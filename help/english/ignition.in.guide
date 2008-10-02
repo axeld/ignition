@@ -1,0 +1,2208 @@
+@database ignitionhelp
+
+@$VER: ignition.guide 1.0 (3.4.2004)
+@author Axel Dörfler
+@(c) 1998-2004 pinc Software
+
+@wordwrap
+@index index
+
+
+#ifndef IGNITION_LITE_EDITION
+@node main "ignition - Help"
+#else
+@node main "ignition Lite Edition - Help"
+#endif
+ @{b}Table Of Contents@{ub}
+
+@{b}Note: This documentation is currently only very partially translated to the English language - most of the contents here are still in German. This is a work in progress, sorry for any inconvenience.@{ub}
+
+In this guide, you'll find help for the	following topics:
+
+ @{b}1. Introduction@{ub}
+   @{" Usage Of This Guide               1.1." link help}
+   @{" How To Enter Cell Text & Formulas 1.2." link cell_input}
+   @{" Interactive Mode                  1.3." link interactive_mode}
+   @{" Drag & Drop                       1.4." link drag&drop}
+   @{" Beginner-Mode                     1.5." link beginner}
+#ifdef IGNITION_LITE_EDITION
+   @{" Differences To The Standard Edit. 1.6 " link full_version}
+#endif
+@rem
+
+ @{b}2. Reference / Context-sensitive Help@{ub}
+   @{" Windows                           2.1." link windows}
+   @{" Menu                              2.2." link menus}
+   @{" Icon Bar                          2.3." link iconbar}
+   @{" Tool Bar                          2.4." link toolbar}
+   @{" Formula Bar                       2.5." link formbar}
+   @{" Help Bar                          2.6." link helpbar}
+
+ @{b}3. Appendix@{ub}
+   @{" Frequently Asked Questions        3.1." link faq}
+   @{" Troubleshooting                   3.2." link troubleshooting}
+   @{" Support-Address                   3.3." link support}
+
+In chapter 2.2. and	2.3. only the standard configuration is covered; your personal preferences cannot be covered here.
+However, you can assign your own help texts and guides to the commands.
+
+Copyright ©1998-2004, pinc Software. All Rights Reserved.
+@endnode
+
+
+***********************************************************************************
+* 1. Introduction                                                                 *
+***********************************************************************************
+
+@node help "ignition - How To Use This Guide"
+ @{b}1.1. Usage Of This Guide@{ub}
+
+The context sensitive help will be triggered by the "help"-key on your keyboard; ignition will try to open a meaningful entry about what's currently placed under your mouse cursor.
+In the sheet itself, ignition will also differentiate between all user interface elements, while it usually only has one help entry for one window.
+An exception to this rule are the windows using tabs; you will find a help entry for every single tab in this guide.
+
+The entries are linked throughout the document. Sometimes, you'll find buttons to trigger actions in the application itself. If an entry have buttons for this, you'll generally find them at the end of it, separated by a short line.
+This functionality is implemented using ARexx, since ignition can be completely controlled remotely. However, this guide is not generated on demand, so it assumes that ignition is accessible using the "ignition.1" port name - but this is not guaranteed, in case you've opened ignition more than once at a time. In this case, the action may be triggered in another running ignition, or even not at all.
+
+The position of the help window on the screen can also be saved: choose the (lonely) item "Save As Defaults" in the "Preferences" menu.
+
+@endnode
+
+
+@node cell_input "ignition - Text- and Formula Input"
+ @{b}1.2. How To Enter Cell Texts And Formulas@{ub}
+
+The first difference in comparison to other spread sheet applications you'll notice is probably when you want to overwrite an existing cell text with something else; if you just start typing in a cell, the old text is not deleted, but it can be edited, any new letters will just be added to this one. Depending on the configuration, you can even just press the "Shift" key to enter the cell text editing mode.
+
+ignition differentiates between texts, values, and formulas for text input:
+
+@{b}Text:@{ub} Everything that doesn't match one of the defined
+   format templates is considered to be text.
+   If you prepend the input with '#', it's always considered to
+   be text, even if it would match a format template.
+   If the text starts with a number (and not with '#'), it will
+   adopt this as its value for calculations. For example, the
+   entry "23 cars" has the value 23, although there is no format
+   template that fits.
+
+@{b}Values:@{ub} Every input will be matched against the existing
+   @{"format templates" link format}. Hence, the value of the entered
+   text is determined by the format: for example, "0:42" can be
+   parsed as 42 minutes, but also as 42 seconds, depending on the
+   existing formats and their order (which can be changed by assigning
+   priorities to them). Valid inputs as recognized by the standard
+   formats are i.e. "Monday", or just "23".
+   
+   Every value is of one of the following types:
+	 Value	 - the value of the input is adopted directly
+	 Percent - value in percent
+	 Date	 - in days
+	 Time	 - in seconds
+	 Unit	 - Values with a unit
+
+   These types can be mixed arbitrarily in formulas, although the the
+   base unit is not respected in this case, i.e. "1s" + "Monday" is
+   not Monday, 0:00:01 but valueof(Monday) + valueof(1s) which is 2
+   in this case.
+   To separate fractions, either "." or "," will be accepted (because
+   of national differences).
+
+@{b}Formulas:@{ub} If the input line starts with a '=', it is interpreted
+	as a formula.
+	ignition knows about the following operators than can be used in
+	calculations:
+     + - * /  - basic arithmetic operations
+	 :        - range between cells (i.e. a3:a5)
+     !        - factorial
+     > >= < <=
+     = !=     - comparisons
+	 & | ~    - bit-wise relations: and, or, not
+	 && ||    - logical relations
+     %        - modulo
+     ^        - power
+
+   Case is insensitive for functions, names, etc. You can auto complete
+   a function name, name, or database using the tab key. Press the key
+   again to browse through all possibilities.
+
+   Besides operators and numbers (the exponential notation is not yet
+   recognized), you can use the following operands:
+
+   @{b}Strings@{ub}
+   To identify a string as string (and not as a name), you have to use
+   quotes. You cannot use all operations on strings, and you also cannot
+   mix text and numbers in calculations.
+   Example: "Hello "
+
+   @{b}Cell References@{ub}
+   If a name consisting of characters only ends with a digit, it will
+   be recognized as a reference to another cell. The character references
+   a column, the number references a row, i.e. "a4" references the cell
+   in column "a" (the first one), row 4.
+   These references are relative to the current cell; if you copy it
+   somewhere else, the reference will change to the cell with the same
+   distance. If you want to reference an absolute cell position, you
+   can do so using the "$" (dollar) sign before the column or row
+   identifier, e.g. "$a$4".
+   You can also specify ranges of cells using the ':' colon. If a
+   function doesn't expect a range for this argument, or if you are
+   using the range in a normal formula, it stands for the sum of
+   the range; hence, "=summe(a3:a6)" is the same as "=a3:a6".
+
+   Using '#' you specify a reference to a cell or range of cells on
+   another page or map; after the first '#' you can either put the
+   name of the page or its page number. Between the cell reference
+   and the page identifier is another '#' as in: "#Page 2#a4".
+   Note, the page reference is absolute; if you insert pages or
+   rename existing pages, they won't get updated, and you won't
+   be warned about existing references.
+   Examples: a2, $b3, $t$42, #Page 2#a4, #2#b3, #2#a4:#2#b6
+
+   @{b}Functions@{ub}
+   If there is an opening parenthesis after a alphanumeric string,
+   it is recognized as function.
+   You can get a list with a short description of all functions
+   when you click on the @{"Choose..." link window_formula} button in the project window.
+
+   @{b}Names & Databases@{ub}
+   You can access the fields of a database using the '.' "operator"
+   (for example, persons.name, or persons.2 for the 2nd field).
+   If a name substitutes with a range, you can use the same mechanism
+   there as well.
+   Cell references in names are always absolute; you don't need to
+   specify the "$" sign for them. If you need relative cell references
+   in names, you can use the reference() function.
+
+@endnode
+
+
+@node interactive_mode "ignition - Interactive Mode"
+ @{b}1.3. Interactive Mode@{ub}
+
+ignition has two different modes it can be in:
+
+ · In the ordinary edit mode you have all the power to change
+   the cells, and you can change and add masks and buttons - but
+   they don't have any function; events are not handled.
+
+ · During the interactive mode, you can use buttons and similar
+   user interface elements in the sheet, as well as database
+   masks.
+   Events handlers that the author of the document has installed
+   will be called.
+   However, you cannot select more than one cell at once, or any
+   other object in the document.
+
+The right corner of the help bar indicates the currently active mode; it will either show a "inter" for the interactive mode, or a "edit" for the editing mode.
+See also: @{" Help Bar " link helpbar}, or @{" Icon Bar " link iconbar}; the latter contains a button to switch the modes in the default configuration.
+
+Please note that the interactive mode can be disabled when the document is loaded for the first time, even if it has been saved in the interactive mode. This is a security feature that lets you open documents from unknown or unsave sources without having to worry.
+Known documents are remembered in the session file.
+
+@rem
+#ifdef IGNITION_LITE_EDITION
+@{b}Note: The interactive mode is not available in the ignition "Lite" Edition!@{ub}
+#else
+@{u}    @{uu}
+
+@{" Switch to interactive mode " rxs "address ignition.1 interactive set"} @{" Switch to editing mode " rxs "address ignition.1 interactive none"}
+#endif
+@endnode
+
+
+@node drag&drop "ignition - Drag & Drop"
+ @{b}1.4. Drag & Drop@{ub}
+
+The process of grabbing an object, dragging it over another, and drop it there to trigger a certain action is generally called "Drag&Drop".
+It can be used at several places throughout ignition's user interface. Almost all list fields support this method of interaction; in the preferences window for the icon bar there even is no other way to drag existing commands into the bar.
+
+It's important to know that ignition supports both scrolling with a selected entry and drag&drop at the same time: if you select an entry and move the mouse below while holding the mouse button down, you won't drag that entry around but just select the next entry in the list which may come in as a surprise.
+If you really intend to drag an entry, you have two choices: you can move the mouse a bit horizontally with a pressed mouse button, or you hold down the "Alt" key when you select the entry - of course, you still have to keep the mouse button pressed in this case, but you can release the "Alt" key immediately after the drag has started.
+In both cases, you will now drag the entry over the screen and can be dropped over another object by releasing the mouse button.
+Usually, the target object gives you a visual hint to indicate acceptance, for example, its frame changes to a black and white dashed line.
+@endnode
+
+ 
+@node beginner "ignition - Beginner-Mode"
+ @{b}1.5. The "Beginner"-Mode@{ub}
+
+ignition has a beginner mode which becomes active automatically, if you select "Beginner" for the installation.
+The beginner mode hides some preferences modules from the user to make the settings less confusing and easier to use. The following preferences are not editable in this mode:
+
+ · Commands
+#ifndef IGNITION_LITE_EDITION
+ · Menu
+ · Context-Menu
+#endif
+ · Keyboard
+		
+Additionally, several System preferences item are hidden as well.
+The beginner mode is set via ToolTypes - the setting is stored in the program icon of ignition. To deactivate the beginner mode, just put the ToolType "BEGINNER" in parentheses as in "(BEGINNER)".
+@endnode
+
+
+#ifdef IGNITION_LITE_EDITION
+@node full_version "ignition - Differences To The Standard Edition"
+ @{b}1.6. Differences To The Standard Edition@{ub}
+
+This is the "Lite Edition" of ignition. In contrast to the "Standard Edition", the following restrictions have been introduced:
+
+ · no interactive Mode; sheets cannot have buttons, internal scripts or similar
+ · no database functionality
+ · the menu preferences are not available
+ · some graphical add-ons are missing
+ · the Turbocalc Import-Filter is missing
+ · the maximum sheet size has been restricted to 30 x 50 cells (not limited in the Standard Edition)
+ · the ARexx port is cut down to the bare minimum (open, save, new, close, print, & quit)
+
+As owner of the SuperBundle, you have the possibility to upgrade to the "Standard Edition" for a reduced pricing. Please contact your local dealer to get more information on that subject.
+@endnode
+#endif
+
+
+***********************************************************************************
+* 2. Context-sensitive Help                                                       *
+***********************************************************************************
+
+@node unknown "ignition - Help"
+There is no help text available for this context/topic.
+@endnode
+
+
+***********************************************************************************
+* 2.1. Windows                                                                    *
+***********************************************************************************
+
+@node windows "ignition - An overview over all windows"
+ @{b}2.1. Windows@{ub}
+
+In this chapter, you'll find a list of all available windows and a description about their usage.
+
+ @{b}Document@{ub}
+   @{" Document Properties          " link window_document}
+   @{" Document Informations        " link window_doc_info}
+   @{" Find                         " link window_search}
+   @{" Main project window          " link project}
+   @{" Page Setup                   " link window_page_setup}
+   @{" Print                        " link window_print}
+   : @{" Print-Status               " link window_printstatus}
+#ifndef IGNITION_LITE_EDITION
+   @{" Scripts                      " link window_scripts}
+#endif
+   @{" Search & Replace             " link window_replace}
+   @{" Set Title                    " link window_set_cell_title}
+   @{" Sheet Properties             " link window_page}
+   @{" Zoom                         " link window_zoom}
+
+ : @{b}Cell@{ub}
+     @{" Attach Note                " link window_notes}
+     @{" Cell Properties            " link window_cell}
+     @{" Cell Size                  " link window_cell_size}
+     @{" Frame                      " link window_frame}
+
+ : @{b}Calculation@{ub}
+     @{" Choose Function            " link window_formula}
+     @{" Set Name                   " link window_set_name}
+
+ : @{b}Graphic & Diagram-Objects@{ub}
+     @{" Chart - Preview            " link window_diagram_preview}
+     @{" Create/Change Chart        " link window_create_diagram}
+     @{" Insert Object              " link window_insert_object}
+     @{" Object Properties          " link window_object}
+
+#ifndef IGNITION_LITE_EDITION
+ : @{b}Database@{ub}
+     @{" Create Database            " link window_database}
+     @{" Create Filter              " link window_database_filter}
+     @{" Create Index               " link window_database_index}
+     @{" Create Mask                " link window_database_mask}
+#endif
+
+ @{b}Preferences@{ub}
+   @{" Prefrences                   " link window_prefs}
+   : @{" Add Preferences Module    " link window_prefs_add_prefs}
+
+   @{" Commands                     " link window_prefs_commands}
+   : @{" Define Command             " link window_prefs_define_command}
+   @{" Context Menus                " link window_prefs_context_menus}
+   @{" Display                      " link window_prefs_display}
+   @{" File                         " link window_prefs_file}
+   @{" Format Templates             " link window_prefs_formats}
+   @{" Icon Bar                     " link window_prefs_iconbar}
+   @{" Keyboard                     " link window_prefs_keyboard}
+   : @{" Record Key                 " link window_prefs_record_key}
+#ifndef IGNITION_LITE_EDITION
+   @{" Menu                         " link window_prefs_menu}
+#endif
+   @{" Names                        " link window_prefs_names}
+   @{" Palette                      " link window_prefs_palette}
+   @{" Screen                       " link window_prefs_screen}
+   @{" Sheet                        " link window_prefs_table}
+   @{" System                       " link window_prefs_system}
+
+ @{b}Miscellaneous@{ub}
+   @{" Choose File Type             " link window_filetype}
+   @{" Clipboard                    " link window_clipboard}
+   @{" Execute Command              " link window_command}
+
+@endnode
+
+
+@node project "ignition - Main project window"
+@toc windows
+The project window contains the following elements:
+
+ @{" Sheet                  " link proj_table}
+ @{" Column & Row titles    " link proj_anti}
+ @{" Icon bar               " link iconbar}
+ @{" Tool bar               " link toolbar}
+ @{" Formula bar            " link formbar}
+ @{" Help bar               " link helpbar}
+
+@endnode
+
+
+@node proj_anti "ignition - Column & Row Titles"
+@toc project
+The row and column titles indicating the position and addressing of cells within the sheet. Columns are identified by sequential letters (a-z, aa-zz, ...), while rows are sequentially numbered.
+You get the cell in column "a" and row 5 by "a5".
+Furthermore, you can specify names for the column and row titles, which you can also use to address cells, or as field names for databases.
+
+If you click with the left mouse button in the border between two titles, you can alter the size of the field by dragging the mouse around while you hold down the mouse button.
+
+With the context menu for the titles (right click), you can also insert or remove new rows/columns in the default configuration.
+
+You can find an overview over all other components in this window @{" here " link project}.
+@endnode
+
+
+@node proj_table "ignition - Sheet"
+@toc project
+This is a view to the actual sheet. Just click on a cell to activate it; when you start entering text, it will be inserted into the current cell (appended to the contents of the cell).
+Cells and graphical objects have their own context menus which you can reach by
+pressing the right mouse button when hovering above such an object.
+
+You can find an overview over all other components in this window @{" here " link project}.
+@endnode
+
+
+@node proj_apen "ignition - Tool Bar"
+@toc project
+This field reflects either the default foreground (text) color for this document, or the last chosen one. You can press on this field to set the foreground color of the current cell to the color as it is shown here.
+
+To select another color, just press the left mouse button on the button next to the right and hold it - a palette menu pops up with all directly defined colors.
+
+To change that palette of predefined colors, open the @{" Preferences - Palette " link windows_prefs_palette} window and change it there.
+
+@{u}    @{uu}
+
+@{" Open window «Preferences - Palette» " rxs "address ignition.1 prefs colors req"}
+@endnode
+
+
+@node proj_bpen "ignition - Tool Bar"
+@toc project
+This field reflects either the default background (text) color for this document, or the last chosen one. You can press on this field to set the background color of the current cell to the color as it is shown here.
+
+To select another color, just press the left mouse button on the button next to the right and hold it - a palette menu pops up with all directly defined colors.
+
+To change that palette of predefined colors, open the @{" Preferences - Palette " link windows_prefs_palette} window and change it there.
+
+@{u}    @{uu}
+
+@{" Open window «Preferences - Palette» " rxs "address ignition.1 prefs colors req"}
+@endnode
+
+
+@node proj_gadget039 "ignition - Project Window"
+@toc project
+This field displays the name of the current page.
+
+With the button next to it, you can change the current page.
+@endnode
+
+
+@node proj_gadget040 "ignition - Project Window"
+@toc project
+Using this button, you can select the page currently displayed in the project window.
+
+The name of the current page is displayed next to this button.
+@endnode
+
+
+@node proj_gadget041 "ignition - Project Window"
+@toc project
+When you hold this button, you can select a function to be inserted at the current cell position.
+
+The list of functions to be chosen from is determined by the last category you've selected in the @{" Choose Function " link window_formula} window.
+@endnode
+
+
+@node proj_gadget042 "ignition - Project Window"
+@toc project
+You can use this text field to enter or change the text for the currently selected cell.
+
+Note, unlike in other spread-sheet applications, this is neither the only nor the preferred way to enter text into a cell; it's usually much more convenient to enter the cell text directly into the cell, as long as you don't have a very small font, or very narrow cells.
+@endnode
+
+
+@node proj_gadget043 "ignition - Project Window"
+@toc project
+This button opens the @{" Choose Function " link window_formula} window which you can use to insert a function into the current cell, or just get an overview over the existing functions.
+@endnode
+
+
+@node proj_gadget045 "ignition - Project Window"
+@toc project
+This icon has no help text assigned to it.
+
+
+Using @{" Preferences - Commands " link windows_prefs_commands} you can assign help texts in arbitrary hypertext files to all available commands.
+
+@{u}    @{uu}
+
+@{" Open window «Preferences - Commands» " rxs "address ignition.1 prefs cmds req global"}
+@endnode
+
+
+@node proj_gadget046 "ignition - Project Window"
+@toc project
+This field displays the font of the current cell or just the currently selected font.
+
+Using the button on the right, you can choose another font for your cells.
+@endnode
+
+
+@node proj_gadget047 "ignition - Project Window"
+@toc project
+This field display the font size of the current cell.
+
+You can enter font sizes in several different units, i.e. in inch, millimeter, or pixel. The button on the right let you choose among some predefined sizes.
+@endnode
+
+
+@node proj_gadget048 "ignition - Project Window"
+@toc project
+This field displays the zoom level of the current page. You can change this by directly entering a percent value.
+
+Values between 25% and 1000% are accepted.
+@endnode
+
+
+@node proj_gadget049 "ignition - Project Window"
+@toc project
+By holding this button pressed down, you can select a font for the current cell.
+
+The font you have chosen will be displayed in the field on its left.
+@endnode
+
+
+@node proj_gadget050 "ignition - Project Window"
+@toc project
+By holding this button pressed down, you can select a font size for the current cell out of a list with predefined sizes.
+
+This size will then be displayed in the field on its left.
+@endnode
+
+
+@node proj_gadget051 "ignition - Project Window"
+@toc project
+This resets the font style of the currently selected cells, also known as plain font style.
+
+Font styles like bold or italics are reverted this way.
+@endnode
+
+
+@node proj_gadget052 "ignition - Project Window"
+@toc project
+This sets the font in the currently selected cells to bold style.
+@endnode
+
+
+@node proj_gadget053 "ignition - Project Window"
+@toc project
+This sets the font in the currently selected cells to italics style.
+@endnode
+
+
+@node proj_gadget054 "ignition - Project Window"
+@toc project
+You can underline the text in the currently selected cells by pressing this button.
+@endnode
+
+
+@node proj_gadget055 "ignition - Project Window"
+@toc project
+When you press this button, you can select the foreground color for the currently selected cells out of a list of predefined colors.
+
+You can define the colors in the list in the @{" Preferences - Palette " link windows_prefs_palette} window.
+
+@{u}    @{uu}
+
+@{" Open window «Preferences - Palette» " rxs "address ignition.1 prefs colors req"}
+@endnode
+
+
+@node proj_gadget056 "ignition - Project Window"
+@toc project
+When you press this button, you can select the background color for the currently selected cells out of a list of predefined colors.
+
+You can define the colors in the list in the @{" Preferences - Palette " link windows_prefs_palette} window.
+
+@{u}    @{uu}
+
+@{" Open window «Preferences - Palette» " rxs "address ignition.1 prefs colors req"}
+@endnode
+
+
+@node proj_gadget057 "ignition - Project Window"
+@toc project
+This button will align the text in the selected cells to the left.
+@endnode
+
+
+@node proj_gadget058 "ignition - Project Window"
+@toc project
+This button will center the text in the selected cells.
+@endnode
+
+
+@node proj_gadget059 "ignition - Project Window"
+@toc project
+This button will align the text in the selected cells to the right.
+@endnode
+
+
+@node proj_gadget060 "ignition - Project Window"
+@toc project
+Change the zoom level of the current document from choosing predefined items from the list.
+@endnode
+
+
+@node proj_gadget061 "ignition - Project Window"
+@toc project
+You can align the text in the selected cells to the top using this button.
+@endnode
+
+
+@node proj_gadget062 "ignition - Project Window"
+@toc project
+You can vertically center the text in the selected cells using this button.
+@endnode
+
+
+@node proj_gadget063 "ignition - Project Window"
+@toc project
+You can align the text in the selected cells to the bottom using this button.
+@endnode
+
+
+  ***
+ *** Misc. Windows
+***
+
+@node window_clipboard "ignition - Window «Clipboard»"
+@toc windows
+You can see a list of all items that are currently in the clipboard.
+Using the "Insert" button, you can paste the contents of the selected entry to the currently selected cell, or remove the selected entry from the clipboard using the "Delete" button.
+@endnode
+
+@node window_search "ignition - Window «Find»"
+@toc windows
+Use this window to find cells that match certain criteria. Choose the search criteria from the list to decide for what should be searched for.
+If such a constraint is active (when it has the hook in front of its name), only cells which match it will be found.
+
+In the "Options" group, you can set several general search options which are applied to the search criteria if applicable:
+The search relation is valid for almost all constraints, while the other options are only applied to text based properties. For example, "with search pattern" lets you define an AmigaDOS style pattern in the text field which the property is matched against, i.e. "#?" stands for "any number of any character".
+
+To start the search, press one of the buttons in the bottom row: "Ok" searches all cells, "Within block" will only search in the currently selected block, and "Start at cell" starts, as its label says, at the current cell position - that means all cells below that cell and those to the right that are in the same row.
+
+The search criteria you entered will be preserved for the next search operation, however, they will be forgotten when you quit the program.
+@endnode
+
+
+@node window_replace "ignition - Window «Search & Replace»"
+@toc windows
+For searching for the cells from which you want to replace certain attributes, you have the same options you'll find in the @{" Find " link window_search} window.
+The attributes you are searching for are set in the left list, the attributes you want to replace in the right one.
+
+If a cell meets the search criteria, all the attributes you've specified on the right will overwrite the corresponding attributes of the cell. This happens either automatically for all cells, or after asking for every single cell if the "acknowledge" option is checked.
+
+The search and the "Replace With" attributes you specified are preserved until the next time you open the window. However, they will not be restored on the next start of the application.
+Also note, when you undo a replace action, all changed cells will be restored at once, it's not possible to undo them one by one.
+@endnode
+
+
+@node window_print "ignition - Window «Print»"
+@toc windows
+Hier können Sie genau bestimmen, was worauf gedruckt wird. In dem Textfeld am oberen Rand des Fensters sehen Sie den aktuellen Drucker, so wie er in den Druckeinstellungen des Systems konfiguriert wurde.
+An dieser Stelle können alle verfügbaren Drucker ausgewählt werden - wenn der Drucker weitergehende Einstellungen unterstützt, können diese über den "Optionen..." Knopf aufgerufen werden.
+
+Falls Sie die Drucker konfigurieren möchten, öffnen Sie bitte die Systemeinstellungen - das geht entweder über das Einsteller-Programm in SYS:Prefs/Printer oder aber auch über den Knopf "Einstellungen".
+
+Unter "Bereiche" können Sie genau definieren, welcher Teil ihres Dokumentes gedruckt werden soll. Dabei können Sie jeder Tabelle unterschiedliche Einstellungen zuweisen, oder sie für alle geltend machen; ist "Einstellungen gelten für alle Tabellen" nicht ausgewählt, ändern Sie jeweils nur die Einstellungen für die in der Liste angewählten Tabelle.
+In dem Eingabefeld "Bereich:" können Sie den Zellbereich, der ausgedruckt werden soll, direkt angeben, z.B. "a10:d30". Die Eingabe in diesem Feld ist nur möglich, wenn der "Bereiche:" Modus auch ausgewählt ist.
+
+Im "Optionen"-Bereich können Sie auswählen, ob der Druck asynchron ausgeführt werden soll. In diesem Fall wird der Zustand des aktuellen Dokumentes kopiert und im Hintergrund gedruckt, während Sie weiterarbeiten können. Falls Sie nur wenig freien Speicher haben, empfiehlt es sich, auf asynchronen Druck zu verzichten. In diesem Fall ist die Oberfläche von ignition so lange blockiert, bis der Druckvorgang beendet ist.
+@endnode
+
+
+@node window_printstatus "ignition - Window «Print-Status»"
+@toc windows
+This window shows the progress of the current print process.
+@endnode
+
+
+@node window_filetype "ignition - Window «Choose File Type»"
+@toc windows
+Hier können Sie den Dateityp auswählen, in dem das Dokument gespeichert werden soll, bzw. in dem ein vorhandenes Dokument zu öffnen versucht werden soll.
+Im Zweifelsfalle verwenden Sie einfach die Voreinstellung, "ignition-Standard".
+@endnode
+
+
+@node window_command "ignition - Window «Execute Command»"
+@toc windows
+Wählen Sie aus der Liste einen Befehl aus, oder geben Sie einen im Eingabefeld ein, der dann direkt ausgeführt werden kann.
+@endnode
+
+
+  ***
+ *** Einstellungen
+***
+
+
+@node window_prefs "ignition - Window «Preferences»"
+@toc windows
+In diesem Fenster können Sie die verschiedenen Konfigurationsmodule in ignition erreichen und ändern. Ein Modul ist dabei eine Zusammenfassung mehrerer Einstellungsmöglichkeiten zu einem Thema.
+
+Alle Einstellungen werden erstmal global verwaltet, und werden bei Bedarf an die offenen Projekte vererbt. Einige Einstellungen sind allerdings nur global verfügbar; diese sind in der Liste durch eine weiße Schriftfarbe zu erkennen. Beispiel für ein nur global verfügbares Modul ist z.B. @{" System " link window_prefs_system}.
+
+Es ist allerdings auch möglich, lokale, also nur für ein bestimmtes Projekt gültige Modul-Einstellungen zu erzeugen. Dazu gibt es verschiedene Möglichkeiten:
+ - entweder ziehen sie ein Modul-Objekt direkt auf den Projekt-Eintrag in der Liste,
+ - drücken @{" Hinzufügen " link window_prefs_add_prefs} und wählen dort ein Modul aus, oder
+ - rufen die Einstellungen eines Moduls direkt auf, z.B. über die Werkzeugleiste
+   eines Projektes.
+
+Einige lokale Module bieten darüber hinaus noch die Möglichkeit, die globalen Module nicht zu überlagern, sondern werden zusätzlich ins Projekt eingebunden - so kann ein Projekt z.B. @{" Formatvorlagen " link window_prefs_formats} sowohl vom globalen als auch vom lokalen Modul benutzen.
+
+Der aktuell gewählte Modus (ersetzen/zusammenfügen) wird durch ein +/- nach dem Namen des Moduls in der Listen angedeutet - drücken Sie einfach auf dieses Symbol, um diese Einstellung zu ändern.
+
+Wird ein globales Modul entfernt, wird automatisch ein neues mit der Minimal- oder Standardkonfiguration erstellt.
+
+Zusätzlich besteht noch die Möglichkeit, bestimmte Moduleinstellungen vorübergehend in der Ablage zu zwischenzuspeichern - diese Module gehen allerdings beim Beenden des Programmes verloren.
+@endnode
+
+
+@node window_prefs_display "ignition - Window «Preferences - Display»"
+@toc windows
+Hier können Sie die optische Erscheinung eines Dokumentes beeinflussen: Bedienleisten können verschoben oder ausgeschaltet werden, ein Zellraster eingestellt werden und noch einiges mehr.
+Sie können hier z.B. auch den Zeichensatz der Spalten- & Zeilentitel festlegen.
+
+Dieses Modul kann lokal benutzt werden, d.h. einem bestimmten Dokument zugewiesen werden - die Einstellungen gelten dann nur für dieses eine Projekt, ohne das andere sie übernehmen würden.
+@endnode
+
+
+@node window_prefs_screen "ignition - Window «Preferences - Screen»"
+@toc windows
+In der Gruppe "Bildschirm" können Sie bestimmen, ob ignition einen eigenen Bildschirm öffnen soll, oder auf einem existierenden öffentlichen Bildschirm.
+Ein eigener Bildschirm kann dabei alle Merkmale des Workbench-Bildschirms (Auflösung, Zeichensatz, ...) übernehmen - sie können aber auch alle Merkmale selber festlegen.
+
+Unter der Überschrift "Monitor" können Sie die Größe Ihres Monitors angeben	- dabei sollte die angegebene Größe genau der Größe des sichtbaren Bildes entsprechen.
+Das ermöglicht ignition die Elemente am Bildschirm in der richtigen Größe darzustellen, 1 cm auf dem Bildschirm sind dann auch 1 cm im Programm. Achten Sie also darauf, daß diese Angabe korrekt ist.
+
+Unter "Hintergrund" läßt sich schließlich noch ein Muster als Hintergrund für den (eigenen) Bildschirm festlegen.
+@endnode
+
+
+@node window_prefs_palette "ignition - Window «Preferences - Palette»"
+@toc windows
+Hier können Sie die Bildschirmfarben sowie die in der Tabelle verfügbare Palette konfigurieren.
+
+In der rechten Gruppe "Palette" sehen sie die gerade ausgewählte Palette (die Auswahl wird in dem Auswahlfeld direkt über der Liste festgelegt).
+Sie können Farben kopieren, löschen und neue hinzufügen. Das Programm versucht automatisch, den Farben einen sinnvollen Namen zu geben, Sie können aber auch einen eigenen Namen bestimmen, der dann vom Programm nicht mehr angetastet wird.
+
+Die Farben ändern können Sie in der linken Gruppe "Farbe", wobei das Standard Farbrad zur Definition genutzt wird. Die Regler unterhalb des Rades können entweder im RGB oder FSH Modus betrieben werden; der Farbanteil also entweder nach Rot/Grün/Blau (RGB) oder Farbton/Sättigung/Helligkeit (FSH) bestimmt werden. 
+
+Die "Farbauswahl" ist die Palette, aus der Sie für Zellenhintergründe, und ähnliches wählen können.
+@endnode
+
+
+@node window_prefs_iconbar "ignition - Window «Preferences - Icon Bar»"
+@toc windows
+In this window, you can select which icons should be present in the icon bar on the top or left edge of the screen.
+ 
+In der linken Liste werden alle definierten Befehle mit Piktogramm angezeigt, in der rechten die in der Leiste vorhandenen; Sie können die Befehle einfach in die andere Liste herüberziehen (siehe auch: @{" Drag&Drop " link drag&drop}). Wenn Sie Befehle von der rechten Liste in die linke ziehen, werden sie einfach von der Piktogrammleiste entfernt. Sie können die Befehle aber auch innerhalb der rechten Liste herumziehen, um ihre Reihenfolge zu ändern.
+Befehle mit Piktogramm können in den @{" Befehls-Einstellungen " link window_prefs_commands} definiert werden, bzw. mit einem anderen Piktogramm versehen werden.
+Mit dem Knopf "Leerfeld" wird am Ende der Leiste ein Leerfeld bzw. Abstandhalter eingefügt. Sie können aber auch diesen Knopf in die Liste an die gewünschte Position ziehen, um ein Leerfeld einzufügen.
+Die Piktogrammleiste kann in den @{" Darstellung Einstellungen " link window_prefs_display} ein- und ausgeschaltet werden.
+
+Dieses Modul kann lokal benutzt werden, d.h. einem bestimmten Dokument zugewiesen werden - die Einstellungen gelten dann nur für dieses eine Projekt, ohne das andere sie übernehmen würden.
+@{u}    @{uu}
+
+@{" Open window «Preferences - Commands» " rxs "address ignition.1 prefs cmds req global"}
+@{" Open window «Preferences - Display» " rxs "address ignition.1 prefs display req"}
+@endnode
+
+
+@node window_prefs_table "ignition - Window «Preferences - Sheet»"
+@toc windows
+Hier werden einige Details zur Benutzung und Berechnung von Tabellen eingestellt.
+
+In der Gruppe "Fehlermeldungen" kann bestimmt werden, ob jeder Berechnungsfehler in einer Zelle von einem erklärendem Dialogfenster (Requester) begleitet werden soll oder nicht. In jedem Fall wird die Meldung in der Zelle selber dargestellt.
+Desweiteren können unbekannte Namen als gleich Null behandelt werden - ansonsten würde eine Fehlermeldung erscheinen.
+
+Unter "Ziehecke" können Sie das Verhalten der rechten unteren Ecke der aktuellen Zelle bestimmen. Sie können mit der Maus auf diese Ecke klicken und daraufhin einige Funktionen wie das Kopieren oder Verschieben dieser Zelle initiieren.
+Hier können Sie bestimmen, was wann passieren soll. "Qualifier" meint dabei eine der Shift/Control/Alt Tasten, die dazu genutzt werden können, eine andere Funktion hervorzurufen.
+
+Unter "Diverses" kann dann noch ausgewählt werden, ob Nullwerte "0" angezeigt werden sollen oder nicht, ob die Formeln anstelle der berechneten Ergebnisse gezeigt werden sollen, und ob bei der Eingabe eines 2-stelligen Jahres die Jahrhundertangabe automatisch vervollständigt werden soll. Geben Sie also "98" für eine Jahresangabe ein, wird daraus automatisch 1998 gemacht. Die Vervollständigung versucht dabei ein sinnvolles Datum zu berechnen, d.h es wird nicht einfach das aktuelle Jahrhundert angenommen.
+Die "Zellgrößenanpassung" bezieht sich auf eine automatische Zellgrößen-Änderung bei der Eingabe eines Textes, der von der Höhe her nicht hereinpassen würde. Schreiben Sie also mit einem 14pt Zeichensatz in eine zu niedrige Zelle, wird diese automatisch so vergrößert, daß der Text paßt.
+Zudem kann noch die Positionsanzeige in der Formelleiste konfiguriert werden - wenn Sie einen Block auswählen können z.B. automatisch alle Zellen addiert angezeigt werden.
+Die Formelleiste kann in den @{" Darstellung Einstellungen " link window_prefs_display} ein- und ausgeschaltet werden.
+
+@{u}    @{uu}
+
+@{" Open window «Preferences - Display» " rxs "address ignition.1 prefs display req"}
+@endnode
+
+
+@node window_prefs_file "ignition - Window «Preferences - File»"
+@toc windows
+Unter "Pfade" legen Sie die Standard-Suchpfade in ignition fest. Wenn Sie bspw. ein neues Dokument öffnen, wird als Standardpfad der "Dokument"-Pfad im Dateirequester erscheinen.
+Die Piktogramme beziehen sich dabei auf die für die @{" Befehlsdefinition " link window_prefs_define_command} verwendeten Bilder.
+
+Darüberhinaus können Sie noch einige Optionen beim Speichern von Dokumenten bestimmen:
+- "Piktogramme erzeugen"
+	Beim Speichern eines Dokumentes wird ein Piktogramm für die Workbench mit erzeugt
+- "Sicherheitskopien"
+	Die vorherige Version des Dokumentes wird mit der Endung ".bak" (wie english
+	"backup") gespeichert
+- "keine Dateiendungen"
+	Standardmäßig haben die verschiedenen Dateiformate auch ihre eigenen Dateiendungen,
+	z.B. benutzt das ignition Standardformat die Endung ".igs". Mit dieser Option können
+	Sie verhindern, daß eine solche Endung beim Speichern eines Dokumentes automatisch
+	an den gewählten Dateinamen angehängt werden.
+- "Auto. Speichern"
+	Sie können ignition veranlassen, Ihre aktuell bearbeiteten Dokumente nach einem
+	bestimmten Intervall automatisch zu speichern. Zudem haben Sie die Möglichkeit,
+	sich vom Programm daran erinnern zu lassen, Ihre Arbeiten regelmäßig zu speichern.
+@endnode
+
+
+#if 0
+@node window_prefs_printer "ignition - Window «Einstellungen - Drucker»"
+@toc windows
+(noch nicht verfügbar)
+@endnode
+#endif
+
+
+@node window_prefs_commands "ignition - Window «Preferences - Commands»"
+@toc windows
+Hier können Sie eigene Befehle definieren, die dann z.B. im Menü oder bei Tastendruck benutzt werden können. Sie können bestehende Befehle verändern oder auch löschen.
+Um einen Befehl zu ändern, öffnen Sie das Window @{" Befehle definieren " link window_prefs_define_command} mit einem Doppelklick.
+
+Dieses Modul kann lokal benutzt werden, d.h. einem bestimmten Dokument zugewiesen werden - die Einstellungen gelten dann nur für dieses eine Projekt, ohne das andere sie übernehmen würden.
+Dieses Modul wird im @{" Anfänger-Modus " link beginner} ausgeblendet.
+@endnode
+
+
+@node window_prefs_define_command "ignition - Window «Define Command»"
+@toc windows
+In diesem Fenster können die in ignition verwendeten Befehle definiert werden. Ein Befehl kann dabei ein ARexx-Befehl oder -Skript sein, oder auch ein DOS-Skript.
+
+In der oberen Box kann der Name des Befehls als auch ein eventuell vorhandenes Piktogramm bestimmt. Dieses Piktogramm wird dann z.B. in der Piktogrammleiste angezeigt - um Befehle in die Piktogrammleiste zu ziehen muß dem Befehl ein Piktogramm zugeordnet sein.
+Wählen Sie einen aussagekräftigen Namen - ignition unterscheidet nicht, ob es nach einem definierten Befehl oder einem internen	Befehl sucht - falls deren Namen identisch sind, wird immer der interne Befehl ausgeführt, nie der von Ihnen definierte!
+
+Unter "Befehle" wird der eigentliche Inhalt des Befehls festgelegt. Ein Befehl kann dabei aus einer Reihe von einzelnen Befehlen bestehen, ein einzelner Befehl kann vom folgenden Typ sein:
+ - "intern"
+	Geben Sie direkt einen der internen Befehle von ignition
+	und seiner Parameter an. Das sind die gleichen Befehle,
+	wie sie auch über ARexx zugänglich sind, und über die
+	ignition intern komplett gesteuert wird.
+
+ - "ARexx"
+	Ein ARexx-Skript wird eingeladen und ausgeführt.
+
+ - "DOS"
+	Ein DOS-Skript wird eingeladen und ausgeführt.
+ 
+@rem
+#ifdef IGNITION_LITE_EDITION
+Beachten Sie, daß ARexx-Skripte in der Lite Edition nicht funktionstüchtig sind.
+
+@rem
+#endif
+In der Gruppe "Ausgaben" kann zum einen eine Ausgabe in eine Datei oder eine Shell definiert werden, was für externe Skripte sehr praktisch sein kann.
+Der unter "Hilfetext:" angegebene Text wird zum Beispiel angezeigt, wenn der Befehl in der Piktogrammleiste sichtbar ist, und der Mauszeiger über ihm zur Ruhe kommt.
+
+Bei "Hypertext:" kann darüberhinaus noch ein Link zu einem AmigaGuide-Dokument angegeben werden, daß beim Druck auf die "Help"-Taste angesprungen wird. Wird der Befehl im "ignition.guide" (diesem Dokument) erklärt, reicht die Angabe des Kapitelnamens, z.B. "icon_redo" (ohne Anführungszeichen). Soll ein Kapitel aus einem anderen Dokument referenziert werden, so muß der Name des Dokumentes gefolgt von einem Schrägstrich vor dem Kapitelnamen stehen, z.B. "ignition.guide/icon_redo". Das Hilfe-Dokument (im AmigaGuide-Format) muß dabei in einem von ignition erreichbarem Pfad liegen (üblicherweise "HELP:<sprache>/", also hierzulande "HELP:deutsch/").
+@endnode
+
+
+@node window_prefs_formats "ignition - Window «Preferences - Format Templates»"
+@toc windows
+In diesem Fenster können Sie die Formate definieren, die ignition zur Ein- und Ausgabe von Werten benutzt. In der Liste auf der linken Seite finden Sie alle bereits definierten Formate oder Formatvorlagen mit einer Vorschau, wie dieses Format dann aussieht.
+In der Gruppe "Eigenschaften" wird das Format bestimmt, so wie es auch zur Erkennung bei der Eingabe benutzt wird; die in der Gruppe "Hervorhebungen" gemachten Einstellungen wirken sich hingegen nur auf die Ausgabe aus - so werden z.B. geklammerte Werte nicht als negative Werte des Formates erkannt, und auch das Gruppentrennzeichen darf in der Eingabe nicht erscheinen.
+Grundsätzlich muß erstmal der Typ des Formates festgelegt werden:
+
+- "Wert"
+	Der Wert der Eingabe entspricht direkt der eingegebenen Zahl,
+	es gibt keine besonderen Formatoptionen. Einzig allein die
+	"0" steht für eine beliebige Zahl.
+
+- "Prozent"
+	Der Wert wird zum hundertstel konvertiert, 55% entsprechen
+    also einem Wert von 0,55. 
+
+- "Datum"
+	Beim Datum gibt es verschiedene besondere Formatoptionen:
+		#y/#Y  2 bzw. 4 stellige Jahreszahl
+		#m/#M  Monat als Zahl (bei #M zweistellig mit führender 0)
+		#d/#D  Tag im Monat (bei #D zweistellig mit führender 0)
+		%m/%M  kurzer/langer Monatsname (Dez/Dezember)
+		%w/%W  kurzer/langer Wochentag (Mo/Montag)
+	Die Grundeinheit beim Datum ist der Tag; mit diesem Typ
+	kann ganz normal gerechnet werden. Beim Rechnen mit Monats-
+	bzw. Jahres-"Auflösung" kann die Funktion datumrechnen()
+	benutzt werden.
+	Berücksichtigen Sie bitte, daß das Format #y mit der Ein-
+	stellung für die @{" automatische Komplettierung " link window_prefs_table} von 2-stelligen
+	Jahreszahlen evtl. nicht wieder erkannt wird.
+
+- "Zeit"
+	Bei der Zeit gibt es ebenfalls verschiedene Formatoptionen:
+		#h/#H  Stunden (bei #H zweistellig mit führender 0)
+		#m/#M  Minuten (bei #M zweistellig mit führender 0)
+		#s/#S  Sekunden (bei #S zweistellig mit führender 0)
+	Die Grundeinheit des Zeittyps ist die Sekunde.
+
+- "Einheit"
+	Der Typ Einheit ist momentan gleichbedeutend mit dem Typ
+	Wert. In einer späteren Version wird er einige Standard-
+	einheiten (Längenmaße) ineinander umrechnen können; er
+	kann und sollte also noch nicht zur automatischen
+	Umrechnung benutzt werden (d.h. eine Formel wie:
+		=text('1m'*100;"0cm")
+	sollte bei definierten "0m" Format nicht benutzt werden, da
+	sie später möglichweise einen falschen Wert anzeigt).
+
+Die Priorität bestimmt die Reihenfolge, in der die Formate bei der Erkennung von Eingaben durchgegangen wird, alle Prioritäten ungleich Null werden auch in der Liste angezeigt - die Liste wird immer von unten nach oben durchsucht, wobei die Priorität nur Änderungen innerhalb eines Grundtyps bewirkt.
+Die Anzahl der Nachkommastellen sollte selbsterklärend sein, bei "(auto)" werden so viele Stellen angezeigt, wie zur Repräsentierung des Werte notwendig (Nullen am Ende werden abgeschnitten), maximal jedoch 10 Stellen.
+Mit der Ausrichtung kann automatisch nach Erkennung bestimmt werden, wie der Text in der Zelle ausgerichtet werden soll - das wirkt aber nur, wenn die Ausrichtung in der Zelle selber (noch) nicht gesetzt wurde - die Ausrichtung der Zelle selber kann in den Zelleigenschaften @{" geändert " link window_cell_page1} werden.
+
+Dieses Modul kann lokal benutzt werden, d.h. einem bestimmten Dokument zugewiesen werden - die Einstellungen gelten dann nur für dieses eine Projekt, ohne das andere sie übernehmen würden.
+
+@{u}    @{uu}
+
+@{" Open window «Preferences - Sheet» " rxs "address ignition.1 prefs table req"}
+@{" Open window «Cell Properties/Color & Alignment» " rxs "address ignition.1 align req"}
+@endnode
+
+
+@node window_prefs_record_key "ignition - Window «Record Key»"
+@toc windows
+Drücken Sie einfach eine Taste, die dann dem im Fenster @{"Preferences - Keyboard" link window_prefs_keyboard} ausgewählten Befehl zugeordnet wird.
+
+Durch drücken von "Abbruch" bzw. schließen des Fensters bleibt die vorherige Tastenkombination für diesen Befehl erhalten.
+@endnode
+
+
+#ifndef IGNITION_LITE_EDITION
+@node window_prefs_menu "ignition - Window «Preferences - Menu»"
+@toc windows
+ToDo: (noch nicht verfügbar)
+
+Dieses Modul kann lokal benutzt werden, d.h. einem bestimmten Dokument zugewiesen werden - die Einstellungen gelten dann nur für dieses eine Projekt, ohne das andere sie übernehmen würden.
+Dieses Modul wird im @{" Anfänger-Modus " link beginner} ausgeblendet.
+@endnode
+#endif	/* IGNITION_LITE_EDITION */
+
+
+@node window_prefs_keyboard "ignition - Window «Preferences - Keyboard»"
+@toc windows
+Hier können Sie eigene Tastaturkürzel definieren. In der linken Spalte der Liste wird der Name der Taste gezeigt "c.down" steht dabei bspw. für die "Cursor-unten" Taste. In der rechten Spalte wird der dazugehörige Befehl angezeigt.
+Über den Knopf "Aufnehmen" können Sie ein Kürzel aufnehmen; sie brauchen also den Namen, den ignition für eine Taste benutzt nicht zu kennen.
+In dem Auswahl-Knopf daneben kann aus der Liste der Befehle der für dieses Kürzel passende Befehl ausgewählt werden.
+
+Darüberhinaus läßt sich noch festlegen, in welchen Momenten das Tastaturkürzel benutzt werden kann:
+ - "immer"
+	Das Kürzel ist immer verfügbar.
+
+ - "nicht während des Edierens"
+	Das Kürzel steht nicht während der Eingabe eines Zelltextes zur Verfügung.
+
+ - "nur während des Edierens"
+	Das Kürzel steht nur während der Eingabe eines Zelltextes zur Verfügung
+	(Eingabe in der Tabelle mit sichtbarem Cursor).
+
+Dieses Modul kann lokal benutzt werden, d.h. einem bestimmten Dokument zugewiesen werden - die Einstellungen gelten dann nur für dieses eine Projekt, ohne das andere sie übernehmen würden.
+Dieses Modul wird im @{" Anfänger-Modus " link beginner} ausgeblendet.
+@endnode
+
+
+#if 0
+@node window_prefs_font "ignition - Window «Einstellungen - Zeichensatz»"
+@toc windows
+(noch nicht verfügbar)
+@endnode
+#endif
+
+
+#if 0
+@node window_prefs_toolbar "ignition - Window «Einstellungen - Werkzeugleiste»"
+@toc windows
+(noch nicht verfügbar)
+@endnode
+#endif
+
+
+@node window_prefs_system "ignition - Window «Preferences - System»"
+@toc windows
+Here you'll find some general settings as well as system clipboard settings. The preferences options are spread over two tabs:
+
+   @{" Miscellaneous " link window_prefs_system_page0}
+   @{" Clipboard     " link window_prefs_system_page1}
+ 
+@endnode
+
+
+@node window_prefs_system_page0 "ignition - Window «Preferences - System/Miscellaneous»"
+@toc windows
+On this tab, you'll find the following options:
+ 
+ - "Icon on Workbench"
+   If this option is selected, there will be an icon on the Workbench
+   while the program is running. You can drop documents on this icon,
+   and they will be loaded into ignition directly.
+
+ - "Check security"
+   This option is important when you open foreign documents that have
+   been saved in the interactive mode. If you open such a document for
+   the first time, it will give you the possibility to fall back into
+   editing mode, so that you don't have to be afraid for malicious
+   contents.
+   Don't disable this option when you have to work with foreign documents
+   without having seriously thought about it!
+
+ - "Context menus"
+   You can enable and disable context menus using this option. Context
+   menus are the menus that pop up when you press the right mouse button
+   while hovering an object. They contain options in the context of that
+   object.
+   It's recommened to let this option active, as long as you don't
+   experience any particular problems with it.
+
+The following options are not available in the beginner mode:
+
+ - "Window refresh"
+   Depending on how much memory you have in your system (or intend to
+   make available for ignition), you can play with different settings
+   to make ignition a bit slower.
+
+ - "Use sessions"
+   The use of sessions enables ignition to remember the documents you
+   have used recently. To accomplish this, a session file is maintained
+   and written to whent the program quits.
+   If you don't want this behaviour, you can prevent it by disabling
+   this option.
+
+#if 0
+- "Beim Zeichnen Puffer benutzen"
+	Bestimmt, ob ignition erst in den Hintergrund zeichnen soll, um dann das
+	sichtbare Bild in einem Rutsch zu aktualisieren. Das benötigt zwar mehr
+	Speicher, hat aber einen deutlich angenehmeren und flickerfreien Bild-
+	aufbau zur Folge.
+#endif
+@endnode
+
+
+@node window_prefs_system_page1 "ignition - Window «Preferences - System/Clipboard»"
+@toc windows
+You can set the following options for the clipboard usage:
+ 
+ - "Climb list"
+   When you insert items from the clipboard, you usually will always
+   insert the object you cut out or copied there last.
+   This option enables a special mode where the clipboard is used like
+   a stack; it visually climbs the list of internal items (have a look
+   at the @{" Clipboard window " link window_clip}).
+   That means when you copy "1", "2", and "3" to the clipboard, and
+   then paste from the clipboard three times in a row, you will get "3",
+   "2", and finally the "1" back from it, instead of "3" three times.
+   This option is disabled by default.
+
+ - "Clipboard unit"
+   ignition uses the standard system clipboard; you can define which unit
+   should be used. AmigaOS supports 256 different clipboard units at once,
+   however, mostly the first one (0) is actually used.
+   For the cooperation with other applications, it's recommended to keep
+   this setting to "0".
+
+@endnode
+
+
+@node window_prefs_names "ignition - Window «Preferences - Names»"
+@toc windows
+In diesem Fenster können Sie Namen definieren. Namen können bei Berechnungen genutzt werden, und sowohl als wiederkehrende Berechnungen vereinfachen, als auch als feststehende Konstanten benutzt werden.
+So ist z.B. "pi" als Konstante definiert.
+Namen sind ähnlich Variablen wie sie in Programmiersprachen benutzt werden, werden aber jeweils erst bei Benutzung ausgewertet.
+
+Um einen neuen Namen zu definieren klicken Sie erst auf "Neu" (unter der Liste der vorhandenen Namen), und wählen dann den Namen, der wie er in Formeln verwendet werden soll.
+Darüberhinaus gibt es verschiedene Typen, die ein Name haben kann:
+ - "standard"
+	Ein solcher Name kann jede Art von Formel beinhalten.
+ - "reference"
+	bezieht sich auf eine bestimmte Zelle, die direkt über diesen Namen angesprochen werden kann.
+	Der Name wird dann auch im Positionsfeld für die aktuelle Zelle angezeigt.
+ - "search criteria"
+	hat immer die aktuelle Zelle als Bezug, und kann z.B. als Filter für die Datenbank-Funktionen
+	wie dbanzahl() benutzt werden. Ein mögliches Kriterium wäre z.B. "aktuelle() > 100".
+
+Dieses Modul kann lokal benutzt werden, d.h. einem bestimmten Dokument zugewiesen werden - die Einstellungen gelten dann nur für dieses eine Projekt, ohne das andere sie übernehmen würden.
+
+Es werden nur die Namen gezeigt, die dieses Modul definiert - werden lokale Einstellungen genutzt, und diese zusätzlich zu den globalen genutzt (erkennbar an dem Plus-Symbol neben dem Modulnamen im @{" Einstellungen " link window_prefs} Fenster), erscheinen nur die zusätzlich lokal definierten Namen, nicht aber die global vorhandenen.
+
+@{u}    @{uu}
+
+@{" Window «Einstellungen» öffnen " rxs "address ignition.1 prefs req"}
+@endnode
+	
+ 
+#ifndef IGNITION_LITE_EDITION
+@node window_prefs_context_menus "ignition - Window «Preferences - Context Menus»"
+@toc windows
+ToDo: (noch nicht verfügbar)
+
+Dieses Modul kann lokal benutzt werden, d.h. einem bestimmten Dokument zugewiesen werden - die Einstellungen gelten dann nur für dieses eine Projekt, ohne das andere sie übernehmen würden.
+Dieses Modul wird im @{" Anfänger-Modus " link beginner} ausgeblendet.
+@endnode
+#endif	/* IGNITION_LITE_EDITION */
+
+
+@node window_prefs_add_prefs "ignition - Window «Add Preferences»"
+@toc windows
+This window can only be accessed within the project local preferences. You can use it to add the listed preferences modules to your local preferences of a document.
+Since you cannot apply all preferences modules in a local only context, you'll only see those modules listed which are possible to use in that way.
+Contrary to the behaviour when you drag&drop other preferences to the project, every added preferences module will have the default settings.
+@endnode
+
+
+  ***
+ ***  Map
+***
+	
+  
+@node window_page "ignition - Window «Sheet Properties»"
+@toc windows
+In this window, you can alter the configuration of a page in the sheet. You can change the name of the page with whom it is represented in the document, you can change the default fore- and background colors, as well as defining certain protection and security attributes.
+The security features are only active as long the general document protection is active as well.
+You can choose between the following options:
+ - "none"
+   The page can be edited without any restrictions.
+
+ - "immutable"
+   The page is visible, but you cannot change its contents.
+
+ - "hidden"
+   The page won't be visible as part of the document, but you can still
+   refer to it in calculations.
+   
+@endnode
+
+
+@node window_document "ignition - Window «Document Properties»"
+@toc windows
+You can change some document-wide settings at this place.
+
+In der Gruppe "Properties" stehen folgende Möglichkeiten zur Wahl:
+#ifndef IGNITION_LITE_EDITION
+ - "interactive mode"
+	Schaltet das Dokument in den @{" interaktiven Modus " link interactive_mode}.
+@rem
+#endif
+ - "display notes"
+	Zellnotizen werden angezeigt; über den Zellen mit Notiz öffnet sich dann
+	ein Rahmen mit der Notiz.
+
+ - "save window position"
+	Die Fenstergröße des Dokumentes wird im Projekt gespeichert. Das kann
+	für spezielle Anwendungen benutzt werden.
+
+ - "immutable"
+	Das gesamte Dokument kann nicht verändert werden.
+
+ - "show hidden cells"
+	Zellen mit dem Sicherheitsmerkmal "Inhalt verstecken" werden
+	dennoch angezeigt.
+
+@rem
+#ifdef IGNITION_LITE_EDITION
+Die Option "interaktiver Modus" ist nur in der @{" Standard-Version " link full_version} verfügbar.
+@rem
+#endif
+Unter "Security" können Sie Paßwörter für die Einhaltung der Schutzmerkmale bestimmen. In Falle des Schutzes des gesamten Dokumentes kann das Dokument ohne Angabe eines Paßwortes nicht mehr geöffnet werden.
+
+@rem
+#ifndef IGNITION_LITE_EDITION
+In der Gruppe "Event Definition" können Sie Aktionen zu verschiedenen Ereignissen definieren. Bei Eintritt des Ereignisses wird der angegebene Befehl ausgeführt. Ereignisse werden nur im @{" interaktiven Modus " link interactive_mode} ausgewertet.
+#else
+Die Ereignisdefinition ist nur im interaktiven Modus interessant, und steht daher ebenfalls nur in der Standard-Version zur Verfügung.
+#endif
+@endnode
+
+
+@node window_page_setup "ignition - Window «Page Setup»"
+@toc windows
+Hier können Sie die Seitengröße als auch Papierränder definieren.
+Bei dem Punkt "Limits:" kann bestimmt werden, wie ignition die Papiergrenzen sichtbar machen soll:
+ - "none"
+	Die Seitengrenzen werden in keiner Weise im Dokument sichtbar gemacht. Das ist die Standard-Einstellung.
+
+ - "marked"
+	Die Grenzen werden markiert, d.h. mit einer Linie mit schraffiertem Rand kenntlich gemacht.
+
+ - "fixed"
+	Der Bereich außerhalb der Seitengrenzen wird lediglich schraffiert dargestellt.
+@endnode
+
+
+@node window_doc_info "ignition - Window «Document Informations»"
+@toc windows
+Hier können Sie dokumentspezifische Informationen und Bemerkungen angeben. Diese werden mit dem Dokument gespeichert.
+@endnode
+
+
+@node window_zoom "ignition - Window «Zoom»"
+@toc windows
+Choose a zoom level for the current document.
+@endnode
+								
+  
+#ifndef IGNITION_LITE_EDITION
+@node window_scripts "ignition - Window «Scripts»"
+@toc windows
+ToDo: (noch nicht verfügbar)
+@endnode
+#endif	/* IGNITION_LITE_EDITION */
+
+
+@node window_set_cell_title "ignition - Window «Set Title»"
+@toc windows
+Hier können Sie einen Titel für eine Spalte oder Reihe festlegen. Dieser Titel ist nicht nur zur besseren Orientierung in der Tabelle gedacht, er wird z.B. bei der Erstellung von Datenbanken als Feldname übernommen.
+@endnode
+
+
+  ***
+ *** Objects
+***
+
+@node window_insert_object "ignition - Window «Insert Object»"
+@toc windows
+In this dialog window, you choose between several objects to insert them into the current document. If you intend to insert more than one object at a time, you should make sure to have set the "Keep window open" option enabled - the window will close automatically if that option is not set; just close the window yourself in that case when you don't need it anymore.
+
+After having selected a certain class of objects, you have to decide where to put the object on the current sheet by clamping a bounding box with the mouse. With some objects, you only have to specify some points like the beginning and end of a line, or several lines as part of a polygon.
+@endnode
+
+
+@node window_object "ignition - Window «Object Propeties»"
+@toc windows
+This window displays properties of the related graphical object. In the "Position" group, the size and position of the object can be specified exactly.
+All other attributes shown are depending on the type of object; the object's class.
+
+Is the object a chart object, you can open the @{" Diagramm ändern " link window_create_diagram} window by pressing the "Chart settings..." button.
+@endnode
+
+
+@node window_create_diagram "ignition - Window «Create/Change Chart»"
+@toc windows
+Depending on the context, you can create a new chart, or you can alter the properties of an existing one.
+The settings are divided into several tabs:
+
+   @{" Contents         " link window_create_diagram_page0}
+   @{" Chart Type       " link window_create_diagram_page1}
+   @{" Display          " link window_create_diagram_page2}
+   @{" Values           " link window_create_diagram_page3}
+   @{" Axes             " link window_create_diagram_page4}
+
+If you are creating a new diagram, you'll not only find an appropriate note in the title of the window, but you'll also find the buttons "Ok", "Preview...", and "Cancel" at the bottom of the window. Since the diagram is not yet part of the document and therefore not visible, you can create a preview in a separate window with the "Preview..." button.
+If you change an existing diagram, the changes will be visible in the document immediately.
+@endnode
+
+
+@node window_create_diagram_page0 "ignition - Window «Create/Change Chart - Inhalt»"
+@toc window_create_diagram
+Hier wird festgelegt, woher das Diagramm seine Daten bekommt, und wie sie ausgewertet werden. Außerdem kann der Name des Diagrammes festgelegt werden.
+
+Unter "Range:" kann der Zellbereich (wie üblich in der Form "a3:b5") angegeben werden - der Knopf "from block" füllt den Bereich mit der Position des momentan selektierten Zellbereiches. Sind während der Erstellung des Diagrammes bereits Zellen ausgewählt, werden diese automatisch im Bereich übernommen.
+
+Werte "vertical" oder "horizontal" bestimmt, in welcher Reihenfolge die Werte benutzt werden sollen. Einige Diagrammtypen unterstützen auch mehrreihige Daten; beim Balkendiagramm z.B. werden für jede Datenreihe eigene Balken angezeigt, und die hier getroffene Einstellung bestimmt, ob die Datenreihen Reihen sind oder eigentlich doch Spalten.
+
+Unter "Page:" kann schließlich noch bestimmt werden, aus welcher Tabelle die Daten geholt werden sollen - ein Diagramm kann sich selbstverständlich auch auf Daten aus einer anderen Tabelle beziehen, allerdings muß sie im gleichen Dokument liegen.	Voreingestellt ist dabei immer die aktuell dargestellte Tabelle.
+@endnode
+
+
+@node window_create_diagram_page1 "ignition - Window «Create/Change Chart - Chart Type»"
+@toc window_create_diagram
+Hier können Sie aus der Liste der verfügbaren Diagrammtypen wählen. Ein einfacher Klick wählt den Typ aus und ändert das Diagramm dementsprechend.
+
+Beachten Sie, daß einige Einstellungen vom jeweiligen Diagrammtyp verwaltet werden, und daher bei einem Wechsel des Typs verlorengehen!
+@endnode
+
+
+@node window_create_diagram_page2 "ignition - Window «Create/Change Chart - Display»"
+@toc window_create_diagram
+Hier werden spezielle und für jeden Diagrammtyp unterschiedliche Möglichkeiten zur Änderung der Darstellung des Diagrammes aufgezeigt.
+Z.Zt. bei fast allen Diagrammtypen vorhandene Einstellungen sind z.B.:
+																						
+ - "Area outline"
+	Alle Flächen des Diagrammes bekommen einen schwarzen Rahmen.
+
+ - "Pseudo-3D"
+	Das Diagramm wird in der Parallelperspektive gezeichnet, was
+	einen 3D Effekt hervorruft.
+
+Probieren Sie ansonsten die Einstellungen einfach aus, um zu sehen, was genau sie bewirken.
+@endnode
+
+
+@node window_create_diagram_page3 "ignition - Window «Create/Change Chart - Values»"
+@toc window_create_diagram
+Hier werden alle Werte aus den Zellen in Reihen gruppiert angezeigt. Sie können, je nach Fähigkeiten des Diagrammtyps, die Farbe des jeweiligen Wertes ändern oder den Wert in irgendeiner Weise hervorheben (wie, ist wieder Sache des Diagrammtyps).
+
+Beachten Sie, daß diese Einstellungen beim Wechsel des Diagrammtyps verlorengehen!
+@endnode
+
+
+@node window_create_diagram_page4 "ignition - Window «Create/Change Chart - Axes»"
+@toc window_create_diagram
+Einige Diagrammtypen benutzen eine Achsendarstellung. In diesem Fall können Sie hier das Aussehen der Achsen verändern.
+
+In der Gruppe "Labels" kann die Achsenbeschriftung ein- und ausgeschaltet, ihre Schriftart und -größe bestimmt und ihre Farbe verändert werden.
+
+Unter "Background" können Eigenschaften des Hintergrunds des Diagrammes, die von den Achsen aufgespannte Fläche, bestimmt werden. In der Einstellung "transparent" werden die hinter dem Diagramm gelegenen Objekte/Zellen sichtbar. Sie können zudem auch noch ein Raster auf den Hintergrund legen, der dem Abstand der Beschriftungsskala entspricht.
+@endnode
+
+
+@node window_diagram_preview "ignition - Window «Chart Preview»"
+@toc windows
+In diesem Fenster wird eine Vorschau des zu erstellenden Diagramms gezeigt.
+Wird im @{" Create Chart " link window_create_diagram} bestätigt, wird dieses Diagramm in die aktuelle Seite eingefügt.
+@endnode
+
+
+#if 0
+@node window_object_list "ignition - Window «Objektliste»"
+@toc windows
+(noch nicht verfügbar)
+@endnode
+#endif
+
+
+  ***
+ *** Cell Properties
+***
+
+@node window_cell "ignition - Window «Cell Properties»"
+@toc windows
+You can alter several cell properties using this window.
+The options are spread over several tabs:
+
+   @{" Format              " link window_cell_page0}
+   @{" Color & Alignment   " link window_cell_page1}
+   @{" Font                " link window_cell_page2}
+   @{" Miscellaneous       " link window_cell_page3} (cell security)
+
+Generally, the option "keep" means that the current cell property is preserved when you apply the changes.
+
+Beachten Sie auch, daß alle Änderungen erst vorgenommen werden, wenn einer der Knöpfe "Assign" oder "Ok" gedrückt werden - dabei werden dann auch alle Änderungen übernommen, also auch die der momentan nicht sichtbaren Karteireiter.
+Daher sind alle Eigenschaften beim Öffnen des Fensters auf "keep" geschaltet, können aber per Knopfdruck auch die Einstellungen der gerade ausgewählten Zelle übernehmen.
+"Assign" läßt dabei das Fenster offen, und ermöglicht so auf einfache Weise das Anwenden gleicher Einstellungen auf verschiedene Zellen.
+
+The changes are applied to all currently selected cells, which are not necessarily the same as those which were selected when the window was opened.
+@endnode
+
+
+@node window_cell_page0 "ignition - Window «Cell Properties/Format»"
+@toc window_cell
+Hier können Sie eines der in @{" Preferences - Format Templates " link window_prefs_formats} gemachten Formate einer Zelle zuweisen.
+Die im Format angegebenen Eigenschaften werden dann z.T. übernommen. Davon abweichend kann noch die Anzahl der Nachkommastellen bestimmt werden.
+
+@{u}    @{uu}
+
+@{" Open window «Preferences - Format Templates» " rxs "address ignition.1 prefs format global req"}
+@endnode
+
+
+@node window_cell_page1 "ignition - Window Cell Properties/Color & Alignment»"
+@toc window_cell
+In der Gruppe "Colors" wird die Vorder- (also Text-) und Hintergrundfarbe einer Zelle bestimmt. Die Auswahl wird nur angewandt, wenn die jeweilige Option markiert wurde.
+Es kann aus der in @{" Preferences - Palette " link window_prefs_palette} definierten Liste ausgewählt werden.
+																																											  
+Analog dazu wird in der Gruppe "Pattern" ein Zellmuster bestimmt, der erste PopUp-Knopf bestimmt dabei das Muster, der zweite die Farbe des Musters.
+
+Unter "Alignment" kann die Ausrichtung des Zellinhaltes innerhalb der Zelle bestimmt werden. Von Erwähnung ist noch die Option "remove" bei der horizontalen Ausrichtung: damit können Sie die aktuelle Einstellung löschen, und die des Formates der Zelle wird wieder wirksam.
+
+@{u}    @{uu}
+
+@{" Open window «Preferences - Palette» " rxs "address ignition.1 prefs colors req"}
+@endnode
+
+
+@node window_cell_page2 "ignition - Window «Cell Properties/Font»"
+@toc window_cell
+Hier können Sie die Schriftart und -Eigenschaften einer Zelle bestimmen.
+
+In der Gruppe "Font" kann die Schriftfamilie und Größe der Schrift bestimmt werden.
+
+Unter "Style" können verschiedene Merkmale aktiviert werden - gibt es eine Schrift für das spezielle Merkmal in der aktuellen Familie, wird diese automatisch ausgwählt. Wenn nicht, wird das Merkmal von der ähnlichsten Schrift ausgehend berechnet.
+
+Unter "Special" steht momentan nur die Möglichkeit zur Wahl, die Schrift ein wenig zu neigen, positive Werte nach rechts, negative nach links.
+
+In der Gruppe "Typography" können dann noch Kerning und Laufweite eingestellt werden. Ersteres bestimmt den Abstand zwischen speziellen Pärchen, wie z.B. "Te" - ohne Kerning wird einfach die normale Zeichenbreite benutzt, bei den verschiedenen Kerning-Einstellungen (die aber oft identsich sind) werden die Abstände den Zeichen angepaßt; im Beispiel rückt das "e" näher an das "T" heran. Dabei hat "Design" üblicherweise einen kleineren Abstand als "Text".
+Die Laufweite bestimmt den generellen Abstand der Zeichen und wird zum normalen Zeichenabstand (ob mit oder ohne Kerning) einfach dazugezählt bzw. davon abgezogen.
+@endnode
+
+
+@node window_cell_page3 "ignition - Window «Cell Properties/Miscellaneous»"
+@toc window_cell
+In the "Cell Security" group, you can set different security levels:
+ - "keep"
+   The current setting of the selected cells won't be changed.
+
+ - "no restrictions"
+   No restrictions at all; this is the default level.
+
+ - "not editable"
+   The cells cannot be edited anymore.
+
+ - "hide formula"
+   The formula which is used to compute the cell values is hidden, and
+   naturally, cannot be edited anymore.
+
+ - "hide contents"
+   The cell contents will be completely hidden and cannot be changed.
+@endnode
+
+
+@node window_frame "ignition - Window «Frame»"
+@toc windows
+ToDo: !!!
+(noch nicht verfügbar)
+@endnode
+
+
+@node window_cell_size "ignition - Window «Cell Size»"
+@toc windows
+You can exactly alter the size of the cells at this place. For the cell width as well as its height, among the following options can be chosen:
+ - "do not change"
+   The size won't be changed.
+
+ - "exact"
+   Changes the size of the selected cells to exactly this value (a value
+   following a unit, like "1 cm").
+   Note, all cells in a row do have the same height, and all cells in a
+   column the same width.
+
+ - "minimal"
+   Enlarges all cells that are smaller than the specified value - that
+   only really makes sense when more than one cell is selected.
+
+ - "optimal"
+   Adapts the cell size in a way that the complete contents are visible
+   within the cell - the cell width will be determined by the length of
+   the text, the cell height by the font size used in the cell.
+
+The changes are applied to all currently selected cells, which are not necessarily the same as those which were selected when the window was opened.
+
+A simple way to change the size of a cell is to press the left mouse button in the space at the borders of a cell title - you can just drag the size to your satisfaction.
+@endnode
+
+
+@node window_notes "ignition - Window «Attach Note»"
+@toc windows
+Sie können jeder Zelle eine Notiz zuweisen, die dann gezeigt wird, wenn der Mauszeiger über der Zelle zur Ruhe kommt. Die Notiz kann mehrere Zeilen haben, Sie können die gleiche Notiz auch mehreren Zellen zuweisen, und sie auch einfach wieder löschen.
+
+The changes are applied to all currently selected cells, which are not necessarily the same as those which were selected when the window was opened.
+@endnode
+
+
+  ***
+ *** Database
+***
+
+#ifndef IGNITION_LITE_EDITION
+@node window_database_index "ignition - Window «Create Index»"
+@toc windows
+(noch nicht verfügbar)
+@endnode
+
+
+@node window_database "ignition - Window «Create Database»"
+@toc windows
+(noch nicht verfügbar)
+@endnode
+
+
+@node window_database_mask "ignition - Window «Create Mask»"
+@toc windows
+(noch nicht verfügbar)
+@endnode
+
+
+@node window_database_filter "ignition - Window «Create Filter»"
+@toc windows
+(noch nicht verfügbar)
+@endnode
+#endif	/* IGNITION_LITE_EDITION */
+
+
+  ***
+ *** Calculation
+***
+
+@node window_formula "ignition - Window «Choose Function»"
+@toc windows
+Here you can choose a function out of a list of all functions sorted by category. The chosen function will be inserted in the currently active cell at cursor position.
+Additionally, there is a short description given for all the functions.
+@endnode
+
+
+@node window_set_name "ignition - Window «Set Name»"
+@toc windows
+The string you enter in this window will be the name under which the current cell will be accessible. It will also be shown in the cell position display that is part of the formula bar.
+You can use this name in calculations to refer to the cell.
+@endnode
+
+***
+
+@node windowXXX "ignition - Window «»"
+@toc windows
+(noch nicht verfügbar)
+@endnode
+
+
+***********************************************************************************
+* 2.2. Menüs                                                                      *
+***********************************************************************************
+
+@node menus "ignition - Menu"
+ @{b}2.2. Menus@{ub}
+
+Here you'll find a description for the menus available in the default configuration:
+
+   @{" Project       " link menu_project}
+   @{" Edit          " link menu_edit}
+   @{" View          " link menu_view}
+   @{" Object        " link menu_object}
+   @{" Preferences   " link menu_preferences}
+
+@endnode
+
+ 
+@node menu_project "ignition - Menu: Project"
+ @{b}2.2. Menus@{ub}
+
+ @{b}Projekt@{ub}
+ @{" Neu                   (N)" link item_new}
+
+ @{" laden...              (L)" link item_load}
+ @{" öffnen...             (O)" link item_open}
+
+ @{" speichern             (S)" link item_save}
+ @{" speichern als...      (A)" link item_save_as}
+ @{" schließen                " link item_close}
+
+ @{" drucken               (P)" link window_print}
+
+ @{" Über                  (?)" link item_about}
+ @{" beenden               (Q)" link item_quit}
+
+@endnode
+
+
+@node item_new "ignition - Menu: Projekt/Neu"
+Damit wird ein neues Dokument geöffnet.
+@endnode
+
+
+@node item_load "ignition - Menu: Projekt/öffnen..."
+Es erscheint das Standard-Dateiauswahlfenster, in dem sie ein neues Dokument laden können.
+Für das neue Dokument wird in jedem Fall ein neues Fenster geöffnet.
+@endnode
+
+
+@node item_open "ignition - Menu: Projekt/laden..."
+Es erscheint das Standard-Dateiauswahlfenster, in dem sie ein neues Dokument laden können.
+Das Dokument wird dabei im Fenster des momentan aktuellen Projektes geladen.
+Änderungen bei diesem gehen aber nicht verloren - falls Änderungen zur gespeicherten Version des Dokumentes existieren, wird nochmal nachgefragt, ob es gespeichert werden soll, bevor es geschlossen wird.
+@endnode
+
+
+@node item_save "ignition - Menu: Projekt/Speichern"
+Speichert das aktuelle Dokument unter seinem Namen ab. Falls das Dokument noch nie gespeichert wurde, wird ein Dateiauswahlfenster geöffnet.
+@endnode
+
+
+@node item_save_as "ignition - Menu: Projekt/Speichern als..."
+Öffnet ein Dateiauswahlfenster in dem Sie festlegen können, wo das aktuelle Dokument gespeichert wird.
+Darüberhinaus können Sie auch noch den Dateityp des Dokumentes bestimmen.
+@endnode
+
+
+@node item_close "ignition - Menu: Projekt/schließen"
+Schließt das aktuelle Dokument. Wenn das Fenster des Dokumentes das letzte offene Programmfenster ist, wird zudem das Programm beendet.
+Falls Änderungen gegenüber der gespeicherten Version vorliegen, findet noch eine Sicherheitsabfrage statt.
+@endnode
+
+
+@node item_about "ignition - Menu: Projekt/über"
+Zeigt das ignition "Programminformationen" Fenster, in dem Sie die auch die Versionsnummer ablesen können.
+@endnode
+
+
+@node item_quit "ignition - Menu: Projekt/beenden"
+Beendet das Programm. Falls geänderte Dokumente geöffnet sind, besteht die Möglichkeit, diese noch abzuspeichern.
+Bei geänderten Programmeinstellungen wird ebenfalls noch nachgefragt, ob diese gespeichert werden sollen.
+@rem
+@rem Diese Art der Rückfragen lassen sich unter den @{" System Einstellungen " link window_prefs_system} abschalten.
+@rem
+@rem @{u}    @{uu}
+@rem
+@rem @{" Window «Einstellungen - System» öffnen " rxs "address ignition.1 prefs system req"}
+@endnode
+
+
+@node menu_edit "ignition - Menu: Bearbeiten"
+ @{b}2.2. Menus@{ub}
+
+ @{b}Bearbeiten@{ub}
+ @{" Ausschneiden          (X)" link item_cut}
+ @{" Kopieren              (C)" link item_copy}
+ @{" Einfügen              (V)" link item_paste}
+ @{" Duplizieren              " link item_duplicate}
+
+ @{" Zwischenablage           " link window_clip}
+
+ @{" Zellen einfügen        » " link menu_insertcells}
+ @{" Zellen entfernen       » " link menu_removecells}
+
+ @{" Text löschen        (Del)" link item_delete_text}
+ @{" Löschen                  " link item_delete}
+
+ @{" Suchen                (F)" link window_find}
+ @{" Ersetzen              (R)" link window_replace}
+ @{" Nächstes              (W)" link item_find_next}
+
+ @{" Rückgängig            (U)" link item_undo}
+ @{" Wiederholen           (R)" link item_redo}
+
+@endnode
+
+
+@node item_cut "ignition - Menu: Bearbeiten/Ausschneiden"
+Entfernt das aktuelle Objekt (oder Zellen) in die Zwischenablage.
+@endnode
+
+
+@node item_copy "ignition - Menu: Bearbeiten/Kopieren"
+Kopiert das aktuelle Objekt (oder Zellen) in die Zwischenablage.
+@endnode
+
+
+@node item_pase "ignition - Menu: Bearbeiten/Einfügen"
+Fügt das momentan in der Zwischenablage befindliche Objekt (oder Zellen) in die Tabelle ein.
+Zellen werden an der aktuellen Position eingefügt, Objekte an den Koordinaten, an denen sie in die Zwschenablage kopiert/verschoben worden waren (oder versetzt davon, wenn mehrfach eingefügt wird).
+@endnode
+
+
+@node item_duplicate "ignition - Menu: Bearbeiten/Duplizieren"
+Dupliziert das aktuell ausgewählte Objekt und fügt es leicht versetzt in die aktuelle Seite ein.
+Diese Funktion ist nicht auf Zellen anwendbar.
+@endnode
+
+
+@node item_delete_text "ignition - Menu: Bearbeiten/Text löschen"
+Löscht den Text der aktuellen Zelle(n).
+@endnode
+
+
+@node item_delete "ignition - Menu: Bearbeiten/Löschen"
+Löscht die angewählten Objekte oder Zellen.
+@endnode
+
+
+@node item_item_find_next "ignition - Menu: Bearbeiten/Nächstes"
+Falls nach einer Zelle gesucht wurde, oder falls Zelleigenschaften nach einem definierten Muster ersetzt werden sollen, springt diese Funktion zur nächsten passenden Zelle weiter.
+
+@{u}    @{uu}
+
+@{" Window «Suchen» öffnen " rxs "address ignition.1 search req"}
+@{" Window «Suchen und Ersetzen» öffnen " rxs "address ignition.1 replace req"}
+@endnode
+
+
+@node item_undo "ignition - Menu: Bearbeiten/Undo"
+Damit können alle Änderungen an der Tabelle rückgängig gemacht werden. Mit @{" Redo " link item_redo} können diese wieder hergestellt werden.
+@endnode
+
+
+@node item_redo "ignition - Menu: Bearbeiten/Redo"
+Damit können alle Änderungen an der Tabelle wieder hergestellt werden, die zuvor mit @{" Undo " link item_undo} rückgängig gemacht wurden.
+@endnode
+
+
+@node menu_view "ignition - Menu: Ansicht"
+ @{b}2.2. Menus@{ub}
+
+ @{b}Ansicht@{ub}
+ @{" 50%                      " link item_zoom}
+ @{" 100%                     " link item_zoom}
+ @{" 200%                     " link item_zoom}
+ @{" 400%                     " link item_zoom}
+ @{" 800%                     " link item_zoom}
+
+ @{" Übersicht                " link item_zoom}
+ @{" Andere...                " link window_zoom}
+
+@endnode
+
+
+@node item_zoom "ignition - Menu: Ansicht"
+Hier können Sie eine bestimmte Vergrößerung für die aktuelle Tabelle wählen.
+Der Menüpunkt "Übersicht" versucht, die Tabelle komplett darzustellen.
+@endnode
+
+
+@node menu_object "ignition - Menu: Objekt"
+ @{b}2.2. Menus@{ub}
+
+ @{b}Objekt@{ub}
+ @{" Zelle                  » " link menu_cell}
+ @{" Tabelle                » " link menu_page}
+ @{" Namen...                 " link window_prefs_names}
+#ifndef	IGNITION_LITE_EDITION
+ @{" Datenbank              » " link menu_db}
+#endif
+
+ @{" Dokument...              " link window_document}
+ @{" Skripte...               " link window_scripts}
+
+ @{" Diagram erstellen...     " link window_diagram}
+
+ @{" Information...           " link window_object}
+
+ @{" Objektebene            » " link menu_objdepth}
+
+@rem @{" Gruppieren               " link unknown}
+@rem @{" Gruppierung lösen        " link unknown}
+@rem
+ @{" Einfügen                 " link window_insert_object}
+
+@endnode
+
+
+@node menu_preferences "ignition - Menu: Einstellungen"
+ @{b}2.2. Menus@{ub}
+
+ @{b}Preferences@{ub}
+ @{" ändern...                " link window_prefs}
+
+ @{" load...                  " link item_load_prefs}
+
+ @{" save                     " link item_save_prefs}
+ @{" save as...               " link item_save_prefs_as}
+
+
+@endnode
+
+
+@node item_load_prefs "ignition - Menu: Preferences/load..."
+Ermöglicht die Auswahl von vorher gespeicherten Einstellungen über ein Dateiauswahlfenster.
+@endnode
+
+
+@node item_save_prefs "ignition - Menu: Preferences/save"
+Speichert die aktuellen Einstellungen als Standardeinstellungen (üblicherweise als "config/ignition.prefs").
+@endnode
+
+
+@node item_save_prefs_as "ignition - Menu: Preferences/save as..."
+Ermöglicht die Auswahl eines alternativen Namens und Ortes über einen Dateiauswahlfenster, an dem die aktuellen Einstellungen gespeichert werden sollen.
+@endnode
+
+
+@node menu_insertcells "ignition - Menu: Bearbeiten/Zellen einfügen"
+ @{b}2.2. Menu: Bearbeiten@{ub}
+
+ @{b}Zellen einfügen@{ub}
+ @{" Spalte                   " link item_insert_column}
+ @{" Reihe                    " link item_insert_row}
+
+ @{" nach rechts              " link item_insert_to_right}
+ @{" nach unten               " link item_insert_to_bottom}
+
+
+@endnode
+
+
+@node item_insert_column "ignition - Menu: Zellen einfügen/Spalte"
+Fügt eine Spalte in die Tabelle an der aktuellen Position ein.
+@endnode
+
+
+@node item_insert_row "ignition - Menu: Zellen einfügen/Reihe"
+Fügt eine Reihe in die Tabelle an der aktuellen Position ein.
+@endnode
+
+
+@node item_insert_to_right "ignition - Menu: Zellen einfügen/nach rechts"
+Fügt für die ausgewählten Zellen neue ein und verschiebt die vorhandenen nach rechts.
+@endnode
+
+
+@node item_insert_to_bottom "ignition - Menu: Zellen einfügen/nach unten"
+Fügt für die ausgewählten Zellen neue ein und verschiebt die vorhandenen nach unten.
+@endnode
+
+
+@node menu_removecells "ignition - Menu: Bearbeiten/Zellen entfernen"
+ @{b}2.2. Menu: Bearbeiten@{ub}
+
+ @{b}Zellen entfernen@{ub}
+ @{" Spalte                   " link item_remove_column}
+ @{" Reihe                    " link item_remove_row}
+
+ @{" nach links               " link item_remove_to_left}
+ @{" nach oben                " link item_remove_to_top}
+
+
+@endnode
+
+
+@node item_remove_column "ignition - Menu: Zellen entfernen/Spalte"
+Removes the current column from the sheet.
+@endnode
+
+
+@node item_remove_row "ignition - Menu: Zellen entfernen/Reihe"
+Removes the current row from the sheet.
+@endnode
+
+
+@node item_remove_to_left "ignition - Menu: Zellen entfernen/nach links"
+Removes all selected cells and shifts the existing cells on the right to left to fill the gap.
+@endnode
+
+
+@node item_remove_to_top "ignition - Menu: Zellen entfernen/nach oben"
+Removes all selected cells and shifts the existing cells below to the top to fill the gap.
+@endnode
+
+
+@node menu_cell "ignition - Menu: Objekt/Zelle"
+ @{b}2.2. Menu: Objekt@{ub}
+
+ @{b}Zelle@{ub}
+ @{" Eigenschaften...         " link window_cell}
+ @{" Rahmen...                " link window_frame}
+ @{" Notiz...                 " link window_notes}
+
+ @{" Größe...                 " link window_cell_size}
+ @{" optimale Breite          " link item_optimal_width}
+ @{" optimale Höhe            " link item_optimal_height}
+
+
+@endnode
+
+
+@node item_optimal_width "ignition - Menu: Zelle/optimale Breite"
+Paßt die Breite der aktuellen Spalte so an, daß alle Zellen komplett enthalten sind, d.h. setzt die Breite auf die Breite der breitesten Zelle.
+@endnode
+
+
+@node item_optimal_height "ignition - Menu: Zelle/optimale Höhe"
+Paßt die Höhe der aktuellen Reihe so an, daß alle Zellen komplett enthalten sind, d.h. setzt die Höhe auf die Höhe der höchsten Zelle (nach Schriftgröße).
+@endnode
+
+
+@node menu_page "ignition - Menu: Objekt/Tabelle"
+ @{b}2.2. Menu: Objekt@{ub}
+
+ @{b}Tabelle@{ub}
+ @{" Nächste                  " link item_next_page}
+ @{" Vorherige                " link item_prev_page}
+ ~~
+ @{" Neu                      " link item_new_page}
+ @{" löschen                  " link item_delete_page}
+ @{" nach oben                " link item_page_to_top}
+ @{" nach unten               " link item_page_to_bottom}
+ ~~
+ @{" Eigenschaften...         " link window_page}
+
+
+@endnode
+
+
+@node item_next_page "ignition - Menu: Tabelle/Nächste"
+Geht im aktuellen Dokument zur nächsten Seite (Tabelle).
+@endnode
+
+
+@node item_prev_page "ignition - Menu: Tabelle/Vorherige"
+Geht im aktuellen Dokument zur vorherigen Seite (Tabelle).
+@endnode
+
+
+@node item_new_page "ignition - Menu: Tabelle/Neu"
+Fügt eine neue Seite (Tabelle) am Ende des Dokumentes ein, und macht sie zur aktuellen.
+@endnode
+
+
+@node item_delete_page "ignition - Menu: Tabelle/löschen"
+Löscht die aktuelle Seite (Tabelle) aus dem Dokument.
+@endnode
+
+
+@node item_page_to_top "ignition - Menu: Tabelle/nach oben"
+Verschiebt die aktuelle Seite (Tabelle) im Dokument eine Seite nach oben, falls möglich.
+@endnode
+
+
+@node item_page_to_bottom "ignition - Menu: Tabelle/nach unten"
+Verschiebt die aktuelle Seite (Tabelle) im Dokument eine Seite nach unten, falls möglich.
+@endnode
+
+
+#ifndef IGNITION_LITE_EDITION
+@node menu_db "ignition - Menu: Objekt/Datenbank"
+ @{b}2.2. Menu: Objekt@{ub}
+
+ @{b}Datenbank@{ub}
+ @{" definieren...            " link window_database}
+ ~~
+ @{" Index...                 " link window_database_index}
+ @{" Filter...                " link window_database_filter}
+ @{" Maske...                 " link window_database_mask}
+ ~~
+ @{" Eintrag hinzufügen       " link item_database_add_record}
+ @{" Suche (wechseln)         " link item_database_search}
+
+
+@endnode
+
+
+@node item_database_add_record "ignition - Menu: Datenbank/Eintrag hinzufügen"
+Fügt in der aktuellen Datenbank einen Eintrag hinzu. Es wird versucht, diese dabei anhand der aktuellen Zellposition zu ermitteln; falls die Zelle innerhalb einer Datenbankdefinition oder Maske liegt, kann die Datenbank bestimmt werden.
+Falls die Datenbank Referenzen zu anderen beinhaltet, werden in diesen Datenbanken automatisch ebenfalls neue Einträge hinzugefügt.
+@endnode
+
+
+@node item_database_search "ignition - Menu: Datenbank/Suche (wechseln)"
+Dieser Menüpunkt schaltet die aktuelle Maske in den Suchmodus. Werden in allen Feldern Eingaben gemacht (oder der Menüpunkt mit teilweisen Eingaben erneut ausgewählt), wird ein Filter generiert, der nur die der Suchanfrage entsprechenden Einträgen anzeigt.
+Bei nochmaliger Auswahl des Menüpunktes wird der Filter wieder ausgeschaltet.
+Ein ähnlicher Filter kann auch über das @{" Filter erstellen " link window_database_filter} Fenster definiert werden.
+
+@{u}    @{uu}
+
+@{" Window «Filter erstellen» öffnen " rxs "address ignition.1 filter req"}
+@endnode
+#endif	/* IGNITION_LITE_EDITION */
+								
+ 
+@node menu_objdepth "ignition - Menu: Objektebene"
+ @{b}2.2. Menu@{ub}
+
+ @{b}Objektebene@{ub}
+ @{" nach vorne               " link item_object_to_front}
+ @{" nach hinten              " link item_object_to_back}
+
+
+@endnode
+
+
+@node item_object_to_front "ignition - Menu: Objektebene/nach vorne"
+Damit kann das aktuell ausgewählte Objekt eine Ebene nach vorne verschoben werden.
+Wird es also vorher teilweise von einem anderen Objekt verdeckt, kann man dies hiermit ändern.
+@endnode
+
+
+@node item_object_to_back "ignition - Menu: Objektebene/nach hinten"
+Damit kann das aktuell ausgewählte Objekt eine Ebene nach hinten verschoben werden.
+Falls es also vor einem anderen Objekt liegt, wird es nachher von diesem verdeckt.
+@endnode
+
+
+***********************************************************************************
+* 2.3. Piktogrammleiste                                                           *
+***********************************************************************************
+
+@node iconbar "ignition - Icon Bar"
+ @{b}2.3. Icon Bar@{ub}
+
+In the default configuration, you will find the following buttons in the icon bar (in that order):
+
+ @{" Preferences: Display       " link window_prefs_display}
+ @{" Preferences: Palette       " link window_prefs_palette}
+ @{" Aufsteigend sortieren      " link icon_sort_ascending}
+ @{" Absteigend sortieren       " link icon_sort_descending}
+ @{" Zellbreite setzen          " link icon_set_cell_width}
+
+ @{" Zelle(n) umrahmen          " link window_frame}
+ @{" Nachkommastelle weniger    " link icon_less_decimal_places}
+ @{" Nachkommastelle mehr       " link icon_more_decimal_places}
+ @{" Gruppentrennzeichen        " link icon_separate_thousands}
+ @{" Negative Werte klammern    " link icon_neg_values}
+
+ @{" Undo                       " link icon_undo}
+ @{" Redo                       " link icon_redo}
+
+#ifndef IGNITION_LITE_EDITION
+ @{" Switch mode                " link icon_interactive_mode}
+#endif
+
+Die Piktogrammleiste kann unter @{" Einstellungen - Darstellung " link window_prefs_display} ein- und ausgeschaltet werden.
+Zusätzlich kann sie projektabhängig über das Fenster @{" Einstellungen - Piktogrammleiste " link window_prefs_iconbar} konfiguriert werden.
+
+@{u}    @{uu}
+
+@{" Open window «Preferences - Display» " rxs "address ignition.1 prefs display req"}
+@{" Open window «Preferences - Icon Bar» " rxs "address ignition.1 prefs icon req"}
+@endnode
+
+
+@node icon_undo "ignition - Undo"
+Damit können alle Änderungen an der Tabelle rückgängig gemacht werden. Mit @{" Redo " link icon_redo} können diese wieder hergestellt werden.
+
+In der Hilfeleiste wird jeweils die aktuelle Änderung angezeigt, wenn der Mauszeiger über diesem Knopf ist.
+@endnode
+
+
+@node icon_redo "ignition - Redo"
+Damit können alle Änderungen an der Tabelle wieder hergestellt werden, die zuvor mit @{" Undo " link icon_undo} rückgängig gemacht wurden.
+
+In der Hilfeleiste wird jeweils die wieder herzustellende Änderung angezeigt, wenn der Mauszeiger über diesem Knopf ist.
+@endnode
+
+
+@node icon_sort_descending "ignition - Absteigend sortieren"
+Dieser Knopf veranlaßt eine absteigende Sortierung des ausgewählten Blockes.
+Wird mehr als eine Spalte angewählt, wird nach der ersten sortiert, und die Reihenfolge der Zeilen der anderen entsprechend geändert.
+@endnode
+
+
+@node icon_sort_ascending "ignition - Aufsteigend sortieren"
+Dieser Knopf veranlaßt eine aufsteigende Sortierung des ausgewählten Blockes.
+Wird mehr als eine Spalte angewählt, wird nach der ersten sortiert, und die Reihenfolge der Zeilen der anderen entsprechend geändert.
+@endnode
+
+
+@node icon_set_cell_width "ignition - Zellbreite setzen"
+Dieser Knopf setzt die Breite (oder eher Spannweite) der aktuellen Zelle auf die momentan selektierte Breite.
+Das kann zum Beispiel dazu genutzt werden, Überschriften über eine Tabelle zu zentrieren - geben Sie die Überschrift zunächst linksbündig über der Tabelle ein, wählen dann diese Zelle und alle folgenden über die gesamte Breite der Tabelle an, und setzen mit diesem Knopf die Zellbreite.
+Wird nun die erste Zelle mit der Überschrift ausgewählt, spannt der Rahmen, der die aktuelle Zelle hervorhebt über die ganze Tabellenbreite. Wenn Sie die Zelle nun zentrieren, wird die Überschrift auch über die gesamte Tabelle zentriert.
+
+@{u}    @{uu}
+
+@{" Center the currently selected cell(s) " rxs "address ignition.1 align center"}
+@endnode
+
+
+@node icon_less_decimal_places "ignition - Nachkommastellenanzahl verringern"
+Verringert die Anzahl der Nachkommastellen.
+Die kleinste Stufe ist allerdings nicht "0 Stellen", wie man erwarten könnte, sondern die "Auto"-Einstellung, d.h. es werden so viele Stellen angezeigt wie nötig, um den Wert zu repräsentieren - Nullen am Ende werden also weggelassen.
+Maximal werden aber immer nur 10 Nachkommastellen angezeigt.
+@endnode
+
+
+@node icon_more_decimal_places "ignition - Nachkommastellenanzahl erhöhen"
+Erhöht die Anzahl der Nachkommastellen.
+Maximal werden 10 Nachkommastellen angezeigt.
+Die kleinste Stufe ist allerdings nicht "0 Stellen", wie man erwarten könnte, sondern die "Auto"-Einstellung, d.h. es werden so viele Stellen angezeigt wie nötig (maximal jedoch 10), um den Wert zu repräsentieren - Nullen am Ende werden also weggelassen.
+@endnode
+
+
+@node icon_separate_thousands "ignition - Gruppentrennzeichen wechseln"
+Wechselt das Gruppentrennzeichen - Tausender werden entweder gesondert geschrieben oder nicht, also 1 Million entweder als 1000000 oder als 1.000.000 (je nach eingesteller Sprache kann das z.B. auch 1,000,000 sein).
+@endnode
+
+
+@node icon_neg_values "ignition - Negative Werte klammern"
+Negative Werte werden geklammert oder normal mit Minuszeichen dargestellt, also z.B. -58 == (58).
+@endnode
+
+
+@node icon_interactive_mode "ignition - Modus wechseln"
+Dieser Knopf wechselt in den @{" interaktiven Modus " link interactive_mode} und zurück.
+Der aktuelle Modus, in dem sich das Dokument befindet wird in der @{" Hilfsleiste " link helpbar} angezeigt.
+@endnode
+
+
+***********************************************************************************
+* 2.4. Tool Bar                                                                   *
+***********************************************************************************
+
+@node toolbar "ignition - Tool Bar"
+ @{b}2.4. Tool Bar@{ub}
+
+The tool bar contains the following elements:
+
+ @{" Schrift               " link proj_gadget046}
+ @{" Schriftgröße          " link proj_gadget047}
+ @{" Style - Plain         " link proj_gadget051}
+ @{" Style - Bold          " link proj_gadget052}
+ @{" Style - Italics       " link proj_gadget053}
+ @{" Style - Underlined    " link proj_gadget054}
+ @{" Foreground Color      " link proj_gadget055}
+ @{" Background Color      " link proj_gadget056}
+ @{" align left            " link proj_gadget057}
+ @{" align right           " link proj_gadget058}
+ @{" center                " link proj_gadget059}
+ @{" top                   " link proj_gadget061}
+ @{" middle                " link proj_gadget062}
+ @{" bottom                " link proj_gadget063}
+ @{" Zoom                  " link proj_gadget048}
+
+You can switch the tool bar on and off in the @{" Preferences - Display " link window_prefs_display} window.
+
+@{u}    @{uu}
+
+@{" Open window «Preferences - Display» " rxs "address ignition.1 prefs display req"}
+@endnode
+
+
+***********************************************************************************
+* 2.5. Formula Bar                                                                *
+***********************************************************************************
+
+@node formbar "ignition - Formula Bar"
+ @{b}2.5. Formula Bar@{ub}
+
+The formula bar consists of the following elements:
+
+ @{" Positionsanzeige       " link form_pos}
+ @{" Eingabefeld            " link proj_gadget042}
+ @{" schnelle Formelauswahl " link proj_gadget041}
+ @{" Formelauswahl          " link proj_gadget043}
+ @{" Seitenanzeige          " link proj_gadget039}
+
+You can switch on or off the formula bar in the @{"Preferences - Display" link window_prefs_display} window.
+
+@{u}    @{uu}
+
+@{" Open window «Preferences - Display» " rxs "address ignition.1 prefs display req"}
+@endnode
+
+
+@node form_pos "ignition - Formelleiste/Positionsanzeige"
+@toc formbar
+In diesem Feld wird die aktuelle Position in der Tabelle oder die Position des aktuell markierten Blockes gezeigt.
+
+Zusätzlich können Sie sich die Summe oder den Mittelwert der markierten Zellen anzeigen lassen. Dies können Sie im Fenster @{" Einstellungen - Tabelle " link window_prefs_table} unter «Diverses/Blockanzeige» auswählen.
+
+@{u}    @{uu}
+
+@{" Window «Einstellungen - Tabelle» öffnen " rxs "address ignition.1 prefs table req"}
+@endnode
+
+
+***********************************************************************************
+* 2.6. Help Bar                                                                   *
+***********************************************************************************
+
+@node helpbar "ignition - Help Bar"
+@{b}2.6. Help Bar@{ub}
+
+In this bar status informations and help texts, and cell notes are displayed.
+You can enable or hide the bar in @{" Preferences - Display " link window_prefs_display}.
+
+At its right border, the following status informations are visible permanently:
+ @{b}inter@{ub} - @{" interactive mode " link mode_interactive}
+ @{b}edit@{ub} - @{" editing mode " link mode_edit}
+
+In the interactive mode, objects are performing assigned actions, and can be used like other user interface components if the object is of that type (i.e. the button object would be an example for that).
+If you are in the editing mode, you can only add/remove or change these objects.
+
+@{u}    @{uu}
+
+@rem
+#ifdef IGNITION_LITE_EDITION
+@{" Switch to interactive mode " rxs "address ignition.1 interactive set"} @{" Switch to editing mode " rxs "address ignition.1 interactive none"}
+#endif
+@{" Open window «Preferences - Display» " rxs "address ignition.1 prefs display req"}
+
+@endnode
+
+
+@node mode_interactive "ignition - Interactive Mode"
+In the interactive mode, the actions that have been assigned to the objects in the document can be triggered, defined events can be executed.
+On the other hand, you can alter the document in a very restricted way only. For example, you cannot select any cell blocks or objects.
+
+See also @{"Editing Mode" link mode_edit}.
+
+@{u}    @{uu}
+
+@{" Switch to interactive mode " rxs "address ignition.1 interactive set"} @{" Switch to editing mode " rxs "address ignition.1 interactive none"}
+
+@endnode
+
+ 
+@node mode_edit "ignition - Editing Mode"
+In this mode, all editing functions are available and working. New objects can be added and existing ones can be altered. Actions assigned to these objects are not triggered, though; if you click on a button, you only select the object, but its assigned action won't be executed.
+
+See also @{"Interactive Mode" link mode_interactive}.
+
+@{u}    @{uu}
+
+@{" Switch to interactive mode " rxs "address ignition.1 interactive set"} @{" Switch to editing mode " rxs "address ignition.1 interactive none"}
+
+@endnode
+
+ 
+***********************************************************************************
+* 4. Appendix                                                                     *
+***********************************************************************************
+
+@node faq "ignition - Frequently Asked Questions"
+ @{b}3.1. Frequently Asked Questions@{ub}
+
+(not yet available)
+@endnode
+
+
+@node troubleshooting "ignition - Troubleshooting"
+ @{b}3.2. Troubleshooting@{ub}
+
+ @{b}1. On save, the file type selection window does not appear, although the command explicetly asks for it@{ub}
+
+The file type selection window is based on functionality found in the standard system ASL requester. Some ASL replacement requesters do not implement this functionality, and thus, are not 100% compatible.
+To solve this, revert back to the original ASL requesters and you should be fine; its latest revisions are very fast and nice to use, too, anyway.
+
+ @{b}2. I am using Picasso 96 and true color screens, but imported images are always dithered, and don't look good@{ub}
+
+
+@endnode
+
+
+@node support "ignition - Contact/Support"
+ @{b}3.3. Support-Address@{ub}
+
+If you have questions, problems, or even ideas concerning the current release of ignition, please contact us through the following channels:
+
+eMail: support@pinc-software.de
+
+Post:  pinc Software
+       Axel Dörfler
+
+       Lange Straße 4a
+       49080 Osnabrück
+
+@endnode
+
+
+***********************************************************************************
+* Index                                                                           *
+***********************************************************************************
+
+@node index "ignition - Index"
+Index has not been created.
+@endnode

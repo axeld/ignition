@@ -1,0 +1,383 @@
+## ignition - function names
+## deutsch, 25.1.2003
+;
+##
+## Mathematische
+##
+ABS
+abs(zahl)
+Betrag von zahl
+;
+NUM
+anzahl(bereich;...)
+Anzahl der Felder mit Inhalt
+;
+SUM
+summe(wert;...)
+Summe der angegebenen Werte/Bereiche
+;
+SMT
+summeaus(bereich;ausdruck)
+Summe der ausgewerteten Ausdrücke für den Bereich
+;
+PRT
+produkt(wert;...)
+Produkt der angegebenen Werte/Bereiche
+;
+FAK
+fakultät(zahl)
+Fakultät von zahl
+;
+EXP
+exp(zahl)
+Exponentialfunktion (e^zahl)
+;
+LN
+ln(zahl)
+natürlicher Logarithmus von zahl
+;
+L10
+log10(zahl)
+dekadischer Logarithmus von zahl
+;
+GCD
+ggT(zahl1;zahl2)
+Der größte gemeinsame Teiler von zahl1 und zahl2
+##
+## Logik
+##
+NOT
+nicht(zahl)
+Logisches nicht
+;
+AND
+und(wert;...)
+Ist WAHR, wenn alle Werte WAHR sind
+;
+OR
+oder(wert;...)
+Ist WAHR, wenn mindestens einer der Werte WAHR ist
+;
+IF
+wenn(bedingung;wert1;wert2)
+Wenn die Bedingung erfüllt ist, wird wert1 zurückgegeben, sonst wert2
+;
+SEL
+auswahl(zahl;wert1;...)
+Gibt den zahl'ten Wert zurück
+;
+NOP
+nop(...)
+Tut nichts
+;
+##
+## Trigonometrie
+##
+RAD
+bogen(grad)
+Wandelt Grad in Bogenmaß
+;
+DEG
+grad(zahl)
+Wandelt Bogenmaß in Grad
+;
+SIN
+sin(zahl)
+Sinus von zahl
+;
+COS
+cos(zahl)
+Cosinus von zahl
+;
+TAN
+tan(zahl)
+Tangens von zahl
+;
+SNH
+sinhyp(zahl)
+Sinus hyperbolicus von zahl
+;
+CSH
+coshyp(zahl)
+Cosinus hyperbolicus von zahl
+;
+TNH
+tanhyp(zahl)
+Tangens hyperbolicus von zahl
+;
+ASN
+arcsin(zahl)
+Arcus Sinus von zahl
+;
+ACS
+arccos(zahl)
+Arcus Cosinus von zahl
+;
+ATN
+arctan(zahl)
+Arcus Tangens von zahl
+;
+##
+## Diverse
+##
+RAN
+zufall()
+Gibt eine Zufallszahl zwischen 0 und 1 zurück
+;
+##
+## Text
+##
+UPC
+gross(text)
+Gibt den übergebenen Text in Großbuchstaben zurück
+;
+LWC
+klein(text)
+Gibt den übergebenen Text in Kleinbuchstaben zurück
+;
+LEF
+links(text;zahl)
+Gibt die ersten zahl Zeichen von text zurück
+;
+RIG
+rechts(text;zahl)
+Gibt die letzten zahl Zeichen von text zurück
+;
+MID
+mitte(text;zahl1;zahl2)
+Gibt zahl2 Zeichen ab Stelle zahl1 von text zurück
+;
+PAT
+muster(muster;text)
+Ist wahr, wenn der Text dem Muster entspricht
+;
+LEN
+länge(text)
+Gibt die Zeichenlänge des übergebenen Textes zurück
+;
+POS
+position(text1;text2)
+Gibt die Position von text1 in text2 zurück
+;
+VAL
+wert(text[;format])
+Interpretiert text als Zahl mit angegebenem Format
+;
+TXT
+text(zahl[;format])
+Gibt zahl als Text im angegebenem Format zurück
+;
+CHR
+zeichen(zahl)
+Gibt das dem ASCII-Code entsprechende Zeichen zurück
+;
+##
+## Finanz
+##
+CAI
+endkapital(kapital;zins;jahre)
+einfache Verzinsung eines Kapitals
+;
+CCI
+endkapitalzinseszins(kapital;zins;jahre)
+Verzinsung eines Kapitals mit Aufzinsung
+;
+CAP
+startkapital(endkapital;zins;jahre)
+Ausgangskapital nach vollzogener Verzinsung
+;
+TRM
+laufzeit(kapital;endkapital;zins)
+Laufzeit bei gegebenen Zinsen
+;
+##
+## Erscheinung
+##
+BPN
+hintergrund(bezug)
+Gibt die ID der Hintergrundfarbe von bezug zurück
+;
+APN
+vordergrund(bezug)
+Gibt die ID der Vordergrundfarbe von bezug zurück
+;
+PNM
+farbname(zahl)
+Gibt den Farbnamen zu zahl zurück
+;
+FNT
+schrift(bezug)
+Gibt den Schriftnamen von bezug zurück
+;
+FPT
+schrifthöhe(bezug)
+Gibt die Schrifthöhe von bezug in Punkten zurück
+;
+WID
+breite(bezug)
+Gibt die Zellbreite von bezug in mm zurück
+;
+HEI
+höhe(bezug)
+Gibt die Zellhöhe von bezug in mm zurück
+;
+##
+## Datum & Zeit
+##
+MON
+monat(datum)
+Gibt den Monat des Datums zurück
+;
+DAY
+tag(datum)
+Gibt den Monatstag des Datums zurück
+;
+YER
+jahr(datum)
+Gibt das Jahr des Datums zurück
+;
+LEP
+schaltjahr(datum)
+Wahr, wenn datum innerhalb eines Schaltjahres ist
+;
+DOY
+tagimjahr(datum)
+Gibt den Tag bezüglich des Jahres zurück
+;
+WEK
+woche(datum)
+Gibt die Woche des Jahres von datum zurück
+;
+WKD
+wochentag(datum)
+Liefert den Wochentag von datum
+;
+TDY
+heute()
+Gibt das heutige Datum zurück
+;
+DC
+datumrechnen(datum;tag[;monat;jahr])
+Zählt zum angegebenen Datum tag/monat/jahr hinzu
+;
+NOW
+jetzt()
+Gibt die aktuelle Uhrzeit zurück
+;
+GMT
+gmtabstand()
+Gibt den Abstand zur GMT Zeitzone in Sekunden an (Greenwich Mean Time)
+;
+MLN
+monatslänge(monat[;jahr])
+Gibt die Länge des Monats in Tagen zurück
+;
+THR
+stunde(zeit)
+Die Stunden der Zeitangabe
+;
+TMN
+minute(zeit)
+Die Minuten der Zeitangabe
+;
+TSC
+sekunde(zeit)
+Die Sekunden der Zeitangabe
+;
+##
+## Datenbank
+##
+DPS
+dbposition(datenbank[;parent])
+Gibt den aktuellen Eintrag einer echten Datenbank zurück
+;
+DSZ
+dbgröße(datenbank[;parent])
+Gibt die Anzahl der Einträge einer echten Datenbank zurück
+;
+DFI
+dbfilter(datenbank)
+Gibt den aktuellen Filter der Datenbank zurück
+;
+DNM
+dbanzahl(bereich;...;filter)
+Gibt die Anzahl der gefilterten Einträge zurück
+;
+DPT
+dbprodukt(bereich;...;filter)
+Gibt das Produkt der gefilterten Einträge zurück
+;
+DSM
+dbsumme(bereich;...;filter)
+Gibt die Summe der gefilterten Einträge zurück
+;
+DMI
+dbmin(bereich;...;filter)
+Gibt das Minimum der gefilterten Einträge zurück
+;
+DMA
+dbmax(bereich;...;filter)
+Gibt das Maximum der gefilterten Einträge zurück
+;
+DAV
+dbmittelwert(bereich;...;filter)
+Gibt den Mittelwert der gefilterten Einträge zurück
+;
+##
+## Tabelle
+##
+EXT
+extern(mappe;seite;bezug)
+Ermöglicht Zugriff auf andere Mappen
+;
+PAG
+seite(seite;bezug)
+Ermöglicht einfachen Zugriff auf eine andere Seite
+;
+REF
+bezug(spalte;reihe[;absolut])
+Zugriff auf Zelle spalte:reihe (relativ oder absolut)
+;
+CUR
+aktuelle()
+Zugriff auf die aktuelle Zelle
+;
+COL
+spalte(wert[;absolut])
+Zugriff auf Zellen in der aktuellen Reihe
+;
+ROW
+reihe(wert[;absolut])
+Zugriff auf Zellen in der aktuellen Spalte
+;
+##
+## Statistik
+##
+AVG
+mittelwert(wert;...)
+Mittelwert der übergebenen Werte/Bereiche
+;
+MED
+median(bereich;...)
+Median der übergebenen Bereiche
+;
+PER
+perzentil(p;bereich;...)
+Perzentil p der übergebenen Bereiche
+;
+VAR
+varianz(bereich;...)
+Varianz der übergebenen Bereiche
+;
+MIN
+min(wert;...)
+Minimum der übergebenen Argumente
+;
+MAX
+max(wert;...)
+Maximum der übergebenen Argumente
+;
+OBJ
+objektattribut(objekt;attribut)
+Der Wert des Attributes 'attribut' von 'objekt'
+

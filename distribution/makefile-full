@@ -1,0 +1,65 @@
+## ignition-Makefile
+## für Distributionen
+##
+## Copyright ©2003 pinc Software. All Rights Reserved.
+
+CFLAGS          = nostkchk afp math=i code=f data=f ign=79+147+317 utillib
+LFLAGS          = sc sd nd noicons
+IGN_HOME		= home:source/ignition/
+
+#OPTIMIZE       = opt opttime
+OPTIMIZE        = noopt
+CPU             = 68020
+#CPU            = any
+DEFINES			=
+DEBUG           = nodbg
+LIBS            = lib:scmieee.lib lib:scnb.lib lib:amiga.lib lib:clip.o $(IGN_HOME)lib/safeclip.o $(IGN_HOME)lib/sb_serial_check.o
+GST             = include:allnb.gst
+
+all:              strings ignition guides
+
+strings:
+	CatComp DESCRIPTOR home:source/ignition/locale/ignition.cd CFILE ignition_strings.h OBJFILE ignition_strings.o
+
+guides:
+	sc home:source/ignition/help/deutsch/ignition.in.guide $(DEFINES) pponly objname=home:source/ignition/distribution/lite/locale/deutsch/help/deutsch/ignition.guide
+
+clean:
+	delete \#?.o
+
+ignition_strings.o:
+
+
+OBJS            = ignition.o prefs.o prefsio.o edit.o table.o cell.o calc.o font.o functions.o \
+				  handlewindows.o gadgets.o initwindows.o images.o windows.o objects.o ignition_strings.o \
+                  rexx.o support.o project.o io.o classes.o handleprefs.o color.o reference.o \
+				  prefsgadgets.o graphic.o clip.o undo.o hooks.o database.o pointer.o serial.o \
+				  boopsi.o diagram.o printer.o lock.o cmd.o menu.o popper.o screen.o search.o
+
+windows.o:        windows.c windefs.h version.h
+screen.o:         screen.c version.h types.h
+classes.o:        classes.c classes.h
+diagram.o:        diagram.c graphic.h
+
+ignition:         $(OBJS)
+	@echo "linking..."
+	@slink with lib:utillib.with \
+		from lib:c.o $(OBJS) \
+		to $@ \
+		lib $(LIBS) \
+		$(LFLAGS)
+
+.c.o:
+	@echo "compiling $*.c"
+	@sc $(OPTIMIZE) $(CFLAGS) $(DEFINES) $(DEBUG) gst=$(GST) cpu=$(CPU) $*.c
+
+.c.oo:
+	sc $(CFLAGS) $(DEFINES) $(DEBUG) cpu=$(CPU) gst=$(GST) objname=$*.oo $*.c
+
+.c.ooo:
+	sc $(OPTIMIZE) $(CFLAGS) $(DEBUG) gst=$(GST) cpu=any objname=$*.ooo $*.c
+
+.asm.o:
+	asm -D -DCPU_$(CPU) -u $*.asm
+
+

@@ -1,0 +1,115 @@
+; ignition - Make distribution
+
+if not exists ram:ignition then
+  mkdir ram:ignition
+endif
+
+if not exists ram:ignition/src then
+  mkdir ram:ignition/src
+endif
+
+; ******************* Compile *******************
+
+cp home:source/ignition/#?.[ch] ram:ignition/src clone quiet
+cp home:source/ignition/distribution/makefile-full ram:ignition/src/Makefile
+
+cd ram:ignition/src
+make
+
+if exists ram:ignition/ignition then
+  rm ram:ignition/ignition
+endif
+
+; ******************* Create Archive *******************
+
+; *** ignition ***
+
+if not exists ram:ignition/ignition.lha then
+  lha a ram:ignition/ignition.lha ignition
+  cd home:source/ignition/distribution/full
+  lha a ram:ignition/ignition.lha ignition.info
+endif
+
+; *** icons ***
+
+if not exists ram:ignition/icons.lha then
+  cd home:source/ignition/icons
+  lha a ram:ignition/icons.lha #?.icon
+endif
+
+; *** libs ***
+
+if not exists ram:ignition/libs.lha then
+  cd libs:
+  lha a ram:ignition/libs.lha gtdrag.library
+endif
+
+; *** sheets ***
+
+if not exists ram:ignition/sheets.lha then
+  cd home:source/ignition/distribution/full/sheets
+  lha a ram:ignition/sheets.lha #?.igs#?
+endif
+
+; *** config ***
+
+if not exists ram:ignition/config.lha then
+	cd home:source/ignition/distribution/full/config
+	lha a ram:ignition/config.lha #?
+endif
+
+; *** locale ***
+
+if not exists ram:ignition/locale_deutsch.lha then
+	cd home:source/ignition/distribution/full/locale/deutsch
+	sc home:source/ignition/help/deutsch/ignition.in.guide pponly objname=help/deutsch/ignition.guide
+	list all lformat=%p%s > T:ign-ls-pre
+	grep -v -q .svn T:ign-ls-pre > T:ign-ls
+	lha -x a ram:ignition/locale_deutsch.lha @T:ign-ls
+endif
+
+if not exists ram:ignition/locale_english.lha then
+	cd home:source/ignition/distribution/full/locale/english
+	sc home:source/ignition/help/english/ignition.in.guide pponly objname=help/english/ignition.guide	 
+	list all lformat=%p%s > T:ign-ls-pre
+	grep -v -q .svn T:ign-ls-pre > T:ign-ls
+	lha -x a ram:ignition/locale_english.lha @T:ign-ls
+endif
+ 
+; *** misc ***
+
+if not exists ram:ignition/misc.lha then
+  cd home:source/ignition/distribution/full/misc
+  lha a ram:ignition/misc.lha #?
+endif
+
+; *** add-ons ***
+
+if not exists ram:ignition/add-ons.lha then
+  cd home:source/ignition/distribution/full/add-ons
+  lha a ram:ignition/add-ons.lha #?
+  cd sys:classes/gadgets
+  lha a ram:ignition/add-ons.lha pScroller.gadget pTextEdit.gadget
+endif
+
+; ******************* Dateien kopieren *******************
+
+cd home:source/ignition
+
+if not exists ram:ignition/ignition-Installation then
+  cp misc/ignition-Installation misc/ignition-Installation.info ram:ignition/ quiet
+endif
+
+if not exists ram:ignition/lhex then
+  cp distribution/lhex ram:ignition/
+endif
+
+; ******************* Endgültiges Archiv erstellen *******************
+
+cd ram:ignition
+
+rm ram:ignition.lha
+lha a ram:ignition.lha #?
+
+cd home:source/ignition
+

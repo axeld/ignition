@@ -1,0 +1,566 @@
+; $VER: ign-Installer 1.0 (15.8.2003), axeld.
+;
+; Copyright ©2003 pinc Software. All Rights Reserved.
+
+; History:
+; 98/03/30 axeld  - Initial release
+; 98/04/01 axeld  - added english texts
+;                 - completed install-routines
+; 98/04/13 axeld  - tooltype support, prevent update preferences
+; 98/04/27 axeld  - #?.iodtype's will be copied to the right drawer
+;                 - fixed install-update
+; 98/05/01 axeld  - support for ToolType BEGINNER
+; 00/09/17 axeld  - update to reflect "recent" changes
+; 00/09/17 axeld  - ToolTypes haven't been set
+; 00/09/17 axeld  - ToolType SHEETS is now set properly
+; 01/04/15 axeld  - checks for an existing installation (in the selected folder), and
+;                   skips asking for a sheets directory
+; 03/08/15 axeld  - adapted because of changes in directory structure
+
+
+;@@ All private symbols are preceded by a '|'
+
+
+;; ----------------------------------------------------------------------------------
+;; preparation
+;; ----------------------------------------------------------------------------------
+			
+	
+(set |n 0)
+(while (set |current (select |n "deutsch" "english" ""))
+  (if (= @language |current) (set |supported TRUE))
+  (set |n (+ |n 1)))
+
+(if (not |supported)
+  (
+    (set |dummy (select (askchoice (prompt  ("The language %s is not supported!\nPlease choose another one:" @language))
+                                   (choices "\x1b[2pdeutsch" "english")
+								   (help    |locale-help)
+                                   (default 1))
+                        "deutsch" "english"))
+      ;@@ dummy-variable to work around an error message if you abort the
+      ;@@ installation during the choice
+    (set @language |dummy)
+  ))
+
+(set |cpu (database "cpu"))
+
+(set |temp "T:.ign-temp")
+(if (not (exists |temp))
+  (makedir |temp (safe)))
+
+
+;; ----------------------------------------------------------------------------------
+;; messages
+;; ----------------------------------------------------------------------------------
+
+
+(set |separate "\n--\n\n")
+
+(if (= @language "deutsch")
+  (
+    (set |wrong-installer "\nDer von Ihnen verwendete Installer ist zu alt!\n\nDieses Skript benötigt den Installer V43+ um lauffähig zu sein")
+    (set |wrong-cpu "\nignition benötigt mindestens einen 68020-Prozessor!")
+    (set |wrong-os "\nDas installierte Betriebssystem ist zu alt!\n\nignition benötigt AmigaOS 3.0 oder höher.")
+
+    (set |destdir-help (cat "In das ausgewählte Verzeichnis wird der gesamte ignition-Ordner"
+                            "installiert; es wird also ein eigener Ordner erstellt."
+                            |separate @askdir-help))
+    (set |destdir-msg "In welches Verzeichnis soll der ignition-Ordner installiert werden?")
+
+    (set |update-msg "\n\nOffensichtlich ist in diesem Verzeichnis bereits eine\n(ältere) Version von ignition installiert.\n\nDiese Version wird nun aktualisiert.")
+
+    (set |sheetsdir-msg "In welchem Verzeichnis sollen die Dokumente gespeichert werden?")
+
+    (set |libdir-help (cat "Es wird lediglich die gtdrag.library benötigt.\n\nDa diese incl. Entwicklerunterlagen "
+                           "frei verfügbar ist, also möglicherweise auch von anderen Programmen benutzt wird, "
+                           "empfiehlt sich eine Installation ins LIBS:-Verzeichnis."
+                           |separate @askdir-help))
+    (set |libdir-msg "In welchem Verzeichnis sollen die benötigten Libraries installiert werden?")
+
+    (set |tooltype-help (cat "Die Tooltypes haben folgende Bedeutung:\n\n"
+                                 "- FONTS setzt ein zusätzliches Verzeichnis, in dem nach frei skalierbaren Fonts gesucht wird. Bsp.: FONTDIR=Sys:PS-Fonts\n"
+                                 "- WITH spezifiziert die zu benutzenden Einstellungen. Bsp.: WITH=ram:Adressen.prefs\n"
+                                 "- NOABOUT verhindert das Erscheinen des Info-Fensters beim Programmstart\n"
+                                 |separate @askoptions-help))
+    (set |tooltype-msg "Welche Tooltypes sollen gesetzt/geändert werden?")
+    (set |tt-fontdir-msg "In welchem Verzeichnis soll nach Fonts gesucht werden?")
+    (set |tt-with-msg "Geben Sie bitte die Standard-Einstellungen von ignition an (mit Pfad relativ zum Programmverzeichnis):")
+
+	(set |locale-help (cat
+		"Bitte wählen Sie die Sprache für die Installation aus.\n"
+		"Alle sprachabhängigen Programmdateien werden ebenfalls in dieser"
+		"Sprache installiert.\n"
+		"Andere Sprachen stehen z.Zt. nicht zur Auswahl"
+		|separate @askoptions-help))
+
+    (set |parts-help (cat "Bei der Erstinstallation sollten grundsätzlich alle Programmteile kopiert werden"
+                         |separate @askoptions-help))
+    (set |parts-msg "Welche Teile des Packetes sollen installiert werden?")
+    (set |parts-dev-msg "Soll die Entwicklerdokumentation installiert werden?")
+    (set |part-ign "ignition - Hauptprogramm")
+    (set |part-libs "verwendete Libraries")
+	(set |part-config "Einstellungen")
+	(set |part-add-ons "Add-Ons")
+    (set |part-icons "Piktogramme der Werkzeugleiste")
+    (set |part-sheets "Beispieltabellen")
+    (set |part-rexx "Rexx-Skripte")
+
+    (set |cpu-msg "Für welchen Prozessor sollen optimierte Versionen (wenn vorhanden) benutzt werden?")
+    (set |copy-msg "Kopiere Datei\n")
+
+    (set |install-ign-msg "Entpacke das Hauptprogramm nach:\n")
+    (set |install-upd-msg "Im ausgewählten Verzeichnis existieren bereits Einstellungen von ignition.\nMöchten Sie diese Einstellungen für die jetzige Installation behalten?\n")
+    (set |install-libs-msg "Kopiere die benötigten Libraries")
+	(set |install-add-ons-msg "Kopiere die Add-Ons")
+    (set |install-icons-msg "Entpacke die Piktogramme der Werkzeugleiste nach:\n")
+	(set |install-locale-msg "Entpacke lokalisierte Programmdateien nach:\n")
+    (set |install-sheets-msg "Entpacke die Beispieltabellen nach:\n")
+    (set |install-rexx-msg "Entpacke die Rexx-Skripte nach:\n")
+
+    (set |default-sheetsdir "Dokumente")
+  ))
+
+;; -----------------------
+
+(if (= @language "english")
+  (
+    (set |wrong-installer "\nYour Installer-tool is too old!\n\nYou'll need Installer V43+ in order to get this script executed!")
+    (set |wrong-cpu "\nignition requires a 68020-cpu at least!")
+    (set |wrong-os "\nThe installed version of the Operating System is too old!\n\nignition requires AmigaOS 3.0 or higher.")
+
+    (set |destdir-help (cat "In the chosen path the whole ignition-package will be installed; "
+                            "a separate drawer 'ignition' will be created there."
+                            |separate @askdir-help))
+    (set |destdir-msg "Please select the path where the ignition-drawer should be installed.")
+
+    (set |update-msg "\n\nThere seem to be a probably older\ninstallation of ignition in the selected drawer.\n\nProceeding will update this version.")
+    (set |sheetsdir-msg "Please select the drawer where the Documents will be stored.")
+
+    (set |libdir-help (cat "The only required library is the gtdrag.library.\n\nSince the library incl. the developer "
+                           "documentation are for free, the library may used by other applications as well; the installation "
+                           "in the LIBS:-drawer is recommended."
+                           |separate @askdir-help))
+    (set |libdir-msg "Please select a drawer for the required libraries.")
+
+    (set |tooltype-help (cat "The meaning of the tooltypes is as follows:\n\n"
+                                 "- FONTS selects a drawer, where to look for scalable fonts. E.g.: FONTDIR=Sys:PS-Fonts\n"
+                                 "- WITH selects the preferences file to be used. E.g.: WITH=ram:Address.prefs\n"
+                                 "- NOABOUT prevent the Info-Requester being opened on start.\n"
+                                 |separate @askoptions-help))
+    (set |tooltype-msg "Which tooltypes should be set or changed?")
+    (set |tt-fontdir-msg "Please select the drawer where to look for scalable fonts.")
+    (set |tt-with-msg "Please set the standard preferences file for ignition (path relative to the ignition-drawer):")
+
+	(set |locale-help (cat
+		"Please select the language the installation should proceed in.\n"
+		"Note, all language depending application resources will be installed in"
+		"that language as well."
+		"Other languages are currently not available."
+		|separate @askoptions-help))
+
+    (set |parts-help (cat "It is recommended to install all parts of the package."
+                          |separate @askoptions-help))
+    (set |parts-msg "Which parts of the package should be installed?")
+    (set |parts-dev-msg "Should the developer documentation be installed?")
+    (set |part-ign "ignition - main programme")
+    (set |part-libs "required Libraries")
+	(set |part-config "Configuration files")
+	(set |part-add-ons "Add-ons")
+    (set |part-icons "Icons of the toolbar")
+    (set |part-sheets "Example sheets")
+    (set |part-rexx "Rexx-Scripts")
+
+    (set |cpu-msg "Optimized versions for which processor (if available) should be installed?")
+    (set |copy-msg "Copy file\n")
+
+    (set |install-ign-msg "Decompress the main programme to:\n")
+    (set |install-upd-msg "There already exists ignition-preferences in the selected drawer.\nDo you like to keep these for this installation?\n")
+    (set |install-libs-msg "Copy the required libraries")
+	(set |install-add-ons-msg "Copy the Add-ons")
+    (set |install-icons-msg "Decompress the toolbar icons to:\n")
+	(set |install-locale-msg "Decompress localized application resources to:\n")
+    (set |install-sheets-msg "Decompress the example sheets to:\n")
+    (set |install-rexx-msg "Decompress the Rexx-Scripts to:\n")
+
+    (set |default-sheetsdir "sheets")
+  ))
+
+
+;; ----------------------------------------------------------------------------------
+;; misc-procedures
+;; ----------------------------------------------------------------------------------
+   
+
+(procedure |decompress |d-archive |d-target
+  (if (not @pretend)
+    (run (cat "lhex \"-qfw=" |d-target "\" x \"" |d-archive "\""))))
+
+;; -----------------------
+
+(procedure |decompress-temp |d-archive
+  (if (exists |temp)
+    (run (cat "lhex \"-qfw=" |temp "\" x \"" |d-archive "\""))))
+
+;; -----------------------
+
+(procedure |clean-temp
+  (if (exists |temp)
+    (delete (tackon |temp "#?")
+            (optional "force")
+            (all) (safe))))
+
+;; -----------------------
+
+(procedure |find-file |f-file
+  (if (not (exists (cat |f-file |cpu-suffix)))
+    (if (exists (cat |f-file "020"))
+      (set |f-file (cat |f-file "020")))
+    (set |f-file (cat |f-file |cpu-suffix)))
+
+  |f-file)
+
+;; -----------------------
+
+(procedure |check-env
+  (if (< (/ @installer-version 65536) 43)
+    (abort |wrong-installer))
+
+  (if (patmatch "68000|68010" |cpu)
+    (abort |wrong-cpu))
+
+  (if (< (/ (getversion) 65536) 39)
+    (abort |wrong-os)))
+
+;; -----------------------
+
+(procedure |cleanup
+  (if (exists |temp)
+    (delete |temp (all) (safe))))
+
+;; -----------------------
+
+(procedure |check-for-previous-version
+  (set |update 0)
+  (if (exists (tackon @default-dest "ignition"))
+     (set |update 1)))
+
+
+;; ----------------------------------------------------------------------------------
+;; "set"-procedures
+;; ----------------------------------------------------------------------------------
+
+
+(procedure |set-destdir
+	(set |destdir (askdir
+		(prompt  |destdir-msg)
+		(help    |destdir-help)
+		(default (set |destdir @default-dest))))
+	(set @default-dest (tackon |destdir "ignition")))
+
+;; -----------------------
+
+(procedure |set-sheetsdir
+  (set |sheetsdir (tackon @default-dest |default-sheetsdir))
+  (if (> @user-level 1) (set |sheetsdir (askdir (prompt  |sheetsdir-msg)
+                                                (help    @askstring-help)
+                                                (default |sheetsdir)
+                                                (newpath)))))
+
+;; -----------------------
+
+(procedure |set-parts
+	(set |parts (if (> @user-level 1)
+		(askoptions
+			(prompt  |parts-msg)
+			(choices (cat "\x1b[2p" |part-ign) |part-config |part-libs |part-add-ons |part-icons |part-sheets |part-rexx)
+	;@@ Bits:        0                         1            2          3          4           5            6
+			(help    |parts-help))
+		-1))
+
+	(set |part-ign-bit 0)
+	(set |part-config-bit 1)
+	(set |part-libs-bit 2)
+	(set |part-sheets-bit 5)
+
+	(if (> @user-level 1)
+		(set |parts-dev (askbool
+			(prompt  |parts-dev-msg)
+			(help    @askbool-help)
+			(default 1)))))
+
+;; -----------------------
+
+(procedure |set-cpu
+  (set |n 0 |i 0)
+  (while (set |current (select |n "68020|68030" "68040" "68060" ""))
+    (if (patmatch |current |cpu) (set |i |n))
+    (set |n (+ |n 1)))
+
+  (if (> @user-level 1) (set |i (askchoice (prompt  |cpu-msg)
+                                           (help    @askchoice-help)
+                                           (choices "68020/68030" "68040" "68060")
+                                           (default |i))))
+  (set |cpu-suffix (select |i "020" "040" "060")))
+
+;; -----------------------
+
+(procedure |set-libdir
+  (set |libdir "libs:")
+  (if (> @user-level 1) (set |libdir (askdir (prompt  |libdir-msg)
+                                             (help    |libdir-help)
+                                             (default |libdir)))))
+
+;; -----------------------
+
+(procedure |set-tooltypes
+  (set |tt-fontdir "" |tt-with "" |tooltype 0)
+  (if (and (exists (tackon @default-dest "ignition")) (iconinfo (dest (tackon @default-dest "ignition"))
+                                                                (gettooltype "FONTS" "|tt-fontdir")
+                                                                (gettooltype "WITH" "|tt-with")
+                                                                (gettooltype "NOABOUT" "|tt-noabout")))
+    (if |tt-noabout (set |tooltype (or |tooltype 8))))
+
+  (set |tooltype (if (> @user-level 1) (askoptions (prompt  |tooltype-msg)
+                                                   (choices "\x1b[2pFONTS" "WITH" "NOABOUT")
+  ;@@ Bits:                                                 0              1      2
+                                                   (help    |tooltype-help)
+                                                   (default 0))
+                                       0))
+
+  (if (in |tooltype 0) (set |tt-fontdir (askdir (prompt  |tt-fontdir-msg)
+                                                (help    @askdir-help)
+                                                (default "fonts:"))))
+  (if (in |tooltype 1) (set |tt-with (askstring (prompt  |tt-with-msg)
+                                                (help    @askstring-help)
+                                                (default "ignition.prefs")))))
+
+
+;; ----------------------------------------------------------------------------------
+;; "install"-procedures
+;; ----------------------------------------------------------------------------------
+
+
+(procedure |install-ign
+  (working |install-ign-msg @default-dest)
+  (|decompress-temp "ignition.lha")
+  (copyfiles (prompt  |copy-msg)
+             (source  (|find-file (tackon |temp "ignition")))
+             (newname "ignition")
+             (dest    @default-dest))
+  (set |dummy 1)
+  (if (exists (tackon @default-dest "ignition.prefs"))
+    (if (askbool (prompt |install-upd-msg)
+                 (help   @askbool-help))
+      (set |dummy 0)))
+  (if |dummy
+    (copyfiles (prompt  |copy-msg)
+               (source  |temp)
+               (pattern "ignition.#?")
+               (noposition)
+               (dest    @default-dest))
+    (if (not (exists (tackon @default-dest "ignition.info")))
+      (copyfiles (prompt  |copy-msg)
+                 (source  |temp)
+                 (pattern "ignition.info")
+                 (noposition)
+                 (dest    @default-dest))))
+
+  (tooltype (dest (tackon @default-dest "ignition"))
+            (if |tt-fontdir ((settooltype "FONTS" |tt-fontdir) (settooltype "(FONTS"))
+                            ((settooltype "FONTS") (settooltype "(FONTS" "<dir>)")))
+            (if |tt-with ((settooltype "WITH" |tt-with) (settooltype "(WITH"))
+                         ((settooltype "WITH") (settooltype "(WITH" "<file>)")))
+            (if (in |tooltype 2) ((settooltype "NOABOUT" "") (settooltype "(NOABOUT)"))
+                                 ((settooltype "NOABOUT") (settooltype "(NOABOUT)" "")))
+            (if (not (= |sheetsdir "sheets")) ((settooltype "SHEETS" |sheetsdir)))
+            (if (= @user-level 0) ((settooltype "BEGINNER" "") (settooltype "(BEGINNER)"))
+                                  ((settooltype "BEGINNER") (settooltype "(BEGINNER)" ""))))
+
+  (|decompress "misc.lha" @default-dest)
+  (|clean-temp)
+  (complete 20))
+
+;; -----------------------
+
+(procedure |install-libs
+  (|decompress-temp "libs.lha")
+  (foreach |temp "#?.library"
+           (copylib (prompt |install-libs-msg)
+                    (help   @copylib-help)
+                    (source (tackon |temp @each-name))
+                    (dest   |libdir)))
+  (|clean-temp)
+  (complete 25))
+
+;; -----------------------
+
+(procedure |install-config
+	(set |config-dir (tackon @default-dest "config"))
+
+	(working |install-config-msg |config-dir)
+	(makedir |config-dir)
+	(|decompress "config.lha" |config-dir)
+	(complete 30))
+
+;; -----------------------
+
+(procedure |install-add-ons
+	(|decompress-temp "add-ons.lha")
+	(set |add-ons-dir (tackon @default-dest "add-ons"))
+
+	(makedir |add-ons-dir)
+  
+	; copy add-ons descriptions
+
+	(copyfiles
+		(prompt		|copy-msg)
+		(source		|temp)
+		(pattern	"#?.??descr")
+		(dest		|add-ons-dir))
+
+	; copy add-ons in library mode
+
+	(foreach |temp "#?.~(??descr)"
+		(copylib
+			(prompt	|install-add-ons-msg)
+			(help	@copylib-help)
+			(source	(tackon |temp @each-name))
+			(dest	|add-ons-dir)))
+
+	(|clean-temp)
+	(complete 50))
+
+;; -----------------------
+ 
+(procedure |install-dev
+	(set |devdir (tackon @default-dest "developer"))
+
+	; nothing to copy for now
+
+	(makedir |devdir)
+	(|clean-temp)
+	(complete 60))
+
+;; -----------------------
+
+(procedure |install-icons
+  (set |iconsdir (tackon @default-dest "icons"))
+
+  (working |install-icons-msg |iconsdir)
+  (makedir |iconsdir)
+  (|decompress "icons.lha" |iconsdir)
+  (complete (if |parts-dev 70 60)))
+
+;; -----------------------
+
+(procedure |install-sheets
+  (working |install-sheets-msg |sheetsdir)
+  (makedir |sheetsdir (infos))
+  (|decompress "sheets.lha" |sheetsdir)
+  (complete 90))
+
+;; -----------------------
+
+(procedure |install-locale |i-language
+	(working |install-locale-msg @default-dest)
+	(|decompress-temp (cat "locale_" |i-language ".lha"))
+				
+	; install standard locale files
+
+	(copyfiles
+		(prompt		|copy-msg)
+		(source		|temp)
+		(pattern	"(help|catalogs)")
+		(dest		@default-dest))
+
+	; install config if asked for
+	
+	(if (in |parts |part-config-bit)
+		(copyfiles
+			(prompt		|copy-msg)
+			(source		(tackon |temp "config"))
+			(pattern	"#?")
+			(dest		|config-dir)))
+
+	; install sheets if asked for
+
+	(if (in |parts |part-sheets-bit)
+		(copyfiles
+			(prompt		|copy-msg)
+			(source		(tackon |temp "sheets"))
+			(pattern	"#?")
+			(dest		|sheetsdir)))
+ 
+	(|clean-temp)
+	(complete 95))
+
+;; -----------------------
+
+(procedure |install-rexx
+  (set |rexxdir (tackon @default-dest "rexx"))
+
+  (working |install-rexx-msg |rexxdir)
+  (makedir |rexxdir)
+  (|decompress "rexx.lha" |rexxdir)
+  (complete 100))
+
+;; -----------------------
+
+(procedure |install
+	(makedir @default-dest (infos))
+	(makedir |sheetsdir (infos))
+
+	(if (in |parts |part-ign-bit)
+		(|install-ign))
+	(if (in |parts |part-config-bit)
+		(|install-config))
+	(if (in |parts |part-libs-bit)
+		(|install-libs))
+	(if (in |parts 3)
+		(|install-add-ons))
+	(if |parts-dev
+		(|install-dev))
+	(if (in |parts 4)
+		(|install-icons))
+	(if (in |parts |part-sheets-bit)
+		(|install-sheets))
+
+	(|install-locale @language)
+
+	(if (in |parts 6)
+		(|install-rexx)))
+
+
+;; ----------------------------------------------------------------------------------
+;; main
+;; ----------------------------------------------------------------------------------
+	
+	
+(onerror |cleanup)
+(|check-env)
+
+(welcome)
+
+(|set-destdir)
+
+(|check-for-previous-version)  ; special update handling
+(if (> |update 0) (
+		(set |sheetsdir (tackon @default-dest |default-sheetsdir))
+		(message |update-msg)
+		(iconinfo
+			(dest (tackon @default-dest "ignition"))
+			(gettooltype "SHEETS" "|sheetsdir"))
+	)
+	(|set-sheetsdir))
+ 
+(|set-parts)
+(|set-cpu)
+
+(if (in |parts 1) (|set-libdir))
+(if (in |parts 0) (|set-tooltypes))
+
+(|install)
+
+(|cleanup)
+

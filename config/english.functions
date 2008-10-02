@@ -1,0 +1,380 @@
+## ignition - function names
+## english, 30.7.2003
+;
+##
+## Math functions
+##
+ABS
+abs(value)
+Absolute value
+;
+NUM
+number(range;...)
+Number of cells with contents
+;
+SUM
+sum(value;...)
+Sum of given values/ranges
+;
+SMT
+sumfor(range;term)
+Sum of the evaluated terms for the range
+;
+PRT
+product(value;...)
+Product of the given values/ranges
+;
+FAK
+factorial(number)
+Factorial of number
+;
+EXP
+exp(number)
+Exponential function (e^number)
+;
+LN
+ln(number)
+logarithmus naturalis of number
+;
+L10
+log10(number)
+Base ten logarithm of number
+;
+##
+## Logic
+##
+NOT
+not(number)
+Logical not
+;
+AND
+and(value;...)
+Is TRUE, if all values are TRUE
+;
+OR
+or(value;...)
+Is TRUE, if one or more values are TRUE
+;
+IF
+if(condition;value1;value2)
+If the condition is met, value1 is returned, otherwise value2
+;
+SEL
+select(number;value1;...)
+Returns value number "number"
+;
+NOP
+nop(...)
+Does nothing
+;
+##
+## Trigonometry
+##
+RAD
+radian(grad)
+Converts degrees to radians
+;
+DEG
+degree(number)
+Converts radians to degrees
+;
+SIN
+sin(number)
+Sine of number
+;
+COS
+cos(number)
+Cosine of number
+;
+TAN
+tan(number)
+Tangens of number
+;
+SNH
+sinhyp(number)
+Sine hyperbolicus of number
+;
+CSH
+coshyp(number)
+Cosine hyperbolicus of number
+;
+TNH
+tanhyp(number)
+Tangens hyperbolicus of number
+;
+ASN
+arcsin(number)
+Arcus Sine of number
+;
+ACS
+arccos(number)
+Arcus Cosine of number
+;
+ATN
+arctan(number)
+Arcus Tangens of number
+;
+##
+## Misc.
+##
+RAN
+random()
+Returns a random number between 0 and 1
+;
+##
+## Text
+##
+UPC
+uppercase(text)
+Returns "text" in upper case letters
+;
+LWC
+lowercase(text)
+Returns "text" in lower case letters
+;
+LEF
+left(text;number)
+Returns the first "number" letters of "text"
+;
+RIG
+right(text;number)
+Returns the last "number" letters of "text"
+;
+MID
+middle(text;number1;number2)
+Returns "number2" letters of "text" starting with the letter at "number1"
+;
+PAT
+pattern(pattern;text)
+Is true if "text" matches the "pattern" (AmigaDOS style)
+;
+LEN
+length(text)
+Returns the length of "text"
+;
+POS
+position(text1;text2)
+Returns the position of "text2" in "text1"
+;
+VAL
+value(text[;format])
+Interpretes "text" as a number of the optionally specified "format"
+;
+TXT
+text(number[;format])
+Returns "number" as text of the optionally specified "format"
+;
+CHR
+char(number)
+Returns the ASCII code of the corresponding letter
+;
+##
+## Finance
+##
+CAI
+accucapital(capital;interest;years)
+Accumulated capital with a given interest and duration
+;
+CCI
+accucapitalcompinterest(capital;interest;years)
+Accumulated capital with compound interests
+;
+CAP
+seedcapital(accucapital;interest;years)
+Returns seed capital from an accumulated capital
+;
+TRM
+duration(capital;accucapital;interest)
+Duration with given interests
+;
+##
+## Look
+##
+BPN
+background(cell)
+Returns the background color ID of the given cell
+;
+APN
+foreground(cell)
+Returns the foreground color ID of the given cell
+;
+PNM
+colorname(number)
+Returns the name of the color specified by "number"
+;
+FNT
+font(cell)
+Returns the font name used in the cell
+;
+FPT
+fontsize(cell)
+Returns the font size in points
+;
+WID
+width(cell)
+Returns the cell width in mm
+;
+HEI
+height(cell)
+Returns the cell height in mm
+;
+##
+## Date & Time
+##
+MON
+month(date)
+Month of the given date as number from 1-12
+;
+DAY
+day(date)
+Day in month
+;
+YER
+year(datum)
+Year of the given date
+;
+LEP
+leapyear(date)
+Is true, if "date" lies within a leap year
+;
+DOY
+dayofyear(date)
+Day of year
+;
+WEK
+week(date)
+Number of the week in the year
+;
+WKD
+weekday(date)
+Weekday in the week specified by "date"
+;
+TDY
+today()
+Returns today's date
+;
+DC
+computedate(date;day[;month;year])
+Adds day/month/year to the given "date"
+;
+NOW
+now()
+Returns the current time (local time)
+;
+GMT
+gmtoffset()
+Returns the offset to the GMT time zone in seconds (Greenwich Mean Time)
+;
+MLN
+monthlength(month[;year])
+Length of the month (optionally in year) in days
+;
+THR
+hour(time)
+The hour part of the specified time
+;
+TMN
+minute(time)
+The minute part of the specified time
+;
+TSC
+second(time)
+The second part of the specified time
+;
+##
+## Database
+##
+DPS
+dbposition(database[;parent])
+Returns the current record position in this database
+;
+DSZ
+dbsize(database[;parent])
+Returns the number of records in this database
+;
+DFI
+dbfilter(database)
+Returns the current filter of the database
+;
+DNM
+dbnumber(range;...;filter)
+Returns the number of filtered items
+;
+DPT
+dbproduct(range;...;filter)
+Returns the product of the filtered items
+;
+DSM
+dbsum(range;...;filter)
+Returns the sum of the filtered items
+;
+DMI
+dbmin(range;...;filter)
+Returns the minimum of the filtered items
+;
+DMA
+dbmax(range;...;filter)
+Returns the maximum of the filtered items
+;
+DAV
+dbaverage(range;...;filter)
+Returns the average of the filtered items
+;
+##
+## Sheet
+##
+EXT
+extern(map;page;reference)
+Gives access to other documents
+;
+PAG
+page(page;reference)
+Access to another page of the same document
+;
+REF
+reference(column;row[;absolute])
+Access to cell at column:row (relative or absolute)
+;
+CUR
+current()
+Access to the current cell
+;
+COL
+column(value[;absolute])
+Access to cells in the current row
+;
+ROW
+row(value[;absolute])
+Access to cells in the current column
+;
+##
+## Statistics
+##
+AVG
+average(value;...)
+Average of the given values
+;
+MED
+median(range;...)
+Median of the given values
+;
+PER
+percentile(p;range;...)
+Percentile p of the given range
+;
+VAR
+variance(range;...)
+Variance of the given range
+;
+MIN
+min(value;...)
+Minimum of all given values
+;
+MAX
+max(value;...)
+Maximum of all given values
+;
+OBJ
+objectattribute(object;attribute)
+Returns the value of "attribute" of "object"
+

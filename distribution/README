@@ -1,0 +1,13 @@
+Distributions
+--
+
+The "distribution" directory currently contains all files that should end up
+in a distribution of ignition, as well as a makefile that will create a nice
+archive that can be used with the ignition Installer.
+
+It has been made this complicated because there were supposed to be two other
+distributions of ignition: a demo, and a "lite" version.
+
+So before this mechanism is getting used in the future, it should be changed
+so that all files are taken and build from the repository automatically.
+

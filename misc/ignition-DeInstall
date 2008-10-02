@@ -1,0 +1,88 @@
+; $VER: ign-DeInstaller 0.3 (14.2.2000)
+; Copyright ©2000 pinc Software, axeld.
+
+; History:
+; 98/04/01 axeld  -Initial release
+; 98/04/13 axeld  -added SHEETS-ToolType-support
+; 00/02/14 axeld  -home directory now selectable
+
+;@@ All private symbols are preceded by a '|'
+
+;; preparation -----------------------------------------------------------------------
+
+(set |n 0)
+(while (set |current (select |n "deutsch" "english" ""))
+  (if (= @language |current) (set |supported TRUE))
+  (set |n (+ |n 1)))
+
+(if (not |supported)
+  (set @language "english"))
+
+
+;; messages --------------------------------------------------------------------------
+
+(if (= @language "deutsch")
+  (
+    (set |deinstall-help "Bei der Deinstallation wird der gesamte Ordner sowie sämtliche darin enthaltene Daten unwiederbringlich gelöscht.")
+        ;\n\nErstellte Dokumente können aber vorher gesichert werden.")
+    (set |deinstall-msg "Möchten Sie ignition wirklich deinstallieren?")
+    (set |sheets-msg "Möchten Sie Ihre Dokumente (im Ordner %s) behalten?")
+    (set |askdir-msg "Das Skript befindet sich nicht im gleichen Verzeichnis wie ignition! Geben Sie es bitte das Verzeichnis an, in dem ignition installiert ist:")
+    (set |notfound-msg "Die Datei ignition konnte nicht lokalisiert werdeb. Im angegebenen Verzeichnis ist ignition nicht oder nicht vollständig installiert.\nWenn Sie ignition von Hand löschen wollen, löschen Sie einfach das Verzeichnis, in dem es installiert ist.\n\nBeachten Sie, daß ihre Dokumente dann ebenfalls gelöscht werden!")
+    (set |delete-msg "Lösche Verzeichnis:\n")
+    (set |ready-msg "Deinstallation beendet.")
+    (set |ready-sheets-msg "\n\nSie finden ihre Dokumente im Ordner \"%s\".")
+    (set @abort-button "Deinstallation abbrechen")
+  ))
+(if (= @language "english")
+  (
+    (set |deinstall-help "If you deinstall ignition, the whole drawer incl. all data will be deleted.")
+    (set |deinstall-msg "Do you really want to deinstall ignition?")
+    (set |sheets-msg "Do you want to keep your documents (in drawer %s)?")
+    (set |askdir-msg "This script seems not to be in ignition's directory! Please select it by yourself:")
+    (set |notfound-msg "Couldn't find file ignition. The selected directory does not contain ignition.\nYou may deinstall it by deleting the whole ignition-directory.\n\nPlease take care of your own documents!")
+    (set |delete-msg "Delete drawer:\n")
+    (set |ready-msg "Deinstallation finished.")
+    (set |ready-sheets-msg "\n\nYou'll find your documents at \"%s\".")
+    (set @abort-button "Abort Deinstallation")
+  ))
+
+;; main ------------------------------------------------------------------------------
+
+(if |welcome (welcome))
+
+(if (askbool (prompt  |deinstall-msg)
+             (help    |deinstall-help))
+  (
+    (if (not (exists "ignition"))
+      (
+        (set |dir (askdir (prompt  |askdir-msg)
+                          (help    @askdir-help)
+                          (default (set |dir @default-dest))))
+        (if (not (exists "ignition"))
+          (abort |notfound-msg))
+      )
+      (set |dir (expandpath ""))
+    )
+
+    (set |n 0 |sheetsdir "")
+    (if (not (and (iconinfo (dest "ignition") (gettooltype "SHEETS" "|sheetsdir")) (exists |sheetsdir)))
+      (while (set |current (select |n "sheets" "Tabellen" ""))
+        (if (exists |current) (set |sheetsdir |current))
+        (set |n (+ |n 1))))
+
+    (if (and (if |sheetsdir 1 0) (askbool (prompt (|sheets-msg |sheetsdir)) (help @askbool-help)))
+      (
+        (rename |sheetsdir (tackon (pathonly |dir) (cat "ign-" |sheetsdir)))
+        (rename (cat |sheetsdir ".info") (tackon (pathonly |dir) (cat "ign-" |sheetsdir ".info")))
+      )
+      (set |sheetsdir ""))
+
+    (message |delete-msg |dir)
+    (delete |dir (all))
+    (delete (cat |dir ".info"))
+  )
+)
+
+(exit |ready-msg (if |sheetsdir (|ready-sheets-msg (tackon (pathonly |dir) (cat "ign-" |sheetsdir)))) (quiet))
+
