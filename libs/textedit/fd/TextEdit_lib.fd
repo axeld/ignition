@@ -1,0 +1,9 @@
+##base _TextEditBase
+##bias 30
+##public
+GetClass(classbase)(a6)
+Text2Clipboard(unit,string,len)(d0,a0,d1)
+TextFromClipboard(unit,pool)(d0,a0)
+FreeEditList(ed)(a0)
+PrepareEditText(ed,rastport,string)(a0/a1/a2)
+##end
