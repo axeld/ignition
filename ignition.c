@@ -113,20 +113,19 @@ void
 RemoveToolObj(struct ToolObj *to)
 {
     Remove((APTR)to);
-    FreePooled(pool,to,sizeof(struct ToolObj));
+    FreePooled(pool, to, sizeof(struct ToolObj));
 }
 
 
 void
-AddToolObj(int32 type,STRPTR name,STRPTR help)
+AddToolObj(int32 type, STRPTR name, STRPTR help)
 {
     struct ToolObj *to;
 
-    if (to = AllocPooled(pool,sizeof(struct ToolObj)))
-    {
+    if (to = AllocPooled(pool, sizeof(struct ToolObj))) {
         to->to_Type = type;
         /* strcpy(to->to_Name,name); */
-        AddTail(&toolobjs,(struct Node *)to);
+        AddTail(&toolobjs, (struct Node *)to);
     }
 }
 
@@ -134,7 +133,7 @@ AddToolObj(int32 type,STRPTR name,STRPTR help)
 struct MinList *
 GetIconObjsList(struct Prefs *pr)
 {
-    if (HasPrefsModule(pr,WDT_PREFICON))
+    if (HasPrefsModule(pr, WDT_PREFICON))
         return &pr->pr_IconObjs;
 
     return &prefs.pr_IconObjs;
@@ -146,10 +145,9 @@ FreeIconObjs(struct MinList *l)
 {
     struct IconObj *io;
 
-    while (io = (APTR)RemHead(l))
-    {
+    while (io = (APTR)RemHead(l)) {
         FreeString(io->io_AppCmd);
-        FreePooled(pool,io,sizeof(struct IconObj));
+        FreePooled(pool, io, sizeof(struct IconObj));
     }
 }
 
@@ -159,8 +157,7 @@ CopyIconObj(struct IconObj *io)
 {
     struct IconObj *sio;
 
-    if (sio = AllocPooled(pool,sizeof(struct IconObj)))
-    {
+    if (sio = AllocPooled(pool,sizeof(struct IconObj))) {
         sio->io_AppCmd = AllocString(io->io_AppCmd);
         sio->io_Node.in_Name = sio->io_AppCmd;
         sio->io_Node.in_Image = io->io_Node.in_Image;
@@ -170,15 +167,14 @@ CopyIconObj(struct IconObj *io)
 
 
 void
-AddIconObj(struct MinList *list,struct AppCmd *ac,long pos)
+AddIconObj(struct MinList *list, struct AppCmd *ac, long pos)
 {
     struct IconObj *io;
 
     if ((io = AllocPooled(pool,sizeof(struct IconObj))) == NULL)
         return;
 
-    if (ac)
-    {
+    if (ac) {
         io->io_AppCmd = AllocString(ac->ac_Node.in_Name);
         io->io_Node.in_Name = io->io_AppCmd;
     /*  if (!strcmp(io->io_AppCmd,"Leerfeld"))
@@ -190,24 +186,24 @@ AddIconObj(struct MinList *list,struct AppCmd *ac,long pos)
 
 
 void
-MakeMarkText(struct Page *page,STRPTR t)
+MakeMarkText(struct Page *page, STRPTR t)
 {
     struct Term *k;
-    char   s[64];
+    char s[64];
 
-    if (prefs.pr_Table->pt_Flags & PTF_MARKSUM)
-        strcpy(s,"summe(");
+	// TODO: this is language specific!
+    if ((prefs.pr_Table->pt_Flags & PTF_MARKSUM) != 0)
+        strcpy(s, "summe(");
     else
-        strcpy(s,"mittelwert(");
-    strcat(s,t);  strcat(s,")");
+        strcpy(s, "mittelwert(");
+    strcat(s, t);  strcat(s, ")");
 
-    if (k = CreateTree(page,s))
-    {
-        strcat(t," (");
-        if (prefs.pr_Table->pt_Flags & PTF_MARKAVERAGE)
-            strcat(t,"ø ");
-        strcat(t,ita(TreeValue(k),-3,ITA_NONE));
-        strcat(t,")");
+    if (k = CreateTree(page, s)) {
+        strcat(t, " (");
+        if ((prefs.pr_Table->pt_Flags & PTF_MARKAVERAGE) != 0)
+            strcat(t, "ø ");
+        strcat(t, ita(TreeValue(k), -3, ITA_NONE));
+        strcat(t, ")");
         DeleteTree(k);
     }
 }
@@ -218,8 +214,8 @@ DisplayTablePos(struct Page *page)
 {
     struct winData *wd;
     struct tableField *tf;
-    long   w = wd_PosWidth-4;
-    char   t[64];
+    long w = wd_PosWidth - 4;
+    char t[64];
 
     if (!page->pg_Mappe->mp_Prefs.pr_Disp->pd_FormBar || !page->pg_Window)
         return;
@@ -227,18 +223,17 @@ DisplayTablePos(struct Page *page)
     wd = (struct winData *)page->pg_Window->UserData;
     itext.FrontPen = 1;
     itext.ITextFont = scr->Font;
-    EraseRect(page->pg_Window->RPort,10,wd->wd_FormY+5,9+w,wd->wd_FormY+fontheight+6);
+    EraseRect(page->pg_Window->RPort, 10, wd->wd_FormY + 5, 9 + w, wd->wd_FormY + fontheight + 6);
 
-    if (page->pg_MarkCol == -1)
-    {
+    if (page->pg_MarkCol == -1) {
         struct Name *nm,*snm = NULL;
 
         if (page->pg_Gad.DispPos == PGS_NONE)
             return;
-        foreach(&page->pg_Mappe->mp_Prefs.pr_Names,nm)
-        {
-            if (nm->nm_Node.ln_Type == NMT_CELL && nm->nm_Page == page && PosInTablePos(&nm->nm_TablePos,page->pg_Gad.cp.cp_Col,page->pg_Gad.cp.cp_Row))
-            {
+        foreach (&page->pg_Mappe->mp_Prefs.pr_Names, nm) {
+            if (nm->nm_Node.ln_Type == NMT_CELL
+				&& nm->nm_Page == page
+				&& PosInTablePos(&nm->nm_TablePos, page->pg_Gad.cp.cp_Col, page->pg_Gad.cp.cp_Row)) {
                 snm = nm;
                 if (!nm->nm_TablePos.tp_Width && nm->nm_TablePos.tp_Height)
                     break;
@@ -247,62 +242,55 @@ DisplayTablePos(struct Page *page)
         if (snm)
             itext.IText = snm->nm_Node.ln_Name;
         else
-            itext.IText = Coord2String(page->pg_Gad.cp.cp_Col,page->pg_Gad.cp.cp_Row);
-    }
-    else
-    {
-        strcpy(t,Coord2String(page->pg_MarkCol,page->pg_MarkRow));
-        strcat(t,":");
-        strcat(t,Coord2String(page->pg_MarkWidth != -1 ? page->pg_MarkCol+page->pg_MarkWidth : page->pg_Rows,page->pg_MarkHeight != -1 ? page->pg_MarkRow+page->pg_MarkHeight : page->pg_Rows));
+            itext.IText = Coord2String(page->pg_Gad.cp.cp_Col, page->pg_Gad.cp.cp_Row);
+    } else {
+        strcpy(t, Coord2String(page->pg_MarkCol, page->pg_MarkRow));
+        strcat(t, ":");
+        strcat(t, Coord2String(page->pg_MarkWidth != -1 ? page->pg_MarkCol + page->pg_MarkWidth : page->pg_Rows, page->pg_MarkHeight != -1 ? page->pg_MarkRow + page->pg_MarkHeight : page->pg_Rows));
         if (prefs.pr_Table->pt_Flags & (PTF_MARKSUM | PTF_MARKAVERAGE))
-            MakeMarkText(page,t);
+            MakeMarkText(page, t);
         itext.IText = t;
     }
-    makeClip(page->pg_Window,10,wd->wd_FormY+5,w-1,fontheight+1);
-    PrintIText(page->pg_Window->RPort,&itext,10+((w-IntuiTextLength(&itext))>>1),wd->wd_FormY+6);
+    makeClip(page->pg_Window, 10, wd->wd_FormY + 5, w - 1, fontheight + 1);
+    PrintIText(page->pg_Window->RPort, &itext, 10 + ((w - IntuiTextLength(&itext)) >> 1), wd->wd_FormY + 6);
     freeClip(page->pg_Window);
 
     {
         STRPTR s = NULL;
-        BOOL   disabled = FALSE;
+        BOOL disabled = FALSE;
 
-        if (tf = GetTableField(page,page->pg_Gad.cp.cp_Col,page->pg_Gad.cp.cp_Row))
-        {
+        if (tf = GetTableField(page, page->pg_Gad.cp.cp_Col, page->pg_Gad.cp.cp_Row)) {
             if ((tf->tf_Flags & TFF_SECURITY) > TFF_STATIC)
                 disabled = TRUE;
             else
                 s = tf->tf_Original;
         }
-        GT_SetGadgetAttrs(GadgetAddress(page->pg_Window,GID_FORM),page->pg_Window,NULL,GTST_String,s,GA_Disabled,disabled,TAG_END);
+        GT_SetGadgetAttrs(GadgetAddress(page->pg_Window, GID_FORM), page->pg_Window, NULL, GTST_String, s, GA_Disabled, disabled, TAG_END);
     }
 }
 
 
 void
-DrawIconBar(struct Prefs *pr,struct Window *win, struct winData *wd)
+DrawIconBar(struct Prefs *pr, struct Window *win, struct winData *wd)
 {
-    if (pr->pr_Disp->pd_IconBar == PDIB_TOP)
-    {
-        SetAPen(win->RPort,2);
-        DrawDithRect(win->RPort,win->BorderLeft,wd->wd_IconY,win->Width-1-win->BorderRight,wd->wd_IconY-2+wd->wd_IconH);
-        if (pr->pr_Disp->pd_ToolBar)
-        {
-            Move(win->RPort,win->BorderLeft,wd->wd_IconY+wd->wd_IconH);
-            Draw(win->RPort,win->Width-1-win->BorderRight,wd->wd_IconY+wd->wd_IconH);
+    if (pr->pr_Disp->pd_IconBar == PDIB_TOP) {
+        SetAPen(win->RPort, 2);
+        DrawDithRect(win->RPort, win->BorderLeft, wd->wd_IconY, win->Width - 1 - win->BorderRight, wd->wd_IconY - 2 + wd->wd_IconH);
+        if (pr->pr_Disp->pd_ToolBar) {
+            Move(win->RPort, win->BorderLeft, wd->wd_IconY + wd->wd_IconH);
+            Draw(win->RPort, win->Width - 1 - win->BorderRight, wd->wd_IconY + wd->wd_IconH);
         }
-        SetAPen(win->RPort,1);
-        Move(win->RPort,win->BorderLeft,wd->wd_IconY+wd->wd_IconH-1);
-        Draw(win->RPort,win->Width-1-win->BorderRight,wd->wd_IconY+wd->wd_IconH-1);
-    }
-    else
-    {
-        SetAPen(win->RPort,2);
-        DrawDithRect(win->RPort,win->BorderLeft,wd->wd_IconY+1,win->BorderLeft+wd->wd_IconW-2,wd->wd_IconY+wd->wd_IconH);
-        Move(win->RPort,win->BorderLeft,wd->wd_IconY);
-        Draw(win->RPort,win->BorderLeft+wd->wd_IconW-2,wd->wd_IconY);
-        SetAPen(win->RPort,1);
-        Move(win->RPort,win->BorderLeft+wd->wd_IconW-1,wd->wd_IconY);
-        Draw(win->RPort,win->BorderLeft+wd->wd_IconW-1,wd->wd_IconY+wd->wd_IconH);
+        SetAPen(win->RPort, 1);
+        Move(win->RPort, win->BorderLeft, wd->wd_IconY + wd->wd_IconH - 1);
+        Draw(win->RPort, win->Width - 1 - win->BorderRight, wd->wd_IconY + wd->wd_IconH - 1);
+    } else {
+        SetAPen(win->RPort, 2);
+        DrawDithRect(win->RPort, win->BorderLeft, wd->wd_IconY + 1, win->BorderLeft + wd->wd_IconW - 2, wd->wd_IconY + wd->wd_IconH);
+        Move(win->RPort, win->BorderLeft, wd->wd_IconY);
+        Draw(win->RPort, win->BorderLeft + wd->wd_IconW - 2, wd->wd_IconY);
+        SetAPen(win->RPort, 1);
+        Move(win->RPort, win->BorderLeft + wd->wd_IconW - 1, wd->wd_IconY);
+        Draw(win->RPort, win->BorderLeft + wd->wd_IconW - 1, wd->wd_IconY + wd->wd_IconH);
     }
 }
 
