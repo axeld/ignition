@@ -2246,7 +2246,7 @@ HandleApp(void)
 				ProcessAppCmd(rxpage, "HELP");
             else if (imsg.Class == IDCMP_REFRESHWINDOW)
             {
-                if (wd->wd_Type == WDT_PROJECT)  // ist ganz schön Scheiße so
+                if (wd->wd_Type == WDT_PROJECT)  // TODO: that's not really a good solution
                 {
                     GT_BeginRefresh(win);
 					GT_EndRefresh(win, TRUE);
