@@ -7,7 +7,7 @@
 
 
 #include "TextEdit_includes.h"
-
+#include "compatibility.h"
 
 void PRIVATE DrawEditCursor(struct ClassBase *cb,struct RastPort *rp,struct Gadget *gad,struct EditGData *ed)
 {
@@ -32,11 +32,11 @@ void PRIVATE DrawEditCursor(struct ClassBase *cb,struct RastPort *rp,struct Gadg
     GetEditCursorCoord(cb,rp,ed,ed->ed_MarkPos,&mx,&my,&i);
     if (cy > my || cy == my && cx > mx)
     {
-      swmem(&cy,&my,sizeof(long));
-      swmem(&cx,&mx,sizeof(long));
+      swmem((UBYTE *)&cy,(UBYTE *)&my,sizeof(long));
+      swmem((UBYTE *)&cx,(UBYTE *)&mx,sizeof(long));
     }
     else
-      swmem(&cw,&i,sizeof(long));
+      swmem((UBYTE *)&cw,(UBYTE *)&i,sizeof(long));
 
     SetDrMd(rp,COMPLEMENT);
     if (cy == my && cy >= 0 && cy < by)
@@ -70,11 +70,11 @@ void PRIVATE DrawEditGadget(struct ClassBase *cb,struct RastPort *rp,struct Gadg
   {
     struct Image *im;
 
-    if (im = NewObject(NULL,"frameiclass",IA_Width,     ed->ed_GadWidth,
+    if ((im = NewObject(NULL,"frameiclass",IA_Width,     ed->ed_GadWidth,
                                           IA_Height,    gad->Height,
                                           IA_FrameType, ed->ed_FrameType,
                                           IA_EdgesOnly, TRUE,
-                                          TAG_END))
+                                          TAG_END)) != 0)
     {
       DrawImage(rp,im,gad->LeftEdge,gad->TopEdge);
       DisposeObject(im);
@@ -141,7 +141,9 @@ void PRIVATE DrawEditGadget(struct ClassBase *cb,struct RastPort *rp,struct Gadg
     SetABPenDrMd(rp,ed->ed_APen,ed->ed_BPen,JAM1);
     rp->AreaPtrn = (unsigned short *)&ghostPtrn;
     rp->AreaPtSz = 1;
-    RectFill(rp,x = gad->LeftEdge+4,y = gad->TopEdge+2,x+ed->ed_GadWidth-10,y+gad->Height-5);
+    x = gad->LeftEdge+4;
+    y = gad->TopEdge+2;
+    RectFill(rp,x,y,x+ed->ed_GadWidth-10,y+gad->Height-5);
     rp->AreaPtrn = NULL;
     rp->AreaPtSz = 0;
   }
@@ -151,7 +153,7 @@ void PRIVATE DrawEditGadget(struct ClassBase *cb,struct RastPort *rp,struct Gadg
     static long total;
 
     for(mln = ed->ed_List.mlh_Head;mln->mln_Succ && mln != ed->ed_Top;top++,mln = mln->mln_Succ);
-    if (GetAttr(PGA_Top,ed->ed_Scroller,(ULONG *)&i) && i == top)
+    if (GetAttr(PGA_Top,(Object *)ed->ed_Scroller,(IPTR *)&i) && i == top)
     {
       if (total == ed->ed_TextLines)
         return;
@@ -163,5 +165,3 @@ void PRIVATE DrawEditGadget(struct ClassBase *cb,struct RastPort *rp,struct Gadg
     DoMethod((APTR)ed->ed_Scroller,GM_RENDER,gi,rp,GREDRAW_REDRAW);
   }
 }
-
-

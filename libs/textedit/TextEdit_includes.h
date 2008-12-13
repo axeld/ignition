@@ -6,15 +6,21 @@
 #define TEXTEDIT_INCLUDES_H
 
 #define INTUI_V36_NAMES_ONLY
-#define __USE_SYSBASE
 
-#define SysBase cb->cb_SysBase
-#define IntuitionBase cb->cb_IntuitionBase
-#define GfxBase cb->cb_GfxBase
-#define DOSBase cb->cb_DOSBase
-#define UtilityBase cb->cb_UtilityBase
-#define IFFParseBase cb->cb_IFFParseBase
+#if !defined(__AROS__)
+#	define __USE_SYSBASE
+
+#	define SysBase cb->cb_SysBase
+#	define IntuitionBase cb->cb_IntuitionBase
+#	define GfxBase cb->cb_GfxBase
+#	define DOSBase cb->cb_DOSBase
+#	define UtilityBase cb->cb_UtilityBase
+#	define IFFParseBase cb->cb_IFFParseBase
+#endif
+
 #define ConsoleDevice ((struct Library *)cb->cb_Console.io_Device)
+
+#include "SDI_compiler.h"
 
 #include <exec/execbase.h>
 #include <exec/libraries.h>
@@ -33,33 +39,29 @@
 #include <gadgets/TextEdit.h>
 #include <dos/dos.h>
 
-#include <clib/exec_protos.h>
-#include <clib/iffparse_protos.h>
-#include <clib/console_protos.h>
-#include <clib/intuition_protos.h>
-#include <clib/graphics_protos.h>
-#include <clib/utility_protos.h>
-#include <clib/dos_protos.h>
+#include <proto/exec.h>
+#include <proto/iffparse.h>
+#include <proto/console.h>
+#include <proto/intuition.h>
+#include <proto/graphics.h>
+#include <proto/utility.h>
+#include <proto/dos.h>
 
-#include <pragmas/exec_pragmas.h>
-#include <pragmas/iffparse_pragmas.h>
-#include <pragmas/console_pragmas.h>
-#include <pragmas/intuition_pragmas.h>
-#include <pragmas/graphics_pragmas.h>
-#include <pragmas/utility_pragmas.h>
-#include <pragmas/dos_pragmas.h>
+#if defined(__SASC)
+#	include <pragmas/exec_pragmas.h>
+#	include <pragmas/iffparse_pragmas.h>
+#	include <pragmas/console_pragmas.h>
+#	include <pragmas/intuition_pragmas.h>
+#	include <pragmas/graphics_pragmas.h>
+#	include <pragmas/utility_pragmas.h>
+#	include <pragmas/dos_pragmas.h>
+#endif
 
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
 #include <math.h>
 
-#define PUBLIC __asm __saveds
-#define PRIVATE __regargs
-#define reg(x) register __ ## x
-
-extern void kprintf(STRPTR,...);
-#define bug kprintf
 
 #define ID_FTXT  MAKE_ID('F','T','X','T')
 #define ID_CHRS  MAKE_ID('C','H','R','S')
@@ -85,21 +87,6 @@ struct ClassBase
 
 /******************************* internal structures *******************************/
 
-struct EditGData
-{
-  APTR   ed_Pool;
-  STRPTR ed_Text;
-  long   ed_Size,ed_Pos,ed_MarkPos,ed_TextLines;
-  struct MinList ed_List;
-  struct MinNode *ed_Top;
-  UWORD  ed_LineHeight,ed_Spacing,ed_MinSpace,ed_MaxSpace,ed_CharWidth;
-  UWORD  ed_Width,ed_Lines,ed_MaxSpaces,ed_TabSpaces,ed_GadWidth;
-  UBYTE  ed_APen,ed_BPen,ed_BorderH,ed_BorderV;
-  UWORD  ed_Flags;
-  long   ed_FrameType;
-  struct Gadget *ed_Scroller;
-  UBYTE  ed_ClipUnit;
-};
 
 #define EDF_JUSTIFICATION 3 /* the mask        */
 #define EDF_MARK 16
@@ -151,11 +138,17 @@ extern void PRIVATE DrawEditGadget(struct ClassBase *cb,struct RastPort *rp,stru
 
 /** public functions **/
 
-extern Class * PUBLIC GetClass(reg (a6) APTR cb);
-extern ULONG PUBLIC DispatchEditGadget(reg (a0) Class *cl,reg (a2) Object *o,reg (a1) Msg msg);
-extern void PUBLIC Text2Clipboard(reg (d0) UBYTE clipunit,reg (a0) STRPTR t,reg (d1) long len,reg (a6) struct ClassBase *cb);
-extern STRPTR PUBLIC TextFromClipboard(reg (d0) UBYTE clipunit,reg (a0) APTR pool,reg (a6) struct ClassBase *cb);
-extern void PUBLIC FreeEditList(reg (a6) struct ClassBase *cb,reg (a0) struct EditGData *ed);
-extern BOOL PUBLIC PrepareEditText(reg (a6) struct ClassBase *cb,reg (a0) struct EditGData *ed,reg (a1) struct RastPort *rp,reg (a2) STRPTR t);
+
+#if defined(__AROS__)
+#	include <proto/pTextEdit.h>
+#else
+/* Mazze: ClassBase moved to end of argument list */
+extern Class * PUBLIC GetClass(REG(a6, APTR cb));
+extern void PUBLIC Text2Clipboard(REG(d0, UBYTE clipunit),REG(a0, STRPTR t),REG(d1, long len),REG(a6, struct ClassBase *cb));
+extern STRPTR PUBLIC TextFromClipboard(REG(d0, UBYTE clipunit),REG(a0, APTR pool),REG(a6, struct ClassBase *cb));
+extern IPTR PUBLIC DispatchEditGadget(REG(a0, Class *cl),REG(a2, Object *o),REG(a1, Msg msg));
+extern void PUBLIC FreeEditList(REG(a0, struct EditGData *ed),REG(a6, struct ClassBase *cb));
+extern BOOL PUBLIC PrepareEditText(REG(a0, struct EditGData *ed),REG(a1, struct RastPort *rp),REG(a2, STRPTR t),REG(a6, struct ClassBase *cb));
+#endif
 
 #endif    // TEXTEDIT_H

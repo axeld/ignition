@@ -25,8 +25,6 @@ quit
 #include <dos/dos.h>
 
 #include <clib/alib_protos.h>
-#include <clib/alib_stdio_protos.h>
-#include <clib/TextEdit_protos.h>
 #include <proto/exec.h>
 #include <proto/gadtools.h>
 #include <proto/intuition.h>
@@ -34,20 +32,27 @@ quit
 #include <proto/layers.h>
 #include <proto/utility.h>
 #include <proto/dos.h>
-#include <pragmas/TextEdit_pragmas.h>
+
+#if defined(__SASC)
+#	include <clib/alib_stdio_protos.h>
+#	include <clib/TextEdit_protos.h>
+#	include <pragmas/TextEdit_pragmas.h>
+#else
+#	include <proto/pTextEdit.h>
+#endif
 
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
 
-extern kprintf(STRPTR,...);
+extern void kprintf(STRPTR,...);
 
 
 struct Screen *scr;
 struct Window *win;
 struct Gadget *gad,*glist;
 APTR   dri;
-APTR   TextEditBase;
+struct Library *TextEditBase;
 
 
 struct Library *OpenClass(STRPTR name,LONG version)
@@ -58,9 +63,9 @@ struct Library *OpenClass(STRPTR name,LONG version)
   strcpy(path,"gadgets/");
   strcat(path,name);
 
-  if (class = OpenLibrary(path,version))
+  if ((class = OpenLibrary(path,version)) != 0)
     return(class);
-  if (class = OpenLibrary(name,version))
+  if ((class = OpenLibrary(name,version)) != 0)
     return(class);
 
   return(NULL);
@@ -69,7 +74,7 @@ struct Library *OpenClass(STRPTR name,LONG version)
 
 struct Window *CreateWindow(void)
 {
-  if (scr = LockPubScreen(NULL))
+  if ((scr = LockPubScreen(NULL)) != 0)
     dri = GetScreenDrawInfo(scr);
 
   gad = CreateContext(&glist);
@@ -111,7 +116,7 @@ void HandleWindow(void)
   {
     WaitPort(win->UserPort);
 
-    while(msg = (struct IntuiMessage *)GetMsg(win->UserPort))
+    while((msg = (struct IntuiMessage *)GetMsg(win->UserPort)) != 0)
     {
       switch(msg->Class)
       {
@@ -119,7 +124,7 @@ void HandleWindow(void)
           done = TRUE;
           break;
       }
-      ReplyMsg(msg);
+      ReplyMsg((struct Message *)msg);
     }
   }
 }
@@ -127,12 +132,12 @@ void HandleWindow(void)
 
 int main(int argc, char **argv)
 {
-  if (TextEditBase = OpenClass("pTextEdit.gadget",0))
+  if ((TextEditBase = OpenClass("pTextEdit.gadget",0)) != 0)
   {
     kprintf("classbase: %lx\n",TextEditBase);
     Text2Clipboard(0,"Hallo",5);
 
-    if (win = CreateWindow())
+    if ((win = CreateWindow()) != 0)
     {
       HandleWindow();
       CloseWindow(win);

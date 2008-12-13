@@ -11,7 +11,9 @@
 */
 
 #include <exec/nodes.h>
+#include <exec/lists.h>
 #include <utility/hooks.h>
+#include <graphics/rastport.h>
 
 /* attributes */
 
@@ -25,5 +27,22 @@
 #define EGA_NoClips        TAG_USER+59  /* not yet implemented (no marks) */
 #define EGA_Scroller       TAG_USER+60
 #define EGA_AutoIndent     TAG_USER+61
+
+
+struct EditGData
+{
+  APTR   ed_Pool;
+  STRPTR ed_Text;
+  long   ed_Size,ed_Pos,ed_MarkPos,ed_TextLines;
+  struct MinList ed_List;
+  struct MinNode *ed_Top;
+  UWORD  ed_LineHeight,ed_Spacing,ed_MinSpace,ed_MaxSpace,ed_CharWidth;
+  UWORD  ed_Width,ed_Lines,ed_MaxSpaces,ed_TabSpaces,ed_GadWidth;
+  UBYTE  ed_APen,ed_BPen,ed_BorderH,ed_BorderV;
+  UWORD  ed_Flags;
+  long   ed_FrameType;
+  struct Gadget *ed_Scroller;
+  UBYTE  ed_ClipUnit;
+};
 
 #endif   // GADGETS_TEXTEDIT_H

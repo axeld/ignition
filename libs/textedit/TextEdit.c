@@ -3,69 +3,10 @@
  * Licensed under the terms of the MIT License.
  */
 
-//!	init & support functions.
+//!	support functions.
 
 
 #include "TextEdit_includes.h"
-
-
-Class * PUBLIC GetClass(reg (a6) APTR cb)
-{
-  return(((struct ClassBase *)cb)->cb_Class);
-}
-
-
-void PRIVATE TE_Exit(struct ClassBase *cb)
-{
-  if (FreeClass(cb->cb_Class))
-    cb->cb_Class = NULL;
-
-  CloseLibrary(cb->cb_ScrollerBase);
-  cb->cb_ScrollerBase = NULL;
-  CloseLibrary(cb->cb_IFFParseBase);
-  CloseLibrary(cb->cb_DOSBase);
-  CloseLibrary(cb->cb_IntuitionBase);
-  CloseLibrary((struct Library *)cb->cb_GfxBase);
-  CloseLibrary(cb->cb_UtilityBase);
-  CloseDevice(&cb->cb_Console);
-}
-
-
-int PRIVATE TE_Init(struct ClassBase *cb)
-{
-  if (cb->cb_IntuitionBase = OpenLibrary("intuition.library",37))
-  {
-    if (cb->cb_GfxBase = (APTR)OpenLibrary("graphics.library",37))
-    {
-      if (cb->cb_UtilityBase = OpenLibrary("utility.library",37))
-      {
-        if (!OpenDevice("console.device",-1,(struct IORequest *)&cb->cb_Console,0))
-        {
-          Class *cl;
-
-          if (cl = MakeClass("pinc-editgadget",GADGETCLASS,NULL,sizeof(struct EditGData),0))
-          {
-            cl->cl_Dispatcher.h_Entry = (APTR)DispatchEditGadget;
-            cl->cl_Dispatcher.h_Data = cb;
-            cl->cl_UserData = (ULONG)cb;
-            AddClass(cl);
-
-            if (cb->cb_IFFParseBase = OpenLibrary("iffparse.library",37))
-              cb->cb_DOSBase = OpenLibrary("dos.library",37);
-            cb->cb_Class = cl;
-
-            return(TRUE);
-          }
-          CloseDevice(&cb->cb_Console);
-        }
-        CloseLibrary(cb->cb_UtilityBase);
-      }
-      CloseLibrary(cb->cb_GfxBase);
-    }
-    CloseLibrary(cb->cb_IntuitionBase);
-  }
-  return(FALSE);
-}
 
 
 int PRIVATE CountNodes(struct List *l)
@@ -90,19 +31,25 @@ void PRIVATE strdel(STRPTR t,long len)
 }
 
 
-void PUBLIC FreeEditList(reg (a6) struct ClassBase *cb,reg (a0) struct EditGData *ed)
+LIB_LH1(VOID, FreeEditList,
+  LIB_LHA(struct EditGData *, ed, A0),
+  struct ClassBase *, cb, 7, pTextEdit)
 {
+  LIBFUNC_INIT
+
   struct MinNode *mln;
   struct EditLine *el;
   long   count;
 
-  while(mln = (APTR)RemHead((struct List *)&ed->ed_List))
+  while((mln = (APTR)RemHead((struct List *)&ed->ed_List)) != 0)
   {
     for(count = 0,el = EDITLINE(mln);el->el_Word;el++,count++);
     FreePooled(ed->ed_Pool,mln,sizeof(struct MinNode)+sizeof(STRPTR)+sizeof(ULONG)+sizeof(struct EditLine)*count);
   }
   ed->ed_Top = ed->ed_List.mlh_Head;
   ed->ed_TextLines = 0;
+
+  LIBFUNC_EXIT
 }
 
 
@@ -159,15 +106,21 @@ JustifyEditLine(struct EditGData *ed, struct EditLine *fel, long width, BOOL las
 }
 
 
-BOOL PUBLIC PrepareEditText(reg (a6) struct ClassBase *cb,reg (a0) struct EditGData *ed,reg (a1) struct RastPort *rp,reg (a2) STRPTR t)
+LIB_LH3(BOOL, PrepareEditText,
+  LIB_LHA(struct EditGData *, ed, A0),
+  LIB_LHA(struct RastPort *, rp, A1),
+  LIB_LHA(STRPTR, t, A2),
+  struct ClassBase *, cb, 8, pTextEdit)
 {
+  LIBFUNC_INIT
+
   struct EditLine *stack;
   long   size = 256;
   STRPTR s = t;
 
   if (!ed)
-    return(NULL);
-  FreeEditList(cb,ed);
+    return 0;
+  FreeEditList(ed);
 
   if (t && (stack = AllocPooled(ed->ed_Pool,sizeof(struct EditLine)*size)))
   {
@@ -222,7 +175,7 @@ BOOL PUBLIC PrepareEditText(reg (a6) struct ClassBase *cb,reg (a0) struct EditGD
           else                      /* one word is too long */
             count++;
         }
-        if (mln = AllocPooled(ed->ed_Pool,sizeof(struct MinNode)+sizeof(STRPTR)+sizeof(ULONG)+sizeof(struct EditLine)*count))
+        if ((mln = AllocPooled(ed->ed_Pool,sizeof(struct MinNode)+sizeof(STRPTR)+sizeof(ULONG)+sizeof(struct EditLine)*count)) != 0)
         {
           AddTail((struct List *)&ed->ed_List,(struct Node *)mln);
           if (!*s)
@@ -251,7 +204,7 @@ BOOL PUBLIC PrepareEditText(reg (a6) struct ClassBase *cb,reg (a0) struct EditGD
       {
         struct EditLine *temp;
 
-        if (temp = AllocPooled(ed->ed_Pool,sizeof(struct EditLine)*(size+256)))
+        if ((temp = AllocPooled(ed->ed_Pool,sizeof(struct EditLine)*(size+256))) != 0)
         {
           CopyMem(stack,temp,(count-1)*sizeof(struct EditLine));
           FreePooled(ed->ed_Pool,stack,sizeof(struct EditLine)*size);
@@ -266,7 +219,7 @@ BOOL PUBLIC PrepareEditText(reg (a6) struct ClassBase *cb,reg (a0) struct EditGD
     {
       struct MinNode *mln;
 
-      if (mln = AllocPooled(ed->ed_Pool,sizeof(struct MinNode)+sizeof(STRPTR)+sizeof(ULONG)+sizeof(struct EditLine)))
+      if ((mln = AllocPooled(ed->ed_Pool,sizeof(struct MinNode)+sizeof(STRPTR)+sizeof(ULONG)+sizeof(struct EditLine))) != 0)
       {
         AddTail((struct List *)&ed->ed_List,(struct Node *)mln);
         stack = EDITLINE(mln);
@@ -278,6 +231,8 @@ BOOL PUBLIC PrepareEditText(reg (a6) struct ClassBase *cb,reg (a0) struct EditGD
   }
   ed->ed_Top = ed->ed_List.mlh_Head;
   return(TRUE);
+  
+  LIBFUNC_EXIT
 }
 
 
@@ -395,7 +350,7 @@ BOOL PRIVATE MakeEditCursorVisible(struct ClassBase *cb,struct RastPort *rp,stru
   struct MinNode *cursor,*mln;
   long   line,top;
 
-  if (cursor = GetEditCursorLine(ed,ed->ed_Pos,&line))
+  if ((cursor = GetEditCursorLine(ed,ed->ed_Pos,&line)) != 0)
   {
     for(top = 0,mln = ed->ed_List.mlh_Head;mln->mln_Succ && mln != ed->ed_Top;mln = mln->mln_Succ,top++);
     if (line < top || line >= top+ed->ed_Lines)
@@ -447,7 +402,7 @@ void PRIVATE SetEditBuffer(struct ClassBase *cb,struct EditGData *ed,long newsiz
 {
   STRPTR temp;
 
-  if (temp = AllocPooled(ed->ed_Pool,newsize))
+  if ((temp = AllocPooled(ed->ed_Pool,newsize)) != 0)
   {
     CopyMem(ed->ed_Text,temp,min(ed->ed_Size,newsize));
     if (ed->ed_Text)
@@ -456,5 +411,3 @@ void PRIVATE SetEditBuffer(struct ClassBase *cb,struct EditGData *ed,long newsiz
     ed->ed_Text = temp;
   }
 }
-
-

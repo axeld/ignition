@@ -7,7 +7,7 @@
 
 
 #include "TextEdit_includes.h"
-
+#include "compatibility.h"
 
 ULONG PRIVATE DispatchEditHandleRawKey(struct ClassBase *cb,struct EditGData *ed,struct gpInput *gpi,struct Gadget *gad,struct InputEvent *ie)
 {
@@ -21,7 +21,7 @@ ULONG PRIVATE DispatchEditHandleRawKey(struct ClassBase *cb,struct EditGData *ed
   {
     case CURSORUP:
     case CURSORDOWN:
-      if (mln = GetEditCursorLine(ed,ed->ed_Pos,&line))
+      if ((mln = GetEditCursorLine(ed,ed->ed_Pos,&line)) != 0)
         pos = ed->ed_Text+ed->ed_Pos-EDITLINE(mln)->el_Word;
     case CURSORLEFT:
     case CURSORRIGHT:
@@ -37,7 +37,7 @@ ULONG PRIVATE DispatchEditHandleRawKey(struct ClassBase *cb,struct EditGData *ed
           else
             mln = ed->ed_List.mlh_TailPred;
         }
-        else if (mln = GetEditCursorLine(ed,ed->ed_Pos,&line))
+        else if ((mln = GetEditCursorLine(ed,ed->ed_Pos,&line)) != 0)
         {
           struct EditLine *el,*fel = EDITLINE(mln);
 
@@ -98,7 +98,7 @@ ULONG PRIVATE DispatchEditHandleRawKey(struct ClassBase *cb,struct EditGData *ed
           else
             for(;mln->mln_Succ->mln_Succ && line < ed->ed_Lines-1;mln = mln->mln_Succ,line++);
         }
-        else if (mln = GetEditCursorLine(ed,ed->ed_Pos,&line))
+        else if ((mln = GetEditCursorLine(ed,ed->ed_Pos,&line)) != 0)
         {
           if (ie->ie_Code == CURSORLEFT)
             ed->ed_Pos = EDITLINE(mln)->el_Word-ed->ed_Text;
@@ -167,7 +167,7 @@ ULONG PRIVATE DispatchEditHandleRawKey(struct ClassBase *cb,struct EditGData *ed
             {
               case 'c':
                 DrawEditCursor(cb,rp,gad,ed);
-                Text2Clipboard(ed->ed_ClipUnit,ed->ed_Text+pos,len,cb);
+                Text2Clipboard(ed->ed_ClipUnit,ed->ed_Text+pos,len);
                 ed->ed_Pos = ed->ed_MarkPos;
                 DrawEditCursor(cb,rp,gad,ed);
                 break;
@@ -176,9 +176,9 @@ ULONG PRIVATE DispatchEditHandleRawKey(struct ClassBase *cb,struct EditGData *ed
                 STRPTR t;
                 long   len;
 
-                if (t = TextFromClipboard(ed->ed_ClipUnit,ed->ed_Pool,cb))
+                if ((t = TextFromClipboard(ed->ed_ClipUnit,ed->ed_Pool)) != 0)
                 {
-                  FreeEditList(cb,ed);
+                  FreeEditList(ed);
                   if ((len = strlen(t)+1) > ed->ed_Size-strlen(ed->ed_Text))
                     SetEditBuffer(cb,ed,ed->ed_Size+len);
                   strins(ed->ed_Text+ed->ed_Pos,t);
@@ -190,16 +190,16 @@ ULONG PRIVATE DispatchEditHandleRawKey(struct ClassBase *cb,struct EditGData *ed
                 break;
               }
               case 'x':
-                FreeEditList(cb,ed);
+                FreeEditList(ed);
                 if (len < 2)
                 {
-                  Text2Clipboard(ed->ed_ClipUnit,ed->ed_Text,strlen(ed->ed_Text),cb);
+                  Text2Clipboard(ed->ed_ClipUnit,ed->ed_Text,strlen(ed->ed_Text));
                   *ed->ed_Text = 0;
                   ed->ed_Pos = 0;
                 }
                 else
                 {
-                  Text2Clipboard(ed->ed_ClipUnit,ed->ed_Text+pos,len,cb);
+                  Text2Clipboard(ed->ed_ClipUnit,ed->ed_Text+pos,len);
                   strdel(ed->ed_Text+pos,len);
                   ed->ed_Pos = pos;
                 }
@@ -213,7 +213,7 @@ ULONG PRIVATE DispatchEditHandleRawKey(struct ClassBase *cb,struct EditGData *ed
             switch(c[0])
             {
               case 13:   /* Return */
-                FreeEditList(cb,ed);
+                FreeEditList(ed);
                 if (ed->ed_Flags & EDF_AUTOINDENT)
                 {
                   int  spaces = 0,pos,i;
@@ -249,7 +249,7 @@ ULONG PRIVATE DispatchEditHandleRawKey(struct ClassBase *cb,struct EditGData *ed
                   break;
                 if (ie->ie_Qualifier & (IEQUALIFIER_RSHIFT | IEQUALIFIER_LSHIFT | IEQUALIFIER_LALT | IEQUALIFIER_RALT))
                 {
-                  if (mln = GetEditCursorLine(ed,ed->ed_Pos,&line))
+                  if ((mln = GetEditCursorLine(ed,ed->ed_Pos,&line)) != 0)
                   {
                     struct EditLine *el = EDITLINE(mln);
 
@@ -270,13 +270,13 @@ ULONG PRIVATE DispatchEditHandleRawKey(struct ClassBase *cb,struct EditGData *ed
                         strdel(ed->ed_Text+ed->ed_Pos,1);
                       }
                     }
-                    FreeEditList(cb,ed);
+                    FreeEditList(ed);
                     break;
                   }
                 }
                 else
                 {
-                  FreeEditList(cb,ed);
+                  FreeEditList(ed);
                   if (ed->ed_Pos > ed->ed_MarkPos)
                   {
                     strdel(ed->ed_Text+ed->ed_MarkPos,ed->ed_Pos-ed->ed_MarkPos+1);
@@ -294,7 +294,7 @@ ULONG PRIVATE DispatchEditHandleRawKey(struct ClassBase *cb,struct EditGData *ed
                   break;
                 if (ie->ie_Qualifier & (IEQUALIFIER_RSHIFT | IEQUALIFIER_LSHIFT | IEQUALIFIER_LALT | IEQUALIFIER_RALT))
                 {
-                  if (mln = GetEditCursorLine(ed,ed->ed_Pos,&line))
+                  if ((mln = GetEditCursorLine(ed,ed->ed_Pos,&line)) != 0)
                   {
                     struct EditLine *el = EDITLINE(mln);
                     STRPTR to = NULL,from = ed->ed_Text+ed->ed_Pos;
@@ -319,12 +319,12 @@ ULONG PRIVATE DispatchEditHandleRawKey(struct ClassBase *cb,struct EditGData *ed
                     }
                     if (to)
                       strdel(from,to-from);
-                    FreeEditList(cb,ed);
+                    FreeEditList(ed);
                   }
                 }
                 else
                 {
-                  FreeEditList(cb,ed);
+                  FreeEditList(ed);
                   if (ed->ed_Pos != ed->ed_MarkPos)
                   {
                     strdel(ed->ed_Text+min(ed->ed_Pos,ed->ed_MarkPos),abs(ed->ed_Pos-ed->ed_MarkPos)+1);
@@ -335,7 +335,7 @@ ULONG PRIVATE DispatchEditHandleRawKey(struct ClassBase *cb,struct EditGData *ed
                 }
                 break;
               default:
-                FreeEditList(cb,ed);
+                FreeEditList(ed);
                 c[1] = 0;
                 strins(ed->ed_Text+ed->ed_Pos++,c);
             }
@@ -343,7 +343,7 @@ ULONG PRIVATE DispatchEditHandleRawKey(struct ClassBase *cb,struct EditGData *ed
           ed->ed_MarkPos = ed->ed_Pos;
           if (IsListEmpty((struct List *)&ed->ed_List))
           {
-            PrepareEditText(cb,ed,rp,ed->ed_Text);
+            PrepareEditText(ed,rp,ed->ed_Text);
             for(mln = ed->ed_List.mlh_Head;mln->mln_Succ && top;top--,mln = mln->mln_Succ);
             ed->ed_Top = mln;
 
@@ -364,14 +364,14 @@ BOOL PRIVATE DispatchEditNew(struct ClassBase *cb,struct opSet *ops,Object *o,st
   struct DrawInfo *dri;
   STRPTR t;
 
-  if (dri = (struct DrawInfo *)GetTagData(GA_DrawInfo,NULL,ops->ops_AttrList))
+  if ((dri = (struct DrawInfo *)GetTagData(GA_DrawInfo,0,ops->ops_AttrList)) != 0)
   {
-    if (ed->ed_Pool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR,8192,8192))
+    if ((ed->ed_Pool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR,8192,8192)) != 0)
     {
       ed->ed_GadWidth = ((struct Gadget *)o)->Width;
       ed->ed_LineHeight = dri->dri_Font->tf_YSize+2;
 
-      previous = (APTR)GetTagData(GA_Previous,NULL,ops->ops_AttrList);
+      previous = (APTR)GetTagData(GA_Previous,0,ops->ops_AttrList);
       if (GetTagData(EGA_Scroller,FALSE,ops->ops_AttrList) && MakeEditScroller(cb,ed,(struct Gadget *)o,previous))
         ed->ed_GadWidth -= 16;
 
@@ -388,11 +388,11 @@ BOOL PRIVATE DispatchEditNew(struct ClassBase *cb,struct opSet *ops,Object *o,st
 
       if (GetTagData(EGA_ShowControls,0,ops->ops_AttrList))
         ed->ed_Flags |= EDF_SPECIAL;
-      NewList((struct List *)&ed->ed_List);
+      NEWLIST((struct List *)&ed->ed_List);
       ed->ed_Top = ed->ed_List.mlh_Head;
 
-      t = (STRPTR)GetTagData(EGA_Text,NULL,ops->ops_AttrList);
-      if (ed->ed_Text = AllocPooled(ed->ed_Pool,ed->ed_Size = (t ? strlen(t) : 0)+4096))
+      t = (STRPTR)GetTagData(EGA_Text,0,ops->ops_AttrList);
+      if ((ed->ed_Text = AllocPooled(ed->ed_Pool,ed->ed_Size = (t ? strlen(t) : 0)+4096)) != 0)
       {
         if (t)
           CopyMem(t,ed->ed_Text,strlen(t));
@@ -405,11 +405,11 @@ BOOL PRIVATE DispatchEditNew(struct ClassBase *cb,struct opSet *ops,Object *o,st
 }
 
 
-ULONG PUBLIC DispatchEditGadget(reg (a0) Class *cl,reg (a2) Object *o,reg (a1) Msg msg)
+IPTR DispatchEditGadget(REG(a0, Class *cl), REG(a2, Object *o), REG(a1, Msg msg))
 {
   struct EditGData *ed;
   struct ClassBase *cb;
-  ULONG  retval = 0;
+  IPTR   retval = 0;
 
   ed = INST_DATA(cl,o);
   cb = (APTR)cl->cl_UserData;
@@ -417,7 +417,7 @@ ULONG PUBLIC DispatchEditGadget(reg (a0) Class *cl,reg (a2) Object *o,reg (a1) M
   switch(msg->MethodID)
   {
     case OM_NEW:
-      if (retval = DoSuperMethodA(cl,o,msg))
+      if ((retval = DoSuperMethodA(cl,o,msg)) != 0)
       {
         SetAttrs((Object *)retval,GA_TabCycle,TRUE,TAG_END);
         ed = INST_DATA(cl,retval);
@@ -425,7 +425,7 @@ ULONG PUBLIC DispatchEditGadget(reg (a0) Class *cl,reg (a2) Object *o,reg (a1) M
         if (!DispatchEditNew(cb,(struct opSet *)msg,(Object *)retval,ed))
         {
           DoSuperMethod(cl,(Object *)retval,OM_DISPOSE);
-          retval = NULL;
+          retval = 0;
         }
       break;
     }
@@ -443,7 +443,7 @@ ULONG PUBLIC DispatchEditGadget(reg (a0) Class *cl,reg (a2) Object *o,reg (a1) M
         struct TagItem *tstate,*ti;
 
         tstate = ((struct opSet *)msg)->ops_AttrList;
-        while(ti = NextTagItem(&tstate))
+        while((ti = NextTagItem(&tstate)) != 0)
         {
           switch(ti->ti_Tag)
           {
@@ -452,7 +452,7 @@ ULONG PUBLIC DispatchEditGadget(reg (a0) Class *cl,reg (a2) Object *o,reg (a1) M
               struct RastPort *rp = ObtainGIRPort(((struct opUpdate *)msg)->opu_GInfo);
               long   len;
 
-              FreeEditList(cb,ed);
+              FreeEditList(ed);
               ed->ed_MarkPos = ed->ed_Pos = 0;
               if (ti->ti_Data)
               {
@@ -462,7 +462,7 @@ ULONG PUBLIC DispatchEditGadget(reg (a0) Class *cl,reg (a2) Object *o,reg (a1) M
               }
               else
                 *ed->ed_Text = 0;
-              PrepareEditText(cb,ed,rp,ed->ed_Text);
+              PrepareEditText(ed,rp,ed->ed_Text);
               DrawEditGadget(cb,rp,(struct Gadget *)o,((struct opSet *)msg)->ops_GInfo,ed,FALSE);
               ReleaseGIRPort(rp);
               break;
@@ -510,7 +510,7 @@ ULONG PUBLIC DispatchEditGadget(reg (a0) Class *cl,reg (a2) Object *o,reg (a1) M
         ed->ed_Lines = (((struct Gadget *)o)->Height-2*ed->ed_BorderV)/ed->ed_LineHeight;
         ed->ed_MinSpace = TextLength(gpr->gpr_RPort," ",1);
         ed->ed_MaxSpace = 42*ed->ed_MinSpace;
-        PrepareEditText(cb,ed,gpr->gpr_RPort,ed->ed_Text);
+        PrepareEditText(ed,gpr->gpr_RPort,ed->ed_Text);
 
         SetAttrs(ed->ed_Scroller,PGA_Visible, ed->ed_Lines,TAG_END);
         DrawEditGadget(cb,gpr->gpr_RPort,(struct Gadget *)o,gpr->gpr_GInfo,ed,TRUE);
@@ -614,5 +614,3 @@ ULONG PUBLIC DispatchEditGadget(reg (a0) Class *cl,reg (a2) Object *o,reg (a1) M
   }
   return(retval);
 }
-
-

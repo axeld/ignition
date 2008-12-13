@@ -10,14 +10,14 @@
 #include "dos/dostags.h"
 
 
-void PUBLIC internal_Text2Clipboard(reg (d0) UBYTE clipunit,reg (a0) STRPTR t,reg (d1) long len,reg (a6) struct ClassBase *cb)
+void PUBLIC internal_Text2Clipboard(REG(d0, UBYTE clipunit),REG(a0, STRPTR t),REG(d1, long len),REG(a6, struct ClassBase *cb))
 {
   struct IFFHandle *iff;
   long   error;
 
-  if (iff = AllocIFF())
+  if ((iff = AllocIFF()) != 0)
   {
-    if (iff->iff_Stream = (ULONG)OpenClipboard((long)clipunit))
+    if ((iff->iff_Stream = (ULONG)OpenClipboard((long)clipunit)) != 0)
     {
       InitIFFasClip(iff);
       if (!(error = OpenIFF(iff,IFFF_WRITE)))
@@ -46,15 +46,15 @@ void PUBLIC internal_Text2Clipboard(reg (d0) UBYTE clipunit,reg (a0) STRPTR t,re
 }
 
 
-STRPTR PUBLIC internal_TextFromClipboard(reg(d0) UBYTE clipunit,reg (a0) APTR pool,reg (a6) struct ClassBase *cb)
+STRPTR PUBLIC internal_TextFromClipboard(REG(d0, UBYTE clipunit),REG(a0, APTR pool),REG(a6, struct ClassBase *cb))
 {
   struct IFFHandle *iff;
   long   error,size = 1;
   STRPTR t = NULL,temp;
 
-  if (iff = AllocIFF())
+  if ((iff = AllocIFF()) != 0)
   {
-    if (iff->iff_Stream = (ULONG)OpenClipboard(clipunit))
+    if ((iff->iff_Stream = (ULONG)OpenClipboard(clipunit)) != 0)
     {
       InitIFFasClip(iff);
 
@@ -73,7 +73,7 @@ STRPTR PUBLIC internal_TextFromClipboard(reg(d0) UBYTE clipunit,reg (a0) APTR po
 
           if ((cn = CurrentChunk(iff)) && cn->cn_ID == ID_CHRS && cn->cn_Type == ID_FTXT)
           {
-            if (temp = AllocPooled(pool,size+cn->cn_Size+(t ? 1 : 0)))
+            if ((temp = AllocPooled(pool,size+cn->cn_Size+(t ? 1 : 0))) != 0)
             {
               if (t)
               {
@@ -119,8 +119,14 @@ void PUBLIC process_TextFromClipboard(void)
 }
 
 
-void PUBLIC Text2Clipboard(reg (d0) UBYTE clipunit,reg (a0) STRPTR t,reg (d1) long len,reg (a6) struct ClassBase *cb)
+LIB_LH3(void, Text2Clipboard,
+  LIB_LHA(UBYTE, clipunit, D0),
+  LIB_LHA(STRPTR, t, A0),
+  LIB_LHA(long, len, D1),
+  struct ClassBase *, cb, 5, pTextEdit)
 {
+  LIBFUNC_INIT
+
   struct Task *this;
 
   if (!t || !len || !cb->cb_IFFParseBase)
@@ -147,11 +153,18 @@ void PUBLIC Text2Clipboard(reg (d0) UBYTE clipunit,reg (a0) STRPTR t,reg (d1) lo
   }
   else
     internal_Text2Clipboard(clipunit,t,len,cb);
+
+  LIBFUNC_EXIT
 }
 
 
-STRPTR PUBLIC TextFromClipboard(reg(d0) UBYTE clipunit,reg (a0) APTR pool,reg (a6) struct ClassBase *cb)
+LIB_LH2(STRPTR, TextFromClipboard,
+  LIB_LHA(UBYTE, clipunit, A0),
+  LIB_LHA(APTR, pool, A0),
+  struct ClassBase *, cb, 6, pTextEdit)
 {
+  LIBFUNC_INIT
+
   struct Task *this;
 
   if (!pool || !cb->cb_IFFParseBase)
@@ -184,6 +197,6 @@ STRPTR PUBLIC TextFromClipboard(reg(d0) UBYTE clipunit,reg (a0) APTR pool,reg (a
   }
   else
     return(internal_TextFromClipboard(clipunit,pool,cb));
+
+  LIBFUNC_EXIT
 }
-
-

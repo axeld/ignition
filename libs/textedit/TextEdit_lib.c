@@ -9,11 +9,71 @@
 #include "TextEdit_includes.h"
 
 
-struct Library * PUBLIC LibInit(reg (a0) BPTR Segment,reg (d0) struct ClassBase *cb,reg (a6) struct ExecBase *ExecBase);
-struct Library * PUBLIC LibOpen(reg (a6) struct ClassBase *cb);
-BPTR PUBLIC LibExpunge(reg (a6) struct ClassBase *cb);
-BPTR PUBLIC LibClose(reg (a6) struct ClassBase *cb);
-LONG PUBLIC LibNull(reg (a6) struct ClassBase *cb);
+struct Library * PUBLIC LibInit(REG(a0, BPTR Segment),REG(d0, struct ClassBase *cb),REG(a6, struct ExecBase *ExecBase));
+struct Library * PUBLIC LibOpen(REG(a6, struct ClassBase *cb));
+BPTR PUBLIC LibExpunge(REG(a6, struct ClassBase *cb));
+BPTR PUBLIC LibClose(REG(a6, struct ClassBase *cb));
+LONG PUBLIC LibNull(REG(a6, struct ClassBase *cb));
+
+
+Class * PUBLIC GetClass(REG(a6, APTR cb))
+{
+  return(((struct ClassBase *)cb)->cb_Class);
+}
+
+
+void PRIVATE TE_Exit(struct ClassBase *cb)
+{
+  if (FreeClass(cb->cb_Class))
+    cb->cb_Class = NULL;
+
+  CloseLibrary(cb->cb_ScrollerBase);
+  cb->cb_ScrollerBase = NULL;
+  CloseLibrary(cb->cb_IFFParseBase);
+  CloseLibrary(cb->cb_DOSBase);
+  CloseLibrary(cb->cb_IntuitionBase);
+  CloseLibrary((struct Library *)cb->cb_GfxBase);
+  CloseLibrary(cb->cb_UtilityBase);
+  CloseDevice(&cb->cb_Console);
+}
+
+
+int PRIVATE TE_Init(struct ClassBase *cb)
+{
+  if (cb->cb_IntuitionBase = OpenLibrary("intuition.library",37))
+  {
+    if (cb->cb_GfxBase = (APTR)OpenLibrary("graphics.library",37))
+    {
+      if (cb->cb_UtilityBase = OpenLibrary("utility.library",37))
+      {
+        if (!OpenDevice("console.device",-1,(struct IORequest *)&cb->cb_Console,0))
+        {
+          Class *cl;
+
+          if (cl = MakeClass("pinc-editgadget",GADGETCLASS,NULL,sizeof(struct EditGData),0))
+          {
+            cl->cl_Dispatcher.h_Entry = (APTR)DispatchEditGadget;
+            cl->cl_Dispatcher.h_Data = cb;
+            cl->cl_UserData = (ULONG)cb;
+            AddClass(cl);
+
+            if (cb->cb_IFFParseBase = OpenLibrary("iffparse.library",37))
+              cb->cb_DOSBase = OpenLibrary("dos.library",37);
+            cb->cb_Class = cl;
+
+            return(TRUE);
+          }
+          CloseDevice(&cb->cb_Console);
+        }
+        CloseLibrary(cb->cb_UtilityBase);
+      }
+      CloseLibrary(cb->cb_GfxBase);
+    }
+    CloseLibrary(cb->cb_IntuitionBase);
+  }
+  return(FALSE);
+}
+
 
 STATIC APTR LibVectors[] =
 {
@@ -43,7 +103,7 @@ struct { ULONG DataSize; APTR Table; APTR Data; struct Library * (*Init)(); } __
 };
 
 
-struct Library * PUBLIC LibInit(reg (a0) BPTR segment,reg (d0) struct ClassBase *cb,reg (a6) struct ExecBase *ExecBase)
+struct Library * PUBLIC LibInit(REG(a0, BPTR segment),REG(d0, struct ClassBase *cb),REG(a6, struct ExecBase *ExecBase))
 {
   if(ExecBase->LibNode.lib_Version < 37)
     return(NULL);
@@ -63,7 +123,7 @@ struct Library * PUBLIC LibInit(reg (a0) BPTR segment,reg (d0) struct ClassBase 
 }
 
 
-struct Library * PUBLIC LibOpen(reg (a6) struct ClassBase *cb)
+struct Library * PUBLIC LibOpen(REG(a6, struct ClassBase *cb))
 {
   cb->cb_LibNode.lib_Flags &= ~LIBF_DELEXP;
   cb->cb_LibNode.lib_OpenCnt++;
@@ -86,7 +146,7 @@ struct Library * PUBLIC LibOpen(reg (a6) struct ClassBase *cb)
 }
 
 
-BPTR PUBLIC LibExpunge(reg (a6) struct ClassBase *cb)
+BPTR PUBLIC LibExpunge(REG(a6, struct ClassBase *cb))
 {
   if (!cb->cb_LibNode.lib_OpenCnt && cb->cb_LibSegment)
   {
@@ -104,7 +164,7 @@ BPTR PUBLIC LibExpunge(reg (a6) struct ClassBase *cb)
 }
 
 
-BPTR PUBLIC LibClose(reg (a6) struct ClassBase *cb)
+BPTR PUBLIC LibClose(REG(a6, struct ClassBase *cb))
 {
   if (cb->cb_LibNode.lib_OpenCnt)
     cb->cb_LibNode.lib_OpenCnt--;
@@ -122,9 +182,7 @@ BPTR PUBLIC LibClose(reg (a6) struct ClassBase *cb)
 }
 
 
-LONG PUBLIC LibNull(reg (a6) struct ClassBase *cb)
+LONG PUBLIC LibNull(REG(a6, struct ClassBase *cb))
 {
   return(NULL);
 }
-
-

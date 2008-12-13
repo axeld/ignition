@@ -1,0 +1,26 @@
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+#MM contrib-ignition-textedit : includes linklibs contrib-ignition-scroller
+
+FILES := \
+	TE_dispatch \
+	TE_clip \
+	TE_draw \
+	TextEdit \
+	TextEdit_lib_aros \
+	../compatibility
+
+USER_INCLUDES := -I../include
+
+%build_module mmake=contrib-ignition-textedit \
+  modname=pTextEdit modtype=gadget \
+  files=$(FILES) uselibs="amiga rom pTextEdit"
+
+#MM includes-copy
+
+INCLUDE_FILES := include/gadgets/TextEdit.h
+%copy_includes path=gadgets dir=include/gadgets
+
+%common
