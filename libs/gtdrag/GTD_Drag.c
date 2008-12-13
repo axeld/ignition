@@ -27,7 +27,7 @@ void PRIVATE EndDrag(void)
   adg = dg = NULL;  gdo = NULL;  boopsigad = NULL;
   mx = ~0L;
 
-  for(sdg = (APTR)gadlist.mlh_Head;ndg = (APTR)sdg->dg_Node.mln_Succ;sdg = ndg)
+  for(sdg = (APTR)gadlist.mlh_Head;(ndg = (APTR)sdg->dg_Node.mln_Succ) != 0;sdg = ndg)
   {
     if (sdg->dg_Flags & DGF_ONTHEFLY)     // remove temporary BOOPSI-gadgets
     {
@@ -67,7 +67,7 @@ void PRIVATE MouseMove(WORD mousex,WORD mousey)
     x = mousex+dg->dg_Window->LeftEdge;
     y = mousey+dg->dg_Window->TopEdge;
 
-    if (adg = GetAcceptorDragGadget(x,y))
+    if ((adg = GetAcceptorDragGadget(x,y)) != 0)
     {
       adg->dg_Flags |= DGF_LIKECURRENT;
 
@@ -87,5 +87,3 @@ void PRIVATE IntuiTick(WORD mousex,WORD mousey)
   if (adg && UpdateHighlighting(IDCMP_INTUITICKS,mousex,mousey,adg))
     UpdateDragObj(gdo,mousex,mousey);
 }
-
-

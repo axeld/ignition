@@ -7,13 +7,14 @@
 
 
 #include "gtdrag_includes.h"
+#include "compatibility.h"
 
 
-#define NewList(l) NewList((struct List *)(l))
-#define RemHead(l) RemHead((struct List *)(l))
-#define AddTail(l,n) AddTail((struct List *)(l),(struct Node *)(n))
-#define AddHead(l,n) AddHead((struct List *)(l),(struct Node *)(n))
-#define FindName(l,s) (APTR)FindName((struct List *)(l),(s))
+#define MyNewList(l) NewList((struct List *)(l))
+#define MyRemHead(l) RemHead((struct List *)(l))
+#define MyAddTail(l,n) AddTail((struct List *)(l),(struct Node *)(n))
+#define MyAddHead(l,n) AddHead((struct List *)(l),(struct Node *)(n))
+#define MyFindName(l,s) (APTR)FindName((struct List *)(l),(s))
 
 
 /** @short adds a TreeNode to a list
@@ -43,13 +44,21 @@
  *  @see FreeTreeNodes()
  */
 
-struct TreeNode * PUBLIC AddTreeNode(reg (a0) APTR pool,reg (a1) struct MinList *tree,reg (a2) STRPTR name,reg (a3) struct Image *im,reg (d0) UWORD flags)
+LIB_LH5(struct TreeNode *, AddTreeNode, 
+  LIB_LHA(APTR, pool, A0),
+  LIB_LHA(struct MinList *, tree, A1),
+  LIB_LHA(STRPTR, name, A2),
+  LIB_LHA(struct Image *, im, A3),
+  LIB_LHA(UWORD, flags, D0),
+  struct Library *, library, 29, Gtdrag)
 {
+  LIBFUNC_INIT
+
   struct TreeNode *tn;
 
-  if (tn = AllocPooled(pool,sizeof(struct TreeNode)))
+  if ((tn = AllocPooled(pool,sizeof(struct TreeNode))) != 0)
   {
-    NewList(&tn->tn_Nodes);
+    MyNewList(&tn->tn_Nodes);
     tn->tn_Node.in_Name = name;
     tn->tn_Node.in_Image = im;
     tn->tn_Flags = flags;
@@ -63,9 +72,11 @@ struct TreeNode * PUBLIC AddTreeNode(reg (a0) APTR pool,reg (a1) struct MinList 
       Insert((struct List *)tree,(struct Node *)tn,(struct Node *)stn->tn_Node.in_Pred);
     }
     else
-      AddTail(tree,tn);
+      MyAddTail(tree,tn);
   }
   return(tn);
+
+  LIBFUNC_EXIT
 }
 
 /** @short frees the tree nodes
@@ -80,17 +91,24 @@ struct TreeNode * PUBLIC AddTreeNode(reg (a0) APTR pool,reg (a1) struct MinList 
  *  @see AddTreeNode()
  */
 
-void PUBLIC FreeTreeNodes(reg (a0) APTR pool,reg (a1) struct MinList *list)
+LIB_LH2(void, FreeTreeNodes, 
+  LIB_LHA(APTR, pool, A0),
+  LIB_LHA(struct MinList *, list, A1),
+  struct Library *, library, 28, Gtdrag)
 {
+  LIBFUNC_INIT
+
   struct TreeNode *tn;
 
-  while(tn = (APTR)RemHead(list))
+  while((tn = (APTR)MyRemHead(list)) != 0)
   {
     if (tn->tn_Flags & TNF_CONTAINER)
       FreeTreeNodes(pool,&tn->tn_Nodes);
 
     FreePooled(pool,tn,sizeof(struct TreeNode));
   }
+
+  LIBFUNC_EXIT
 }
 
 /** @short frees the TreeList contents
@@ -104,10 +122,17 @@ void PUBLIC FreeTreeNodes(reg (a0) APTR pool,reg (a1) struct MinList *list)
  *  @see FreeTreeNodes()
  */
 
-void PUBLIC FreeTreeList(reg (a0) APTR pool,reg (a1) struct TreeList *tl)
+LIB_LH2(void, FreeTreeList, 
+  LIB_LHA(APTR, pool, A0),
+  LIB_LHA(struct TreeList *, tl, A1),
+  struct Library *, library, 26, Gtdrag)
 {
-  NewList(&tl->tl_View);
+  LIBFUNC_INIT
+
+  MyNewList(&tl->tl_View);
   FreeTreeNodes(pool,&tl->tl_Tree);
+
+  LIBFUNC_EXIT
 }
 
 /** @short closes an open TreeNode
@@ -124,8 +149,13 @@ void PUBLIC FreeTreeList(reg (a0) APTR pool,reg (a1) struct TreeList *tl)
  *  @see ToggleTreeNode()
  */
 
-void PUBLIC CloseTreeNode(reg (a0) struct MinList *main,reg (a1) struct TreeNode *tn)
+LIB_LH2(void, CloseTreeNode, 
+  LIB_LHA(struct MinList *, main, A0),
+  LIB_LHA(struct TreeNode *, tn, A1),
+  struct Library *, library, 30, Gtdrag)
 {
+  LIBFUNC_INIT
+
   struct TreeNode *itn;
 
   if (!main || !tn)
@@ -141,6 +171,8 @@ void PUBLIC CloseTreeNode(reg (a0) struct MinList *main,reg (a1) struct TreeNode
     if ((itn->tn_Flags & (TNF_CONTAINER | TNF_OPEN)) == (TNF_CONTAINER | TNF_OPEN))
       CloseTreeNode(main,itn);
   }
+
+  LIBFUNC_EXIT
 }
 
 /** @short opens a closed TreeNode
@@ -158,8 +190,13 @@ void PUBLIC CloseTreeNode(reg (a0) struct MinList *main,reg (a1) struct TreeNode
  *  @see ToggleTreeNode()
  */
 
-LONG PUBLIC OpenTreeNode(reg (a0) struct MinList *main,reg (a1) struct TreeNode *tn)
+LIB_LH2(LONG, OpenTreeNode, 
+  LIB_LHA(struct MinList *, main, A0),
+  LIB_LHA(struct TreeNode *, tn, A1),
+  struct Library *, library, 31, Gtdrag)
 {
+  LIBFUNC_INIT
+
   struct MinNode *insertln;
   struct TreeNode *itn;
   long   count = 0;
@@ -180,6 +217,8 @@ LONG PUBLIC OpenTreeNode(reg (a0) struct MinList *main,reg (a1) struct TreeNode 
     insertln = insertln->mln_Pred;
   }
   return count;
+
+  LIBFUNC_EXIT
 }
 
 /** @short toggles a TreeNode between closes/open
@@ -197,8 +236,13 @@ LONG PUBLIC OpenTreeNode(reg (a0) struct MinList *main,reg (a1) struct TreeNode 
  *  @see OpenTreeNode()
  */
 
-LONG PUBLIC ToggleTreeNode(reg (a0) struct MinList *main,reg (a1) struct TreeNode *tn)
+LIB_LH2(LONG, ToggleTreeNode, 
+  LIB_LHA(struct MinList *, main, A0),
+  LIB_LHA(struct TreeNode *, tn, A1),
+  struct Library *, library, 32, Gtdrag)
 {
+  LIBFUNC_INIT
+
   if (!main || !tn)
     return(0);
 
@@ -219,6 +263,8 @@ LONG PUBLIC ToggleTreeNode(reg (a0) struct MinList *main,reg (a1) struct TreeNod
     tn->tn_Flags = (tn->tn_Flags & ~TNF_REPLACE) | TNF_ADD;
 
   return(0);
+
+  LIBFUNC_EXIT
 }
 
 
@@ -229,7 +275,7 @@ void PRIVATE FillTreeList(struct MinList *main,struct MinList *list,UBYTE depth,
   foreach(list,tn)
   {
     if (flags & TNF_OPEN)
-      AddTail(main,&tn->tn_ViewNode);
+      MyAddTail(main,&tn->tn_ViewNode);
     else
       tn->tn_ViewNode.mln_Succ = NULL;
 
@@ -260,10 +306,16 @@ void PRIVATE FillTreeList(struct MinList *main,struct MinList *list,UBYTE depth,
  *  @param tl a pointer to the TreeList
  */
 
-void PUBLIC InitTreeList(reg (a0) struct TreeList *tl)
+LIB_LH1(void, InitTreeList, 
+  LIB_LHA(struct TreeList *, tl, A0),
+  struct Library *, library, 27, Gtdrag)
 {
-  NewList(&tl->tl_View);
+  LIBFUNC_INIT
+
+  MyNewList(&tl->tl_View);
   FillTreeList(&tl->tl_View,&tl->tl_Tree,0,TNF_OPEN,0);
+
+  LIBFUNC_EXIT
 }
 
 /** @short gets the container of a TreeNode
@@ -275,13 +327,19 @@ void PUBLIC InitTreeList(reg (a0) struct TreeList *tl)
  *  @return container the container TreeNode or NULL
  */
 
-struct TreeNode * PUBLIC GetTreeContainer(reg (a0) struct TreeNode *tn)
+LIB_LH1(struct TreeNode *, GetTreeContainer, 
+  LIB_LHA(struct TreeNode *, tn, A0),
+  struct Library *, library, 33, Gtdrag)
 {
+  LIBFUNC_INIT
+
   if (!tn || !tn->tn_Depth)
     return(NULL);
 
   for(;tn->tn_Node.in_Pred;tn = (APTR)tn->tn_Node.in_Pred);
   return((struct TreeNode *)((UBYTE *)tn - sizeof(struct MinNode) - sizeof(struct ImageNode)));
+
+  LIBFUNC_EXIT
 }
 
 /** @short finds the path of a TreeNode
@@ -296,15 +354,21 @@ struct TreeNode * PUBLIC GetTreeContainer(reg (a0) struct TreeNode *tn)
  *  @return path returns the buffer or NULL for failure
  */
 
-STRPTR PUBLIC GetTreePath(reg (a0) struct TreeNode *tn,reg (a1) STRPTR buffer,reg (d0) LONG len)
+LIB_LH3(STRPTR, GetTreePath, 
+  LIB_LHA(struct TreeNode *, tn, A0),
+  LIB_LHA(STRPTR, buffer, A1),
+  LIB_LHA(LONG, len, D0),
+  struct Library *, library, 34, Gtdrag)
 {
+  LIBFUNC_INIT
+
   long pos = 0;
 
   if (!tn || !buffer || !len)
     return(NULL);
 
   *buffer = 0;
-  while(tn = GetTreeContainer(tn))
+  while((tn = GetTreeContainer(tn)) != 0)
   {
     pos += strlen(tn->tn_Node.in_Name)+1;
     if (len <= pos)
@@ -314,6 +378,8 @@ STRPTR PUBLIC GetTreePath(reg (a0) struct TreeNode *tn,reg (a1) STRPTR buffer,re
     strins(buffer,tn->tn_Node.in_Name);
   }
   return(buffer);
+
+  LIBFUNC_EXIT
 }
 
 /** @short finds a TreeNode with a path
@@ -326,8 +392,13 @@ STRPTR PUBLIC GetTreePath(reg (a0) struct TreeNode *tn,reg (a1) STRPTR buffer,re
  *  @return treenode the TreeNode, if found any, or NULL
  */
 
-struct TreeNode * PUBLIC FindTreePath(reg (a0) struct MinList *tree,reg (a1) STRPTR path)
+LIB_LH2(struct TreeNode *, FindTreePath, 
+  LIB_LHA(struct MinList *, tree, A0),
+  LIB_LHA(STRPTR, path, A1),
+  struct Library *, library, 35, Gtdrag)
 {
+  LIBFUNC_INIT
+
   struct TreeNode *tn;
   long   i;
 
@@ -348,6 +419,9 @@ struct TreeNode * PUBLIC FindTreePath(reg (a0) struct MinList *tree,reg (a1) STR
       return(tn);
     }
   }
+  return(NULL);
+
+  LIBFUNC_EXIT
 }
 
 /** @short searches a tree for a special pointer
@@ -364,8 +438,13 @@ struct TreeNode * PUBLIC FindTreePath(reg (a0) struct MinList *tree,reg (a1) STR
  *  @see FindListSpecial()
  */
 
-struct TreeNode * PUBLIC FindTreeSpecial(reg (a0) struct MinList *tree,reg (a1) APTR special)
+LIB_LH2(struct TreeNode *, FindTreeSpecial, 
+  LIB_LHA(struct MinList *, tree, A0),
+  LIB_LHA(APTR, special, A1),
+  struct Library *, library, 36, Gtdrag)
 {
+  LIBFUNC_INIT
+
   struct TreeNode *tn;
 
   if (!tree)
@@ -379,11 +458,13 @@ struct TreeNode * PUBLIC FindTreeSpecial(reg (a0) struct MinList *tree,reg (a1) 
     {
       struct TreeNode *ftn;
 
-      if (ftn = FindTreeSpecial(&tn->tn_Nodes,special))
+      if ((ftn = FindTreeSpecial(&tn->tn_Nodes,special)) != 0)
         return(ftn);
     }
   }
   return(NULL);
+
+  LIBFUNC_EXIT
 }
 
 /** @short searches a list for the special pointer
@@ -399,8 +480,13 @@ struct TreeNode * PUBLIC FindTreeSpecial(reg (a0) struct MinList *tree,reg (a1) 
  *  @see FindTreeSpecial()
  */
 
-struct TreeNode * PUBLIC FindListSpecial(reg (a0) struct MinList *list,reg (a1) APTR special)
+LIB_LH2(struct TreeNode *, FindListSpecial, 
+  LIB_LHA(struct MinList *, list, A0),
+  LIB_LHA(APTR, special, A1),
+  struct Library *, library, 37, Gtdrag)
 {
+  LIBFUNC_INIT
+
   struct TreeNode *tn;
 
   if (!list)
@@ -412,6 +498,8 @@ struct TreeNode * PUBLIC FindListSpecial(reg (a0) struct MinList *list,reg (a1) 
       return(tn);
   }
   return(NULL);
+
+  LIBFUNC_EXIT
 }
 
 /** @short simplifies the usage of ToggleTreeNode()
@@ -435,8 +523,14 @@ struct TreeNode * PUBLIC FindListSpecial(reg (a0) struct MinList *list,reg (a1) 
  *  @see GTD_ToggleTreeNode()
  */
 
-BOOL PUBLIC ToggleTree(reg (a0) struct Gadget *gad,reg (a1) struct TreeNode *tn,reg (a2) struct IntuiMessage *msg)
+LIB_LH3(BOOL, ToggleTree, 
+  LIB_LHA(struct Gadget *, gad, A0),
+  LIB_LHA(struct TreeNode *, tn, A1),
+  LIB_LHA(struct IntuiMessage *, msg, A2),
+  struct Library *, library, 38, Gtdrag)
 {
+  LIBFUNC_INIT
+
   struct DragGadget *dg;
   struct List *list;
   long   top,h;
@@ -463,4 +557,6 @@ BOOL PUBLIC ToggleTree(reg (a0) struct Gadget *gad,reg (a1) struct TreeNode *tn,
 	return TRUE;
   }
   return FALSE;
+
+  LIBFUNC_EXIT
 }

@@ -31,7 +31,7 @@ void PRIVATE SetWindowAttrs(struct Window *win,struct TagItem *tags)
     return;
 
   tstate = (struct TagItem *)tags;
-  while(ti = NextTagItem(&tstate))
+  while((ti = NextTagItem(&tstate)) != 0)
   {
     switch(ti->ti_Tag)
     {
@@ -47,8 +47,12 @@ void PRIVATE SetWindowAttrs(struct Window *win,struct TagItem *tags)
 }
 
 
-void PUBLIC GTD_RemoveWindow(reg (a0) struct Window *win)
+LIB_LH1(void, GTD_RemoveWindow, 
+  LIB_LHA(struct Window *, win, A0),
+  struct Library *, library, 14, Gtdrag)
 {
+  LIBFUNC_INIT
+
   struct DragWindow *dw;
 
   ObtainSemaphore(&ListSemaphore);
@@ -63,11 +67,18 @@ void PUBLIC GTD_RemoveWindow(reg (a0) struct Window *win)
     }
   }
   ReleaseSemaphore(&ListSemaphore);
+
+  LIBFUNC_EXIT
 }
 
 
-void PUBLIC GTD_AddWindowA(reg (a0) struct Window *win,reg (a1) struct TagItem *tags)
+LIB_LH2(void, GTD_AddWindowA, 
+  LIB_LHA(struct Window *, win, A0),
+  LIB_LHA(struct TagItem *, tags, A1),
+  struct Library *, library, 13, Gtdrag)
 {
+  LIBFUNC_INIT
+
   struct DragApp *da;
   struct DragWindow *dw;
 
@@ -82,4 +93,6 @@ void PUBLIC GTD_AddWindowA(reg (a0) struct Window *win,reg (a1) struct TagItem *
     AddTail((struct List *)&winlist,(APTR)dw);
   }
   ReleaseSemaphore(&ListSemaphore);
+
+  LIBFUNC_EXIT
 }

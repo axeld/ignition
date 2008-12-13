@@ -76,14 +76,14 @@ struct IntuiMessage * PRIVATE HandleIMsg(struct DragApp *da,struct IntuiMessage 
   else if (class == IDCMP_MOUSEBUTTONS && dg)
     EndDrag();
 
-  if (gmsg = GT_FilterIMsg(msg))
+  if ((gmsg = GT_FilterIMsg(msg)) != 0)
   {
     da->da_GTMsg = TRUE;
     msg = gmsg;
     if (fakemsg && (class == IDCMP_GADGETUP || class == IDCMP_MOUSEBUTTONS))
     {
       msg = GT_PostFilterIMsg(msg);
-      ReplyMsg(msg);
+      ReplyMsg((struct Message*)msg);
       fakemsg = FALSE;
       msg = NULL;
     }
@@ -92,18 +92,22 @@ struct IntuiMessage * PRIVATE HandleIMsg(struct DragApp *da,struct IntuiMessage 
 }
 
 
-struct IntuiMessage * PUBLIC GTD_GetIMsg(reg (a0) struct MsgPort *mp)
+LIB_LH1(struct IntuiMessage *, GTD_GetIMsg, 
+  LIB_LHA(struct MsgPort *, mp, A0),
+  struct Library *, library, 5, Gtdrag)
 {
+  LIBFUNC_INIT
+
   struct IntuiMessage *msg;
   struct DragApp *da;
 
-  if (da = GetDragApp(NULL))
+  if ((da = GetDragApp(NULL)) != 0)
   {
-    while(msg = (struct IntuiMessage *)GetMsg(mp))
+    while((msg = (struct IntuiMessage *)GetMsg(mp)) != 0)
     {
       msg = HandleIMsg(da,msg);
       if (!da->da_GTMsg)
-        ReplyMsg(msg);
+        ReplyMsg((struct Message *)msg);
       else
         return(msg);
     }
@@ -112,46 +116,65 @@ struct IntuiMessage * PUBLIC GTD_GetIMsg(reg (a0) struct MsgPort *mp)
     return(GT_GetIMsg(mp));
 
   return(NULL);
+
+  LIBFUNC_EXIT
 }
 
 
-struct IntuiMessage * PUBLIC GTD_FilterIMsg(reg (a0) struct IntuiMessage *msg)
+LIB_LH1(struct IntuiMessage *, GTD_FilterIMsg, 
+  LIB_LHA(struct IntuiMessage *, msg, A0),
+  struct Library *, library, 7, Gtdrag)
 {
+  LIBFUNC_INIT
+
   struct DragApp *da;
 
-  if (da = GetDragApp(NULL))
+  if ((da = GetDragApp(NULL)) != 0)
     return(HandleIMsg(da,msg));
 
   return(GT_FilterIMsg(msg));
+
+  LIBFUNC_EXIT
 }
 
 
-void PUBLIC GTD_ReplyIMsg(reg (a0) struct IntuiMessage *msg)
+LIB_LH1(void, GTD_ReplyIMsg, 
+  LIB_LHA(struct IntuiMessage *, msg, A0),
+  struct Library *, library, 6, Gtdrag)
 {
+  LIBFUNC_INIT
+
   struct DragApp *da;
 
-  if (da = GetDragApp(NULL))
+  if ((da = GetDragApp(NULL)) != 0)
   {
     if (da->da_GTMsg)
       msg = GT_PostFilterIMsg(msg);
 
-    ReplyMsg(msg);
+    ReplyMsg((struct Message *)msg);
   }
   else
     GT_ReplyIMsg(msg);
 
-  if (msg = (APTR)GetMsg(dmport))
+  if ((msg = (APTR)GetMsg(dmport)) != 0)
     FreeDropMessage(msg);
+
+  LIBFUNC_EXIT
 }
 
 
-struct IntuiMessage * PUBLIC GTD_PostFilterIMsg(reg (a0) struct IntuiMessage *msg)
+LIB_LH1(struct IntuiMessage *, GTD_PostFilterIMsg, 
+  LIB_LHA(struct IntuiMessage *, msg, A0),
+  struct Library *, library, 8, Gtdrag)
 {
+  LIBFUNC_INIT
+
   struct DragApp *da;
 
   if (!(da = GetDragApp(NULL)) || da->da_GTMsg)
     return(GT_PostFilterIMsg(msg));
 
   return(msg);
-}
 
+  LIBFUNC_EXIT
+}

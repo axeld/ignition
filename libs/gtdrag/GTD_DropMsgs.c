@@ -9,8 +9,14 @@
 #include "gtdrag_includes.h"
 
 
-STRPTR PUBLIC GTD_GetString(reg (a0) struct ObjectDescription *od,reg (a1) STRPTR t,reg (d0) LONG len)
+LIB_LH3(STRPTR, GTD_GetString, 
+  LIB_LHA(struct ObjectDescription *, od, A0),
+  LIB_LHA(STRPTR, t, D1),
+  LIB_LHA(LONG, len, D0),
+  struct Library *, library, 21, Gtdrag)
 {
+  LIBFUNC_INIT
+
   if (!od || !od->od_Object || !t || !len)
     return(NULL);
 
@@ -33,6 +39,8 @@ STRPTR PUBLIC GTD_GetString(reg (a0) struct ObjectDescription *od,reg (a1) STRPT
       return(NULL);
   }
   return(t);
+
+  LIBFUNC_EXIT
 }
 
 
@@ -43,7 +51,7 @@ void PRIVATE FreeDropMessage(struct IntuiMessage *msg)
   if (!msg || msg->Class != IDCMP_OBJECTDROP)
     return;
 
-  if (dm = msg->IAddress)
+  if ((dm = msg->IAddress) != 0)
     FreeMem(dm,sizeof(struct DropMessage));
 
   FreeMem(msg,sizeof(struct ExtIntuiMessage));
@@ -103,7 +111,7 @@ void PRIVATE MakeDropMessage(struct DragApp *da,ULONG qual,WORD mousex,WORD mous
   if (adg && adg->dg_Type == BOOPSI_KIND && DoCustomMethod(adg->dg_Gadget,GM_OBJECTDROP,&dm,qual))  // send to boopsi-gadget
     return;
 
-  if (imsg = AllocMem(sizeof(struct ExtIntuiMessage),MEMF_CLEAR | MEMF_PUBLIC))
+  if ((imsg = AllocMem(sizeof(struct ExtIntuiMessage),MEMF_CLEAR | MEMF_PUBLIC)) != 0)
   {
     struct DropMessage *gdm;
 
@@ -116,13 +124,12 @@ void PRIVATE MakeDropMessage(struct DragApp *da,ULONG qual,WORD mousex,WORD mous
     CurrentTime(&imsg->Seconds,&imsg->Micros);
     imsg->IDCMPWindow = win;
 
-    if (imsg->IAddress = gdm = AllocMem(sizeof(struct DropMessage),MEMF_PUBLIC))
+    if ((imsg->IAddress = gdm = AllocMem(sizeof(struct DropMessage),MEMF_PUBLIC)) != 0)
     {
       CopyMem(&dm,gdm,sizeof(struct DropMessage));
-      PutMsg(win->UserPort,imsg);
+      PutMsg(win->UserPort,(struct Message *)imsg);
       return;
     }
     FreeMem(imsg,sizeof(struct ExtIntuiMessage));
   }
 }
-

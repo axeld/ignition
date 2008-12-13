@@ -9,7 +9,7 @@
 #include "gtdrag_includes.h"
 
 
-ULONG PUBLIC RenderHook(reg (a1) struct LVDrawMsg *msg,reg (a2) struct ImageNode *in)
+ULONG RenderHook(REG(a0, struct Hook * h), REG(a2, struct ImageNode *in), REG(a1, struct LVDrawMsg *msg))
 {
   struct RastPort *rp;
   struct Rectangle bounds;
@@ -88,6 +88,3 @@ ULONG PUBLIC RenderHook(reg (a1) struct LVDrawMsg *msg,reg (a2) struct ImageNode
     GhostRect(rp,pens[BLOCKPEN],msg->lvdm_Bounds.MinX, msg->lvdm_Bounds.MinY,msg->lvdm_Bounds.MaxX, msg->lvdm_Bounds.MaxY);
   return(LVCB_OK);
 }
-
-
-

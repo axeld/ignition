@@ -11,30 +11,29 @@
 
 #define TREE_SHOWFIRST     /* show root-trees connected? */
 
-
-static UWORD sOpenedBitmap[] = {
-	0x0000,		// 0000 0000 0000 0000
-	0x0000,		// 0000 0000 0000 0000
-	0xff80,		// 1111 1111 1000 0000
-	0xff00,		// 0111 1111 0000 0000
-	0x3e00,		// 0011 1110 0000 0000
-	0x1c00,		// 0001 1100 0000 0000
-	0x0800,		// 0000 1000 0000 0000
+static UBYTE sOpenedBitmap[] = {
+	0x00,0x00,		// 0000 0000 0000 0000
+	0x00,0x00,		// 0000 0000 0000 0000
+	0xff,0x80,		// 1111 1111 1000 0000
+	0xff,0x00,		// 0111 1111 0000 0000
+	0x3e,0x00,		// 0011 1110 0000 0000
+	0x1c,0x00,		// 0001 1100 0000 0000
+	0x08,0x00,		// 0000 1000 0000 0000
 };
 
-static UWORD sClosedBitmap[] = {
-	0x1800,		// 0001 1000 0000 0000
-	0x1e00,		// 0001 1110 0000 0000
-	0x1f80,		// 0001 1111 1000 0000
-	0xffe0,		// 1111 1111 1110 0000
-	0x1f80,		// 0001 1111 1000 0000
-	0x1e00,		// 0001 1110 0000 0000
-	0x1800,		// 0001 1000 0000 0000
+static UBYTE sClosedBitmap[] = {
+	0x18,0x00,		// 0001 1000 0000 0000
+	0x1e,0x00,		// 0001 1110 0000 0000
+	0x1f,0x80,		// 0001 1111 1000 0000
+	0xff,0xe0,		// 1111 1111 1110 0000
+	0x1f,0x80,		// 0001 1111 1000 0000
+	0x1e,0x00,		// 0001 1110 0000 0000
+	0x18,0x00,		// 0001 1000 0000 0000
 };
 
 
 ULONG PUBLIC
-TreeHook(reg (a0) struct Hook *h, reg (a1) struct LVDrawMsg *msg, reg (a2) struct TreeNode *tn)
+TreeHook(REG(a0, struct Hook *h), REG(a2, struct TreeNode *tn), REG(a1, struct LVDrawMsg *msg))
 {
 	struct RastPort *rp;
 	struct Rectangle bounds;
@@ -215,5 +214,3 @@ TreeHook(reg (a0) struct Hook *h, reg (a1) struct LVDrawMsg *msg, reg (a2) struc
 
 	return LVCB_OK;
 }
-
-

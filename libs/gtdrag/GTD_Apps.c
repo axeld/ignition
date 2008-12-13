@@ -34,13 +34,16 @@ struct DragApp * PRIVATE GetDragApp(struct Task *task)
 }
 
 
-void PUBLIC GTD_RemoveApp(void)
+LIB_LH0(void, GTD_RemoveApp, 
+  struct Library *, library, 12, Gtdrag)
 {
+  LIBFUNC_INIT
+
   struct DragApp *da;
   struct MinNode *n,*s;
 
   ObtainSemaphore(&ListSemaphore);
-  if (da = GetDragApp(NULL))
+  if ((da = GetDragApp(NULL)) != 0)
   {
     for(n = winlist.mlh_Head;n->mln_Succ;n = n->mln_Succ)
     {
@@ -67,11 +70,18 @@ void PUBLIC GTD_RemoveApp(void)
     FreeMem(da, sizeof(struct DragApp));
   }
   ReleaseSemaphore(&ListSemaphore);
+
+  LIBFUNC_EXIT
 }
 
 
-int PUBLIC GTD_AddAppA(reg (a0) STRPTR t,reg (a1) struct TagItem *tag1)
+LIB_LH2(int, GTD_AddAppA, 
+  LIB_LHA(STRPTR, t, A0),
+  LIB_LHA(struct TagItem *, tag1, A1),
+  struct Library *, library, 11, Gtdrag)
 {
+  LIBFUNC_INIT
+
   struct DragApp *da;
 
   if (!FindTagItem(GTDA_NewStyle,tag1))
@@ -80,7 +90,7 @@ int PUBLIC GTD_AddAppA(reg (a0) STRPTR t,reg (a1) struct TagItem *tag1)
 
   if (t && !GetDragApp(NULL))
   {
-    if (da = AllocMem(sizeof(struct DragApp),MEMF_PUBLIC | MEMF_CLEAR))
+    if ((da = AllocMem(sizeof(struct DragApp),MEMF_PUBLIC | MEMF_CLEAR)) != 0)
     {
       da->da_Name = t;
       da->da_Task = FindTask(NULL);
@@ -94,6 +104,6 @@ int PUBLIC GTD_AddAppA(reg (a0) STRPTR t,reg (a1) struct TagItem *tag1)
   }
   ReleaseSemaphore(&ListSemaphore);
   return(FALSE);
+
+  LIBFUNC_EXIT
 }
-
-

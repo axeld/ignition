@@ -8,10 +8,12 @@
 
 #include "gtdrag_includes.h"
 
-#include <cybergraphics/cybergraphics.h>
-#include <clib/cybergraphics_protos.h>
-#include <pragmas/cybergraphics_pragmas.h>
+#include <cybergraphx/cybergraphics.h>
+#include <proto/cybergraphics.h>
 
+#if defined(__SASC)
+#	include <pragmas/cybergraphics_pragmas.h>
+#endif
 
 #define LOCKLAYERS
 
@@ -27,7 +29,7 @@ void PRIVATE FreeDragObj(struct DragObj *gdo)
     UpdateDragObj(gdo,0,-9999);
 
 #ifdef LOCKLAYERS
-  LockLayer(NULL,gdo->do_DragGadget->dg_Window->RPort->Layer);
+  LockLayer(0,gdo->do_DragGadget->dg_Window->RPort->Layer);
   UnlockLayers(&gdo->do_Screen->LayerInfo);
 #endif
 
@@ -325,4 +327,3 @@ void PRIVATE UpdateDragObj(struct DragObj *gdo,int x, int y)
   gdo->do_X = x;
   gdo->do_Y = y;
 }
-

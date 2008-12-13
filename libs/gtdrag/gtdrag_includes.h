@@ -7,6 +7,8 @@
 
 #define INTUI_V36_NAMES_ONLY
 
+#include "SDI_compiler.h"
+
 #include <exec/execbase.h>
 #include <exec/libraries.h>
 #include <exec/nodes.h>
@@ -17,30 +19,35 @@
 #include <intuition/intuition.h>
 #include <intuition/intuitionbase.h>
 #include <intuition/gadgetclass.h>
+#include <intuition/cghooks.h>
 #include <graphics/gfx.h>
 #include <graphics/gfxmacros.h>
 #include <libraries/gadtools.h>
 #include <libraries/gtdrag.h>
 #include <libraries/asl.h>
+#include <libraries/iffparse.h>
 #include <dos/dos.h>
 
 #include <clib/alib_protos.h>
-#include <clib/alib_stdio_protos.h>
-#include <clib/exec_protos.h>
-#include <clib/gadtools_protos.h>
-#include <clib/intuition_protos.h>
-#include <clib/graphics_protos.h>
-#include <clib/layers_protos.h>
-#include <clib/utility_protos.h>
-#include <clib/dos_protos.h>
+#include <proto/exec.h>
+#include <proto/gadtools.h>
+#include <proto/intuition.h>
+#include <proto/graphics.h>
+#include <proto/layers.h>
+#include <proto/utility.h>
+#include <proto/dos.h>
+#include <proto/gtdrag.h>
 
-#include <pragmas/exec_pragmas.h>
-#include <pragmas/gadtools_pragmas.h>
-#include <pragmas/intuition_pragmas.h>
-#include <pragmas/graphics_pragmas.h>
-#include <pragmas/layers_pragmas.h>
-#include <pragmas/utility_pragmas.h>
-#include <pragmas/dos_pragmas.h>
+#if defined(__SASC)
+#	include <proto/alib_stdio.h>
+#	include <pragmas/exec_pragmas.h>
+#	include <pragmas/gadtools_pragmas.h>
+#	include <pragmas/intuition_pragmas.h>
+#	include <pragmas/graphics_pragmas.h>
+#	include <pragmas/layers_pragmas.h>
+#	include <pragmas/utility_pragmas.h>
+#	include <pragmas/dos_pragmas.h>
+#endif
 
 #include <stdlib.h>
 #include <ctype.h>
@@ -50,17 +57,6 @@
 #define foreach(l,v) for(v = (APTR)((struct List *)l)->lh_Head;((struct Node *)v)->ln_Succ;v = (APTR)((struct Node *)v)->ln_Succ)
 #define words(a,b) ((ULONG)((a) << 16L) | (WORD)(b))
 
-#define PUBLIC __asm __saveds
-#define PRIVATE __regargs
-#define reg(x) register __ ## x
-
-void kprintf(STRPTR,...);
-#define bug kprintf
-#ifdef DEBUG
-#define D(x) x
-#else
-#define D(x) ;
-#endif
 
 /********************* DragWindow *********************/
 
@@ -70,7 +66,7 @@ struct DragWindow
   struct Window *dw_Window;
   struct Task *dw_Task;
   ULONG  dw_AcceptMask;
-  BOOL   __asm (*dw_AcceptFunc)(reg (a0) struct Window *,reg (a1) struct Gadget *,reg (a2) struct ObjectDescription *);
+  BOOL   ASM (*dw_AcceptFunc)(REG(a0, struct Window *),REG(a1, struct Gadget *),REG(a2, struct ObjectDescription *));
 };
 
 
@@ -90,8 +86,8 @@ struct DragGadget
   WORD   dg_ItemHeight;       /* listviews only */
   WORD   dg_Width,dg_Height;
   UWORD  dg_Flags;
-  BOOL   __asm (*dg_AcceptFunc)(reg (a0) struct Window *,reg (a1) struct Gadget *,reg (a2) struct ObjectDescription *);
-  void   __asm (*dg_ObjectFunc)(reg (a0) struct Window *,reg (a1) struct Gadget *,reg (a2) struct ObjectDescription *,reg (d0) LONG pos);
+  BOOL   ASM (*dg_AcceptFunc)(REG(a0, struct Window *),REG(a1, struct Gadget *),REG(a2, struct ObjectDescription *));
+  void   ASM (*dg_ObjectFunc)(REG(a0, struct Window *),REG(a1, struct Gadget *),REG(a2, struct ObjectDescription *),REG(d0, LONG pos));
   struct ObjectDescription dg_Object;
   APTR   dg_CurrentObject;
   ULONG  dg_SourceEntry;
@@ -156,11 +152,11 @@ struct DragObj
 
 extern struct ExecBase *SysBase;
 extern struct IntuitionBase *IntuitionBase;
-extern struct Library  *DOSBase;
+extern struct DosLibrary  *DOSBase;
 extern struct GfxBase  *GfxBase;
 extern struct Library  *GadToolsBase;
 extern struct Library  *LayersBase;
-extern struct Library  *UtilityBase;
+extern struct UtilityBase *UtilityBase;
 extern struct Library  *CyberGfxBase;
 
 extern struct MinList applist;
@@ -235,57 +231,62 @@ extern void PRIVATE IntuiTick(WORD mousex,WORD mousey);
 
 /********************* public functions *********************/
 
+#if !defined(__AROS__)
 // GTD_Apps.c
-extern int PUBLIC GTD_AddAppA(reg (a0) STRPTR t,reg (a1) struct TagItem *tag);
+extern int PUBLIC GTD_AddAppA(REG(a0, STRPTR t),REG(a1, struct TagItem *tag));
 extern void PUBLIC GTD_RemoveApp(void);
 
 // GTD_Gadgets.c
-extern BOOL PUBLIC GTD_GetAttr(reg (a0) APTR gad,reg (d0) ULONG tag,reg (a1) ULONG *storage);
-extern void PUBLIC GTD_SetAttrsA(reg (a0) APTR gad,reg (a1) struct TagItem *tags);
-extern void PUBLIC GTD_AddGadgetA(reg (d0) ULONG type,reg (a0) struct Gadget *gad,reg (a1) struct Window *win,reg (a2) struct TagItem *tag1);
-extern void PUBLIC GTD_RemoveGadget(reg (a0) struct Gadget *);
-extern void PUBLIC GTD_RemoveGadgets(reg (a0) struct Window *);
+extern BOOL PUBLIC GTD_GetAttr(REG(a0, APTR gad),REG(d0, ULONG tag),REG(a1, ULONG *storage));
+extern void PUBLIC GTD_SetAttrsA(REG(a0, APTR gad),REG(a1, struct TagItem *tags));
+extern void PUBLIC GTD_AddGadgetA(REG(d0, ULONG type),REG(a0, struct Gadget *gad),REG(a1, struct Window *win),REG(a2, struct TagItem *tag1));
+extern void PUBLIC GTD_RemoveGadget(REG(a0, struct Gadget *));
+extern void PUBLIC GTD_RemoveGadgets(REG(a0, struct Window *));
 
 // GTD_Windows.c
-extern void PUBLIC GTD_AddWindowA(reg (a0) struct Window *win,reg (a1) struct TagItem *tag);
-extern void PUBLIC GTD_RemoveWindow(reg (a0) struct Window *win);
+extern void PUBLIC GTD_AddWindowA(REG(a0, struct Window *win),REG(a1, struct TagItem *tag));
+extern void PUBLIC GTD_RemoveWindow(REG(a0, struct Window *win));
 
 // GTD_Boopsi.c
-extern ULONG PUBLIC GTD_HandleInput(reg (a0) struct Gadget *gad,reg (a1) struct gpInput *gpi);
-extern BOOL PUBLIC GTD_PrepareDrag(reg (a0) struct Gadget *gad,reg (a1) struct gpInput *gpi);
-extern BOOL PUBLIC GTD_BeginDrag(reg (a0) struct Gadget *gad,reg (a1) struct gpInput *gpi);
-extern void PUBLIC GTD_StopDrag(reg (a0) struct Gadget *gad);
+extern ULONG PUBLIC GTD_HandleInput(REG(a0, struct Gadget *gad),REG(a1, struct gpInput *gpi));
+extern BOOL PUBLIC GTD_PrepareDrag(REG(a0, struct Gadget *gad),REG(a1, struct gpInput *gpi));
+extern BOOL PUBLIC GTD_BeginDrag(REG(a0, struct Gadget *gad),REG(a1, struct gpInput *gpi));
+extern void PUBLIC GTD_StopDrag(REG(a0, struct Gadget *gad));
 
 // GTD_DropMsgs.c
-extern STRPTR PUBLIC GTD_GetString(reg (a0) struct ObjectDescription *od,reg (a1) STRPTR buf,reg (d0) LONG len);
+extern STRPTR PUBLIC GTD_GetString(REG(a0, struct ObjectDescription *od),REG(a1, STRPTR buf),REG(d0, LONG len));
 
 // GTD_IMsgs.c
-extern void PUBLIC GTD_ReplyIMsg(reg (a0) struct IntuiMessage *msg);
-extern struct IntuiMessage * PUBLIC GTD_GetIMsg(reg (a0) struct MsgPort *mp);
-extern struct IntuiMessage * PUBLIC GTD_FilterIMsg(reg (a0) struct IntuiMessage *msg);
-extern struct IntuiMessage * PUBLIC GTD_PostFilterIMsg(reg (a0) struct IntuiMessage *msg);
+extern void PUBLIC GTD_ReplyIMsg(REG(a0, struct IntuiMessage *msg));
+extern struct IntuiMessage * PUBLIC GTD_GetIMsg(REG(a0, struct MsgPort *mp));
+extern struct IntuiMessage * PUBLIC GTD_FilterIMsg(REG(a0, struct IntuiMessage *msg));
+extern struct IntuiMessage * PUBLIC GTD_PostFilterIMsg(REG(a0, struct IntuiMessage *msg));
 
 // GTD_Hook.c
-extern struct Hook * PUBLIC GTD_GetHook(reg (d0) ULONG type);
+extern struct Hook * PUBLIC GTD_GetHook(REG(d0, ULONG type));
+#endif
 
 // GTD_(IFF|Image|Tree)Hook.c
-extern ULONG PUBLIC IFFStreamHook(reg (a0) struct Hook *h,reg (a1) struct IFFStreamCmd *sc,reg (a2) struct IFFHandle *iff);
-extern ULONG PUBLIC RenderHook(reg (a1) struct LVDrawMsg *msg,reg (a2) struct ImageNode *in);
-extern ULONG PUBLIC TreeHook(reg (a0) struct Hook *h,reg (a1) struct LVDrawMsg *msg,reg (a2) struct TreeNode *tn);
+// Mazze: parameters must have order a0,a2,a1
+extern ULONG PUBLIC IFFStreamHook(REG(a0, struct Hook *h),REG(a2, struct IFFHandle *iff),REG(a1, struct IFFStreamCmd *sc));
+extern ULONG PUBLIC RenderHook(REG(a0, struct Hook *h),REG(a2, struct ImageNode *in),REG(a1, struct LVDrawMsg *msg));
+extern ULONG PUBLIC TreeHook(REG(a0, struct Hook *h),REG(a2, struct TreeNode *tn),REG(a1, struct LVDrawMsg *msg));
 
 // GTD_Tree.c
-extern struct TreeNode * PUBLIC AddTreeNode(reg (a0) APTR pool,reg (a1) struct MinList *tree,reg (a2) STRPTR name,reg (a3) struct Image *im,reg (d0) UWORD flags);
-extern void PUBLIC FreeTreeNodes(reg (a0) APTR pool,reg (a1) struct MinList *list);
-extern void PUBLIC FreeTreeList(reg (a0) APTR pool,reg (a1) struct TreeList *tl);
-extern void PUBLIC CloseTreeNode(reg (a0) struct MinList *main,reg (a1) struct TreeNode *tn);
-extern LONG PUBLIC OpenTreeNode(reg (a0) struct MinList *main,reg (a1) struct TreeNode *tn);
-extern LONG PUBLIC ToggleTreeNode(reg (a0) struct MinList *main,reg (a1) struct TreeNode *tn);
-extern void PUBLIC InitTreeList(reg (a0) struct TreeList *tl);
-extern struct TreeNode * PUBLIC GetTreeContainer(reg (a0) struct TreeNode *tn);
-extern STRPTR PUBLIC GetTreePath(reg (a0) struct TreeNode *tn,reg (a1) STRPTR buffer,reg (d0) LONG len);
-extern struct TreeNode * PUBLIC FindTreePath(reg (a0) struct MinList *tree,reg (a1) STRPTR path);
-extern struct TreeNode * PUBLIC FindTreeSpecial(reg (a0) struct MinList *tree,reg (a1) APTR special);
-extern struct TreeNode * PUBLIC FindListSpecial(reg (a0) struct MinList *list,reg (a1) APTR special);
-extern BOOL PUBLIC ToggleTree(reg (a0) struct Gadget *gad,reg (a1) struct TreeNode *tn,reg (a2) struct IntuiMessage *msg);
+#if !defined(__AROS__)
+extern struct TreeNode * PUBLIC AddTreeNode(REG(a0, APTR pool),REG(a1, struct MinList *tree),REG(a2, STRPTR name),REG(a3, struct Image *im),REG(d0, UWORD flags));
+extern void PUBLIC FreeTreeNodes(REG(a0, APTR pool),REG(a1, struct MinList *list));
+extern void PUBLIC FreeTreeList(REG(a0, APTR pool),REG(a1, struct TreeList *tl));
+extern void PUBLIC CloseTreeNode(REG(a0, struct MinList *main),REG(a1, struct TreeNode *tn));
+extern LONG PUBLIC OpenTreeNode(REG(a0, struct MinList *main),REG(a1, struct TreeNode *tn));
+extern LONG PUBLIC ToggleTreeNode(REG(a0, struct MinList *main),REG(a1, struct TreeNode *tn));
+extern void PUBLIC InitTreeList(REG(a0, struct TreeList *tl));
+extern struct TreeNode * PUBLIC GetTreeContainer(REG(a0, struct TreeNode *tn));
+extern STRPTR PUBLIC GetTreePath(REG(a0, struct TreeNode *tn),REG(a1, STRPTR buffer),REG(d0, LONG len));
+extern struct TreeNode * PUBLIC FindTreePath(REG(a0, struct MinList *tree),REG(a1, STRPTR path));
+extern struct TreeNode * PUBLIC FindTreeSpecial(REG(a0, struct MinList *tree),REG(a1, APTR special));
+extern struct TreeNode * PUBLIC FindListSpecial(REG(a0, struct MinList *list),REG(a1, APTR special));
+extern BOOL PUBLIC ToggleTree(REG(a0, struct Gadget *gad),REG(a1, struct TreeNode *tn),REG(a2, struct IntuiMessage *msg));
+#endif
 
 #endif

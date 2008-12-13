@@ -12,8 +12,12 @@
 ULONG  ghostPtrn = 0x44441111;
 
 
-struct Hook * PUBLIC GTD_GetHook(reg (d0) ULONG type)
+LIB_LH1(struct Hook *, GTD_GetHook, 
+  LIB_LHA(ULONG, type, D0),
+  struct Library *, library, 20, Gtdrag)
 {
+  LIBFUNC_INIT
+
   switch(type)
   {
     case GTDH_IMAGE: return(&renderHook);
@@ -21,6 +25,8 @@ struct Hook * PUBLIC GTD_GetHook(reg (d0) ULONG type)
     case GTDH_IFFSTREAM: return(&iffstreamHook);
   }
   return(NULL);
+
+  LIBFUNC_EXIT
 }
 
 
@@ -77,5 +83,3 @@ long PRIVATE WriteHookText(struct RastPort *rp,struct Rectangle *bounds,STRPTR n
   FillOldExtent(rp,bounds,&extent.te_Extent);
   return(extent.te_Width);
 }
-
-

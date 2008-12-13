@@ -9,6 +9,56 @@
 #include "gtdrag_includes.h"
 
 
+struct ExecBase *SysBase;
+struct IntuitionBase *IntuitionBase;
+struct DosLibrary *DOSBase;
+struct GfxBase *GfxBase;
+struct UtilityBase *UtilityBase;
+struct Library *LayersBase;
+struct Library *GadToolsBase;
+struct Library *CyberGfxBase;
+
+
+void PRIVATE GTD_Exit(void)
+{
+  if (dmport)
+  {
+    struct IntuiMessage *msg;
+
+    while(msg = (APTR)GetMsg(dmport))
+      FreeDropMessage(msg);
+    DeleteMsgPort(dmport);
+  }
+  CloseLibrary(CyberGfxBase);
+  CloseLibrary(GadToolsBase);
+  CloseLibrary(DOSBase);
+  CloseLibrary(IntuitionBase);
+  CloseLibrary((struct Library *)GfxBase);
+  CloseLibrary(LayersBase);
+  CloseLibrary(UtilityBase);
+}
+
+
+int PRIVATE GTD_Init(void)
+{
+  SysBase = *(struct ExecBase **)4;
+  IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",37);
+  DOSBase = OpenLibrary("dos.library",37L);
+  GfxBase = (struct GfxBase *)OpenLibrary("graphics.library",37);
+  GadToolsBase = OpenLibrary("gadtools.library",37);
+  LayersBase = OpenLibrary("layers.library",37);
+  UtilityBase = OpenLibrary("utility.library",37);
+  CyberGfxBase = OpenLibrary("cybergraphics.library",41);
+
+  if (IntuitionBase && GfxBase && GadToolsBase && LayersBase && UtilityBase)
+  {
+    if (dmport = CreateMsgPort())
+      return(TRUE);
+  }
+  return(FALSE);
+}
+
+
 struct GTDragBase
 {
   struct Library          LibNode;
@@ -18,11 +68,11 @@ struct GTDragBase
 };
 
 
-struct Library * PUBLIC LibInit(reg (a0) BPTR Segment,reg (d0) struct GTDragBase *GTDragBase,reg (a6) struct ExecBase *ExecBase);
-struct Library * PUBLIC LibOpen(reg (a6) struct GTDragBase *GTDragBase);
-BPTR PUBLIC LibExpunge(reg (a6) struct GTDragBase *GTDragBase);
-BPTR PUBLIC LibClose(reg (a6) struct GTDragBase *GTDragBase);
-LONG PUBLIC LibNull(reg (a6) struct GTDragBase *GTDragBase);
+struct Library * PUBLIC LibInit(REG(a0, BPTR Segment),REG(d0, struct GTDragBase *GTDragBase),REG(a6, struct ExecBase *ExecBase));
+struct Library * PUBLIC LibOpen(REG(a6, struct GTDragBase *GTDragBase));
+BPTR PUBLIC LibExpunge(REG(a6, struct GTDragBase *GTDragBase));
+BPTR PUBLIC LibClose(REG(a6, struct GTDragBase *GTDragBase));
+LONG PUBLIC LibNull(REG(a6, struct GTDragBase *GTDragBase));
 APTR PUBLIC LibNOP(void);
 
 STATIC APTR LibVectors[] =
@@ -83,7 +133,7 @@ struct { ULONG DataSize; APTR Table; APTR Data; struct Library * (*Init)(); } __
 };
 
 
-struct Library * PUBLIC LibInit(reg (a0) BPTR Segment,reg (d0) struct GTDragBase *GTDragBase,reg (a6) struct ExecBase *ExecBase)
+struct Library * PUBLIC LibInit(REG(a0, BPTR Segment),REG(d0, struct GTDragBase *GTDragBase),REG(a6, struct ExecBase *ExecBase))
 {
   if(ExecBase->LibNode.lib_Version < 37)
     return(NULL);
@@ -109,9 +159,9 @@ struct Library * PUBLIC LibInit(reg (a0) BPTR Segment,reg (d0) struct GTDragBase
 
   /** init hooks **/
 
-  treeHook.h_Entry = (APTR)TreeHook;
-  renderHook.h_Entry = (APTR)RenderHook;
-  iffstreamHook.h_Entry = (APTR)IFFStreamHook;
+  treeHook.h_Entry = (HOOKFUNC)TreeHook;
+  renderHook.h_Entry = (HOOKFUNC)RenderHook;
+  iffstreamHook.h_Entry = (HOOKFUNC)IFFStreamHook;
 
   /** init semaphores **/
 
@@ -122,7 +172,7 @@ struct Library * PUBLIC LibInit(reg (a0) BPTR Segment,reg (d0) struct GTDragBase
 }
 
 
-struct Library * PUBLIC LibOpen(reg (a6) struct GTDragBase *GTDragBase)
+struct Library * PUBLIC LibOpen(REG(a6, struct GTDragBase *GTDragBase))
 {
   GTDragBase->LibNode.lib_Flags &= ~LIBF_DELEXP;
   GTDragBase->LibNode.lib_OpenCnt++;
@@ -145,7 +195,7 @@ struct Library * PUBLIC LibOpen(reg (a6) struct GTDragBase *GTDragBase)
 }
 
 
-BPTR PUBLIC LibExpunge(reg (a6) struct GTDragBase *GTDragBase)
+BPTR PUBLIC LibExpunge(REG(a6, struct GTDragBase *GTDragBase))
 {
   struct DragApp *da;
   struct Node *n;
@@ -173,7 +223,7 @@ BPTR PUBLIC LibExpunge(reg (a6) struct GTDragBase *GTDragBase)
 }
 
 
-BPTR PUBLIC LibClose(reg (a6) struct GTDragBase *GTDragBase)
+BPTR PUBLIC LibClose(REG(a6, struct GTDragBase *GTDragBase))
 {
   if(GTDragBase->LibNode.lib_OpenCnt)
     GTDragBase->LibNode.lib_OpenCnt--;
@@ -191,7 +241,7 @@ BPTR PUBLIC LibClose(reg (a6) struct GTDragBase *GTDragBase)
 }
 
 
-LONG PUBLIC LibNull(reg (a6) struct GTDragBase *GTDragBase)
+LONG PUBLIC LibNull(REG(a6, struct GTDragBase *GTDragBase))
 {
   return(NULL);
 }
@@ -201,4 +251,3 @@ APTR PUBLIC LibNOP(void)
 {
   return(NULL);
 }
-

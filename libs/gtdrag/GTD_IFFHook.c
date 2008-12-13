@@ -12,7 +12,7 @@
 #define BUFFERSIZE 2048
 
 
-ULONG PUBLIC IFFStreamHook(reg (a0) struct Hook *h,reg (a1) struct IFFStreamCmd *sc,reg (a2) struct IFFHandle *iff)
+ULONG PUBLIC IFFStreamHook(REG(a0, struct Hook *h), REG(a2, struct IFFHandle *iff), REG(a1, struct IFFStreamCmd *sc))
 {
   struct IFFStreamHookData *is = h->h_Data;
 
@@ -72,6 +72,3 @@ ULONG PUBLIC IFFStreamHook(reg (a0) struct Hook *h,reg (a1) struct IFFStreamCmd 
 
   return(0L);
 }
-
-
-

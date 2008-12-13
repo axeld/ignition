@@ -240,9 +240,16 @@ struct ImageNode
 {
   struct ImageNode *in_Succ;
   struct ImageNode *in_Pred;
+#if defined(__AROS__)
+  #warning FIXME when V1 ABI is out
+  STRPTR in_Name;
+  UBYTE  in_Type;
+  BYTE   in_Pri;
+#else
   UBYTE  in_Type;
   BYTE   in_Pri;
   STRPTR in_Name;
+#endif
   struct Image *in_Image;
 };
 

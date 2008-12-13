@@ -180,7 +180,7 @@ void PRIVATE HighlightDragGadget(struct DragGadget *adg,WORD x,WORD y)
       hw -= 16;
       GT_GetGadgetAttrs(hdg->dg_Gadget,hdg->dg_Window,NULL,GTLV_Labels,&hdg->dg_List,TAG_END);
     }
-    if (hbm = AllocBitMap(hw,hh,hsrp.BitMap->Depth,BMF_CLEAR | BMF_MINPLANES,hsrp.BitMap))
+    if ((hbm = AllocBitMap(hw,hh,hsrp.BitMap->Depth,BMF_CLEAR | BMF_MINPLANES,hsrp.BitMap)) != 0)
     {
       InitRastPort(&hrp);
       hrp.BitMap = hbm;
@@ -213,5 +213,3 @@ void PRIVATE HighlightDragGadget(struct DragGadget *adg,WORD x,WORD y)
     }
   }
 }
-
-

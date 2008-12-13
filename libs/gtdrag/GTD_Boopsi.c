@@ -33,7 +33,7 @@ ULONG PRIVATE DoRenderMethod(struct DragGadget *rdg,WORD x,WORD y,ULONG mode)
   gi.gi_Domain.Height = rdg->dg_Gadget->Height;
   gi.gi_DrInfo = GetScreenDrawInfo(gi.gi_Screen);
 
-  if (rp = ObtainGIRPort(&gi))
+  if ((rp = ObtainGIRPort(&gi)) != 0)
   {
     if (mode != GRENDER_DELETE)
     {
@@ -49,8 +49,13 @@ ULONG PRIVATE DoRenderMethod(struct DragGadget *rdg,WORD x,WORD y,ULONG mode)
 }
 
 
-ULONG PUBLIC GTD_HandleInput(reg (a0) struct Gadget *gad,reg (a1) struct gpInput *gpi)
+LIB_LH2(ULONG, GTD_HandleInput, 
+  LIB_LHA(struct Gadget *, gad, A0),
+  LIB_LHA(struct gpInput *, gpi, A1),
+  struct Library *, library, 24, Gtdrag)
 {
+  LIBFUNC_INIT
+
   struct InputEvent *ie;
   long   x,y;
 
@@ -81,11 +86,18 @@ ULONG PUBLIC GTD_HandleInput(reg (a0) struct Gadget *gad,reg (a1) struct gpInput
       IntuiTick(x,y);
   }
   return(GMR_MEACTIVE);  // catches all input events
+
+  LIBFUNC_EXIT
 }
 
 
-BOOL PUBLIC GTD_PrepareDrag(reg (a0) struct Gadget *gad,reg (a1) struct gpInput *gpi)
+LIB_LH2(BOOL, GTD_PrepareDrag, 
+  LIB_LHA(struct Gadget *, gad, A0),
+  LIB_LHA(struct gpInput *, gpi, A1),
+  struct Library *, library, 22, Gtdrag)
 {
+  LIBFUNC_INIT
+
   struct DragGadget *dg;
   struct Window *win;
 
@@ -104,7 +116,7 @@ BOOL PUBLIC GTD_PrepareDrag(reg (a0) struct Gadget *gad,reg (a1) struct gpInput 
     GTD_AddAppA("intuition",(struct TagItem *)tags);
   }
 
-  if (dg = AddDragGadget(gad,win,BOOPSI_KIND))
+  if ((dg = AddDragGadget(gad,win,BOOPSI_KIND)) != 0)
   {
     struct DragWindow *dw;
 
@@ -130,12 +142,19 @@ BOOL PUBLIC GTD_PrepareDrag(reg (a0) struct Gadget *gad,reg (a1) struct gpInput 
     return(TRUE);
   }
   return(FALSE);
+
+  LIBFUNC_EXIT
 }
 
 
-BOOL PUBLIC GTD_BeginDrag(reg (a0) struct Gadget *gad,reg (a1) struct gpInput *gpi)
+LIB_LH2(BOOL, GTD_BeginDrag, 
+  LIB_LHA(struct Gadget *, gad, A0),
+  LIB_LHA(struct gpInput *, gpi, A1),
+  struct Library *, library, 23, Gtdrag)
 {
-  if (dg = FindDragGadget(gad))
+  AROS_LIBFUNC_INIT
+
+  if ((dg = FindDragGadget(gad)) != 0)
   {
     PrepareDrag(TRUE);
     boopsigad = gad;
@@ -144,14 +163,22 @@ BOOL PUBLIC GTD_BeginDrag(reg (a0) struct Gadget *gad,reg (a1) struct gpInput *g
     return(TRUE);
   }
   return(FALSE);
+
+  LIBFUNC_EXIT
 }
 
 
-void PUBLIC GTD_StopDrag(reg (a0) struct Gadget *gad)
+LIB_LH1(void, GTD_StopDrag, 
+  LIB_LHA(struct Gadget *, gad, A0),
+  struct Library *, library, 25, Gtdrag)
 {
+  LIBFUNC_INIT
+
   if (gad != boopsigad || !gdo)
     return;
 
   FreeDragObj(gdo);
   EndDrag();
+  
+  AROS_LIBFUNC_EXIT
 }

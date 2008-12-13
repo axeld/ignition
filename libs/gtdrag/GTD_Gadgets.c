@@ -101,7 +101,7 @@ struct DragGadget * PRIVATE GetAcceptorDragGadget(int mx,int my)
   struct DragGadget *sdg;
   APTR   layer = WhichLayer(&gdo->do_Screen->LayerInfo,mx,my);
 
-  if (sdg = WhichDragGadget(layer,mx,my))
+  if ((sdg = WhichDragGadget(layer,mx,my)) != 0)
     return(DragGadgetAcceptsObject(sdg,mx-sdg->dg_Window->LeftEdge,my-sdg->dg_Window->TopEdge) ? sdg : NULL);
 
   /*** BOOPSI gadgets ***/
@@ -124,9 +124,9 @@ struct DragGadget * PRIVATE GetAcceptorDragGadget(int mx,int my)
           {
             long rc;
 
-            if (rc = DoCustomMethod(gad,GM_OBJECTDRAG,&dg->dg_Object,dg->dg_Gadget,words(x-gad->LeftEdge,y-gad->TopEdge)))
+            if ((rc = DoCustomMethod(gad,GM_OBJECTDRAG,&dg->dg_Object,dg->dg_Gadget,words(x-gad->LeftEdge,y-gad->TopEdge))) != 0)
             {
-              if (sdg = AddDragGadget(gad,win,BOOPSI_KIND))
+              if ((sdg = AddDragGadget(gad,win,BOOPSI_KIND)) != 0)
               {
                 if (rc & GMR_FINAL)
                   sdg->dg_CurrentObject = dg->dg_Object.od_Object;
@@ -168,8 +168,12 @@ BOOL PRIVATE PointInDragGadget(struct DragGadget *dg,int x,int y,BOOL lheight)
 }
 
 
-void PUBLIC GTD_RemoveGadgets(reg (a0) struct Window *win)
+LIB_LH1(void, GTD_RemoveGadgets, 
+  LIB_LHA(struct Window *, win, A0),
+  struct Library *, library, 17, Gtdrag)
 {
+  LIBFUNC_INIT
+
   struct DragGadget *dg,*ndg;
 
   ObtainSemaphore(&ListSemaphore);
@@ -185,6 +189,8 @@ void PUBLIC GTD_RemoveGadgets(reg (a0) struct Window *win)
     }
   }
   ReleaseSemaphore(&ListSemaphore);
+
+  LIBFUNC_EXIT
 }
 
 
@@ -201,23 +207,35 @@ struct DragGadget * PRIVATE FindDragGadget(struct Gadget *gad)
 }
 
 
-void PUBLIC GTD_RemoveGadget(reg (a0) struct Gadget *gad)
+LIB_LH1(void, GTD_RemoveGadget, 
+  LIB_LHA(struct Gadget *, gad, A0),
+  struct Library *, library, 16, Gtdrag)
 {
+  LIBFUNC_INIT
+
   struct DragGadget *dg;
 
   ObtainSemaphore(&ListSemaphore);
 
-  if (dg = FindDragGadget(gad))
+  if ((dg = FindDragGadget(gad)) != 0)
   {
     Remove((struct Node *)dg);
     FreeMem(dg,sizeof(struct DragGadget));
   }
   ReleaseSemaphore(&ListSemaphore);
+
+  LIBFUNC_EXIT
 }
 
 
-BOOL PUBLIC GTD_GetAttr(reg (a0) APTR gad,reg (d0) ULONG tag,reg (a1) ULONG *storage)
+LIB_LH3(BOOL, GTD_GetAttr, 
+  LIB_LHA(APTR, gad, A0),
+  LIB_LHA(ULONG, tag, D0),
+  LIB_LHA(ULONG *, storage, A1),
+  struct Library *, library, 19, Gtdrag)
 {
+  LIBFUNC_INIT
+
   struct DragGadget *dg;
 
   if (!storage || !(dg = FindDragGadget(gad)))
@@ -254,11 +272,18 @@ BOOL PUBLIC GTD_GetAttr(reg (a0) APTR gad,reg (d0) ULONG tag,reg (a1) ULONG *sto
       return(TRUE);
   }
   return(FALSE);
+
+  LIBFUNC_EXIT
 }
 
 
-void PUBLIC GTD_SetAttrsA(reg (a0) APTR gad,reg (a1) struct TagItem *tags)
+LIB_LH2(void, GTD_SetAttrsA, 
+  LIB_LHA(APTR, gad, A0),
+  LIB_LHA(struct TagItem *, tags, A1),
+  struct Library *, library, 18, Gtdrag)
 {
+  LIBFUNC_INIT
+
   struct TagItem *tstate,*ti;
   struct DragGadget *dg;
 
@@ -269,7 +294,7 @@ void PUBLIC GTD_SetAttrsA(reg (a0) APTR gad,reg (a1) struct TagItem *tags)
   }
 
   tstate = (struct TagItem *)tags;
-  while(ti = NextTagItem(&tstate))
+  while((ti = NextTagItem(&tstate)) != 0)
   {
     switch(ti->ti_Tag)
     {
@@ -359,6 +384,8 @@ void PUBLIC GTD_SetAttrsA(reg (a0) APTR gad,reg (a1) struct TagItem *tags)
   }
   if (dg->dg_Flags & DGF_TREEVIEW && dg->dg_Object.od_Type == ODT_UNKNOWN)
     dg->dg_Object.od_Type = ODT_TREENODE;
+
+  LIBFUNC_EXIT
 }
 
 
@@ -385,15 +412,24 @@ struct DragGadget * PRIVATE AddDragGadget(struct Gadget *gad,struct Window *win,
 }
 
 
-void PUBLIC GTD_AddGadgetA(reg (d0) ULONG type,reg (a0) struct Gadget *gad,reg (a1) struct Window *win,reg (a2) struct TagItem *tags)
+LIB_LH4(void, GTD_AddGadgetA, 
+  LIB_LHA(ULONG, type, D0),
+  LIB_LHA(struct Gadget *, gad, A0),
+  LIB_LHA(struct Window *, win, A1),
+  LIB_LHA(struct TagItem *, tags, A2),
+  struct Library *, library, 15, Gtdrag)
 {
+  LIBFUNC_INIT
+
   struct DragGadget *dg;
 
-  if (dg = AddDragGadget(gad,win,type))
+  if ((dg = AddDragGadget(gad,win,type)) != 0)
   {
     GTD_SetAttrsA(gad,tags);
 
     if (!dg->dg_ItemHeight)
       dg->dg_ItemHeight = win->WScreen->Font->ta_YSize;
   }
+  
+  LIBFUNC_EXIT
 }
