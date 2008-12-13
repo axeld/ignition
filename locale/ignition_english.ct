@@ -267,7 +267,7 @@ MSG_LOAD_PROJECT_ERR
 Could not load project \"%s\".
 ;
 MSG_COLOR_CHANGE_UNDO
-Color changed
+Color changed 
 ;
 MSG_SET_PATTERN_UNDO
 pattern set
@@ -651,7 +651,7 @@ MSG_PAGE_COLOR
 Page color 
 ;
 MSG_ATTACH_NOTE_UNDO
-Attach note
+Attach note 
 ;
 MSG_DELETE_NOTE_UNDO
 Delete note
@@ -2361,7 +2361,7 @@ MSG_SAVE_BACK_REQ
 Save|Back
 ;
 MSG_INTERACTIVE_MODE_HELP
-interactive
+interactive 
 ;
 MSG_EDIT_MODE_HELP
 edit
