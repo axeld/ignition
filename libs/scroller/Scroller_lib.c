@@ -9,11 +9,72 @@
 #include "Scroller_includes.h"
 
 
-struct Library * PUBLIC LibInit(reg (a0) BPTR Segment,reg (d0) struct ClassBase *cb,reg (a6) struct ExecBase *ExecBase);
-struct Library * PUBLIC LibOpen(reg (a6) struct ClassBase *cb);
-BPTR PUBLIC LibExpunge(reg (a6) struct ClassBase *cb);
-BPTR PUBLIC LibClose(reg (a6) struct ClassBase *cb);
-LONG PUBLIC LibNull(reg (a6) struct ClassBase *cb);
+struct Library * PUBLIC LibInit(REG(a0, BPTR Segment),REG(d0, struct ClassBase *cb),REG(a6, struct ExecBase *ExecBase);
+struct Library * PUBLIC LibOpen(REG(a6, struct ClassBase *cb));
+BPTR PUBLIC LibExpunge(REG(a6, struct ClassBase *cb));
+BPTR PUBLIC LibClose(REG(a6, struct ClassBase *cb));
+LONG PUBLIC LibNull(REG(a6, struct ClassBase *cb));
+
+
+void PRIVATE SC_Exit(struct ClassBase *cb)
+{
+  if (FreeClass(cb->cb_ScrollerClass))
+    cb->cb_ScrollerClass = NULL;
+  if (FreeClass(cb->cb_ArrowClass))
+    cb->cb_ArrowClass = NULL;
+
+  CloseLibrary(cb->cb_IntuitionBase);
+  CloseLibrary((struct Library *)cb->cb_GfxBase);
+  CloseLibrary(cb->cb_UtilityBase);
+}
+
+
+int PRIVATE SC_Init(struct ClassBase *cb)
+{
+  if (cb->cb_IntuitionBase = OpenLibrary("intuition.library",37))
+  {
+    if (cb->cb_GfxBase = (APTR)OpenLibrary("graphics.library",37))
+    {
+      if (cb->cb_UtilityBase = OpenLibrary("utility.library",37))
+      {
+        Class *cl;
+
+        if (cl = MakeClass("pinc-scrollergadget","propgclass",NULL,sizeof(struct ScrollerGData),0))
+        {
+          cl->cl_Dispatcher.h_Entry = (APTR)DispatchScrollerGadget;
+          cl->cl_Dispatcher.h_Data = cb;
+          cl->cl_UserData = (ULONG)cb;
+          AddClass(cl);
+
+          cb->cb_ScrollerClass = cl;
+
+          if (cl = MakeClass("pinc-arrowimage","imageclass",NULL,sizeof(struct ArrowIData),0))
+          {
+            cl->cl_Dispatcher.h_Entry = (APTR)DispatchArrowImage;
+            cl->cl_Dispatcher.h_Data = cb;
+            cl->cl_UserData = (ULONG)cb;
+            //AddClass(cl);
+
+            cb->cb_ArrowClass = cl;
+            return(TRUE);
+          }
+          FreeClass(cl);
+        }
+        CloseLibrary(cb->cb_UtilityBase);
+      }
+      CloseLibrary(cb->cb_GfxBase);
+    }
+    CloseLibrary(cb->cb_IntuitionBase);
+  }
+  return(FALSE);
+}
+
+
+Class * PUBLIC GetClass(REG(a6, APTR cb))
+{
+  return(((struct ClassBase *)cb)->cb_ScrollerClass);
+}
+
 
 STATIC APTR LibVectors[] =
 {
@@ -39,7 +100,7 @@ struct { ULONG DataSize; APTR Table; APTR Data; struct Library * (*Init)(); } __
 };
 
 
-struct Library * PUBLIC LibInit(reg (a0) BPTR segment,reg (d0) struct ClassBase *cb,reg (a6) struct ExecBase *ExecBase)
+struct Library * PUBLIC LibInit(REG(a0, BPTR segment),REG(d0, struct ClassBase *cb),REG(a6, struct ExecBase *ExecBase))
 {
   if(ExecBase->LibNode.lib_Version < 37)
     return(NULL);
@@ -59,7 +120,7 @@ struct Library * PUBLIC LibInit(reg (a0) BPTR segment,reg (d0) struct ClassBase 
 }
 
 
-struct Library * PUBLIC LibOpen(reg (a6) struct ClassBase *cb)
+struct Library * PUBLIC LibOpen(REG(a6, struct ClassBase *cb))
 {
   cb->cb_LibNode.lib_Flags &= ~LIBF_DELEXP;
   cb->cb_LibNode.lib_OpenCnt++;
@@ -82,7 +143,7 @@ struct Library * PUBLIC LibOpen(reg (a6) struct ClassBase *cb)
 }
 
 
-BPTR PUBLIC LibExpunge(reg (a6) struct ClassBase *cb)
+BPTR PUBLIC LibExpunge(REG(a6, struct ClassBase *cb))
 {
   if (!cb->cb_LibNode.lib_OpenCnt && cb->cb_LibSegment)
   {
@@ -100,7 +161,7 @@ BPTR PUBLIC LibExpunge(reg (a6) struct ClassBase *cb)
 }
 
 
-BPTR PUBLIC LibClose(reg (a6) struct ClassBase *cb)
+BPTR PUBLIC LibClose(REG(a6, struct ClassBase *cb))
 {
   if (cb->cb_LibNode.lib_OpenCnt)
     cb->cb_LibNode.lib_OpenCnt--;
@@ -118,9 +179,7 @@ BPTR PUBLIC LibClose(reg (a6) struct ClassBase *cb)
 }
 
 
-LONG PUBLIC LibNull(reg (a6) struct ClassBase *cb)
+LONG PUBLIC LibNull(REG(a6, struct ClassBase *cb))
 {
   return(NULL);
 }
-
-

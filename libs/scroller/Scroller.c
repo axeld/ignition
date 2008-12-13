@@ -3,80 +3,21 @@
  * Licensed under the terms of the MIT License.
  */
 
-//!	init & support functions.
+//!	dispatcher functions.
 
 
 #include "Scroller_includes.h"
 
 
-Class * PUBLIC GetClass(reg (a6) APTR cb)
-{
-  return(((struct ClassBase *)cb)->cb_ScrollerClass);
-}
-
-
-void PRIVATE SC_Exit(struct ClassBase *cb)
-{
-  if (FreeClass(cb->cb_ScrollerClass))
-    cb->cb_ScrollerClass = NULL;
-  if (FreeClass(cb->cb_ArrowClass))
-    cb->cb_ArrowClass = NULL;
-
-  CloseLibrary(cb->cb_IntuitionBase);
-  CloseLibrary((struct Library *)cb->cb_GfxBase);
-  CloseLibrary(cb->cb_UtilityBase);
-}
-
-
-int PRIVATE SC_Init(struct ClassBase *cb)
-{
-  if (cb->cb_IntuitionBase = OpenLibrary("intuition.library",37))
-  {
-    if (cb->cb_GfxBase = (APTR)OpenLibrary("graphics.library",37))
-    {
-      if (cb->cb_UtilityBase = OpenLibrary("utility.library",37))
-      {
-        Class *cl;
-
-        if (cl = MakeClass("pinc-scrollergadget","propgclass",NULL,sizeof(struct ScrollerGData),0))
-        {
-          cl->cl_Dispatcher.h_Entry = (APTR)DispatchScrollerGadget;
-          cl->cl_Dispatcher.h_Data = cb;
-          cl->cl_UserData = (ULONG)cb;
-          AddClass(cl);
-
-          cb->cb_ScrollerClass = cl;
-
-          if (cl = MakeClass("pinc-arrowimage","imageclass",NULL,sizeof(struct ArrowIData),0))
-          {
-            cl->cl_Dispatcher.h_Entry = (APTR)DispatchArrowImage;
-            cl->cl_Dispatcher.h_Data = cb;
-            cl->cl_UserData = (ULONG)cb;
-            //AddClass(cl);
-
-            cb->cb_ArrowClass = cl;
-            return(TRUE);
-          }
-          FreeClass(cl);
-        }
-        CloseLibrary(cb->cb_UtilityBase);
-      }
-      CloseLibrary(cb->cb_GfxBase);
-    }
-    CloseLibrary(cb->cb_IntuitionBase);
-  }
-  return(FALSE);
-}
-
 /********************************** Arrow-Images **********************************/
 
 #define IM(o) ((struct Image *)o)
 
-ULONG PUBLIC DispatchArrowImage(reg (a0) Class *cl,reg (a2) Object *o,reg (a1) Msg msg)
+IPTR PUBLIC DispatchArrowImage(REG(a0, Class *cl), REG(a2, Object *o), REG(a1, Msg msg))
 {
   struct ArrowIData *ad;
   struct ClassBase *cb;
-  ULONG  retval = 0;
+  IPTR   retval = 0;
 
   ad = INST_DATA(cl,o);
   cb = (APTR)cl->cl_UserData;
@@ -84,7 +25,7 @@ ULONG PUBLIC DispatchArrowImage(reg (a0) Class *cl,reg (a2) Object *o,reg (a1) M
   switch(msg->MethodID)
   {
     case OM_NEW:
-      if (retval = DoSuperMethodA(cl,o,msg))
+      if ((retval = DoSuperMethodA(cl,o,msg)) != 0)
       {
         IM(retval)->Width = GetTagData(IA_Width,16,((struct opSet *)msg)->ops_AttrList);
         IM(retval)->Height = GetTagData(IA_Height,13,((struct opSet *)msg)->ops_AttrList);
@@ -156,12 +97,12 @@ ULONG PUBLIC DispatchArrowImage(reg (a0) Class *cl,reg (a2) Object *o,reg (a1) M
 
 BOOL PRIVATE DispatchScrollerNew(struct ClassBase *cb,struct ScrollerGData *sd,struct Gadget *gad,struct opSet *ops)
 {
-  static ULONG upmap[] = {GA_ID,SGA_Up,TAG_END};
-  static ULONG downmap[] = {GA_ID,SGA_Down,TAG_END};
+  static struct TagItem upmap[] = {{GA_ID,SGA_Up},{TAG_END}};
+  static struct TagItem downmap[] = {{GA_ID,SGA_Down},{TAG_END}};
   struct Gadget *previous;
   long   x,y,w,h;
 
-  if (!(previous = (struct Gadget *)GetTagData(GA_Previous,NULL,ops->ops_AttrList)))
+  if (!(previous = (struct Gadget *)GetTagData(GA_Previous,0,ops->ops_AttrList)))
     return(FALSE);
   sd->sd_ItemHeight = GetTagData(SGA_ItemHeight,13,ops->ops_AttrList);
 
@@ -209,11 +150,11 @@ BOOL PRIVATE DispatchScrollerNew(struct ClassBase *cb,struct ScrollerGData *sd,s
 }
 
 
-ULONG PUBLIC DispatchScrollerGadget(reg (a0) Class *cl,reg (a2) Object *o,reg (a1) Msg msg)
+IPTR PUBLIC DispatchScrollerGadget(REG(a0, Class *cl), REG(a2, Object *o), REG(a1, Msg msg))
 {
   struct ScrollerGData *sd;
   struct ClassBase *cb;
-  ULONG  retval = 0;
+  IPTR   retval = 0;
 
   sd = INST_DATA(cl,o);
   cb = (APTR)cl->cl_UserData;
@@ -221,7 +162,7 @@ ULONG PUBLIC DispatchScrollerGadget(reg (a0) Class *cl,reg (a2) Object *o,reg (a
   switch(msg->MethodID)
   {
     case OM_NEW:
-      if (retval = DoSuperMethodA(cl,o,msg))
+      if ((retval = DoSuperMethodA(cl,o,msg)) != 0)
       {
         struct Gadget *gad = (struct Gadget *)retval;
 
@@ -241,7 +182,7 @@ ULONG PUBLIC DispatchScrollerGadget(reg (a0) Class *cl,reg (a2) Object *o,reg (a
         else
         {
           DoMethod(o,OM_DISPOSE);
-          retval = NULL;
+          retval = 0;
         }
       }
       break;
@@ -252,7 +193,7 @@ ULONG PUBLIC DispatchScrollerGadget(reg (a0) Class *cl,reg (a2) Object *o,reg (a
 
       retval = DoSuperMethodA(cl,o,msg);
 
-      if (move = -GetTagData(SGA_Up,0,opu->opu_AttrList))
+      if ((move = -GetTagData(SGA_Up,0,opu->opu_AttrList)) != 0)
         if (!(sd->sd_Up->Flags & GFLG_SELECTED))
           move = 0;
       if (!move && (move = GetTagData(SGA_Down,0,opu->opu_AttrList)))
@@ -262,16 +203,16 @@ ULONG PUBLIC DispatchScrollerGadget(reg (a0) Class *cl,reg (a2) Object *o,reg (a
       {
         long top;
 
-        if (GetAttr(PGA_Top,o,(ULONG *)&top))
+        if (GetAttr(PGA_Top,o,(IPTR *)&top))
         {
           top += move;
           if (top >= 0)
           {
             struct RastPort *rp = ObtainGIRPort(opu->opu_GInfo);
-            ULONG  tags[] = {PGA_Top,0,TAG_END};
+            struct TagItem  tags[] = {{PGA_Top,0},{TAG_END}};
 
             SetAttrs(o,PGA_Top,top,TAG_END);
-            GetAttr(PGA_Top,o,&tags[1]);
+            GetAttr(PGA_Top,o,&tags[0].ti_Data);
             DoSuperMethod(cl,o,OM_NOTIFY,tags,opu->opu_GInfo,0);
             DoSuperMethod(cl,o,GM_RENDER,opu->opu_GInfo,rp,GREDRAW_UPDATE);
             ReleaseGIRPort(rp);
@@ -301,4 +242,3 @@ ULONG PUBLIC DispatchScrollerGadget(reg (a0) Class *cl,reg (a2) Object *o,reg (a
   }
   return(retval);
 }
-
