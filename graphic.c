@@ -8,8 +8,11 @@
 #include "types.h"
 #include "funcs.h"
 #include "classes.h"
-#include <safeclip.h>
 
+#if defined(HAVE_SAVECLIP)
+// library exits only on 68k
+#include <safeclip.h>
+#endif
 
 #define AREABUFFERS 300
 
@@ -25,43 +28,45 @@ static APTR *sAreaBuffer = NULL;
 void
 gInitArea(long xmin, long ymin, long xmax, long ymax)
 {
+#if defined(HAVE_SAFECLIP)
 	CLP_xmin = xmin;
 	CLP_ymin = ymin;
 	CLP_xmax = xmax;
 	CLP_ymax = ymax;
+#endif
 }
 
 
 void PUBLIC
-libAreaMove(reg (d0) LONG x, reg (d1) LONG y)
+libAreaMove(REG(d0, LONG x), REG(d1, LONG y))
 {
 	gAreaMove(NULL, x, y);
 }
 
 
 void PUBLIC
-libAreaDraw(reg (d0) LONG x, reg (d1) LONG y)
+libAreaDraw(REG(d0, LONG x), REG(d1, LONG y))
 {
 	gAreaDraw(NULL, x, y);
 }
 
 
 void PUBLIC
-libAreaEnd(reg (a0) struct RastPort *rp)
+libAreaEnd(REG(a0, struct RastPort *rp))
 {
 	gAreaEnd(rp);
 }
 
 
 ULONG PUBLIC
-GetDPI(reg (a0) struct Page *page)
+GetDPI(REG(a0, struct Page *page))
 {
 	return page->pg_DPI;
 }
 
 
 LONG PUBLIC
-GetOffset(reg (a0) struct Page *page,reg (d0) BOOL horiz)
+GetOffset(REG(a0, struct Page *page), REG(d0, BOOL horiz))
 {
 	return horiz ? page->pg_wTabX - page->pg_TabX : page->pg_wTabY - page->pg_TabY;
 }
@@ -105,7 +110,7 @@ DrawVertBlock(struct RastPort *rp, ULONG dpi, long x, long y1, long y2, ULONG po
 
 
 void PUBLIC
-DrawLine(reg (a0) struct RastPort *rp,reg (d0) ULONG dpi,reg (d1) long x1,reg (d2) long y1,reg (d3) long x2,reg (d4) long y2,reg (d5) ULONG points,reg (d6) UWORD flags)
+DrawLine(REG(a0, struct RastPort *rp), REG(d0, ULONG dpi), REG(d1, long x1), REG(d2, long y1), REG(d3, long x2), REG(d4, long y2), REG(d5, ULONG points), REG(d6, UWORD flags))
 {
 	double f,a,b,c,border;
 	long pen,xa,yb;
@@ -151,8 +156,9 @@ MakeTmpRas(long width, long height)
 	long bytes = ((width + 15) >> 3)*height;
 
 	FreeTmpRas();
-	if (sTempBitmap = AllocVec(bytes, MEMF_CHIP | MEMF_CLEAR))
-		grp->TmpRas = InitTmpRas(&sTempRaster, sTempBitmap, bytes);
+	if ((sTempBitmap = AllocVec(bytes, MEMF_CHIP | MEMF_CLEAR)) != 0)
+		//grp->TmpRas = InitTmpRas(&sTempRaster, sTempBitmap, bytes);  FIXME: InitTmpRas is a void function
+		InitTmpRas(&sTempRaster, sTempBitmap, bytes);
 
 	gInitArea(0, 0, width - 1, height - 1);
 }
@@ -162,7 +168,7 @@ void
 FreeDoubleBufferBitMap(void)
 {
 	if (doublerp) {
-		DeleteLayer(NULL, doublerp->Layer);
+		DeleteLayer(0, doublerp->Layer);
 		FreeBitMap(doublerp->BitMap);
 		doublerp->BitMap = NULL;
 	}
@@ -173,7 +179,7 @@ void
 AllocDoubleBufferBitMap(struct Screen *scr)
 {
 	if (doublerp) {
-		if (doublerp->BitMap = AllocBitMap(scr->Width,scr->Height,GetBitMapAttr(scr->RastPort.BitMap,BMA_DEPTH),BMF_MINPLANES,scr->RastPort.BitMap))
+		if ((doublerp->BitMap = AllocBitMap(scr->Width, scr->Height, GetBitMapAttr(scr->RastPort.BitMap, BMA_DEPTH), BMF_MINPLANES, scr->RastPort.BitMap)) != 0)
 			doublerp->Layer = CreateUpfrontLayer(gli,doublerp->BitMap,0,0,scr->Width-1,scr->Height-1,LAYERSIMPLE,NULL);
 		else
 			FreeDoubleBuffer();
@@ -199,7 +205,7 @@ FreeDoubleBuffer(void)
 void
 InitDoubleBuffer(void)
 {
-	if (doublerp = AllocPooled(pool,sizeof(struct RastPort)))
+	if ((doublerp = AllocPooled(pool, sizeof(struct RastPort))) != 0)
 	{
 		gli = NewLayerInfo();
 		InitRastPort(doublerp);
@@ -246,27 +252,27 @@ InitGraphics(void)
 		AddColor(&colors, NULL,  97,  97,  97);   // dark grey
 	}
 
-	NewList(&scrcolors);
+	MyNewList(&scrcolors);
 	for (i = 0; i < 8; i++) {
-		if (cp = AllocPooled(pool, sizeof(struct colorPen))) {
+		if ((cp = AllocPooled(pool, sizeof(struct colorPen))) != 0) {
 			sprintf(t, GetString(&gLocaleInfo, MSG_COLOR), i + 1);
 			cp->cp_Node.ln_Name = AllocString(t);
 			cp->cp_Pen = i;
 			cp->cp_Red = standardPalette[i * 3 + 1] >> 24;
 			cp->cp_Green = standardPalette[i * 3 + 2] >> 24;
 			cp->cp_Blue = standardPalette[i * 3 + 3] >> 24;
-			AddTail(&scrcolors, cp);
+			MyAddTail(&scrcolors, cp);
 		}
 	}
 
-	if (grp = AllocPooled(pool, sizeof(struct RastPort))) {
+	if ((grp = AllocPooled(pool, sizeof(struct RastPort))) != 0) {
 		InitRastPort(grp);
-		if (sAreaBuffer = AllocPooled(pool, AREABUFFERS * 5))
+		if ((sAreaBuffer = AllocPooled(pool, AREABUFFERS * 5)))
 			InitArea(grp->AreaInfo = &sAreaInfo, sAreaBuffer, AREABUFFERS);
 		SafeInit(AREABUFFERS * 5);
 		MakeTmpRas(800, 600);
 	}
-	if (irp = AllocPooled(pool, sizeof(struct RastPort)))
+	if ((irp = AllocPooled(pool, sizeof(struct RastPort))) != 0)
 		InitRastPort(irp);
 }
 

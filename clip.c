@@ -25,7 +25,7 @@ CopyGGroup(struct gGroup *sgg, BOOL objects)
 	if (sgg->gg_Type == GOT_OBJECT) {
 		struct gObject *go;
 
-		if (go = (struct gObject *)gDoMethod(GROUPOBJECT(sgg), GCM_COPY)) {
+		if ((go = (struct gObject *)gDoMethod(GROUPOBJECT(sgg), GCM_COPY)) != 0) {
 			// deselect the new object
 			go->go_Flags &= ~GOF_SELECTED;
 			return OBJECTGROUP(go);
@@ -34,9 +34,9 @@ CopyGGroup(struct gGroup *sgg, BOOL objects)
 		return NULL;
 	}
 
-	if (gg = AllocPooled(pool, sizeof(struct gGroup))) {
+	if ((gg = AllocPooled(pool, sizeof(struct gGroup))) != 0) {
 		CopyMem(sgg, gg, sizeof(struct gGroup));
-		NewList(&gg->gg_Objects);
+		MyNewList(&gg->gg_Objects);
 		
 		// deselect the new group
 		gg->gg_Flags &= ~GOF_SELECTED;
@@ -45,8 +45,8 @@ CopyGGroup(struct gGroup *sgg, BOOL objects)
 			struct gGroup *igg,*sigg;
 
 			foreach (&sgg->gg_Objects, sigg) {
-				if (igg = CopyGGroup(sigg, TRUE))
-					AddTail(&gg->gg_Objects, igg);
+				if ((igg = CopyGGroup(sigg, TRUE)) != 0)
+					MyAddTail(&gg->gg_Objects, igg);
 			}
 		}
 	}
@@ -121,7 +121,7 @@ DuplicateGGroup(struct Page *page, struct gGroup *cgg, struct UndoNode *un)
 		return NULL;
 	}
 
-	if (gg = CopyGGroup(cgg, TRUE)) {
+	if ((gg = CopyGGroup(cgg, TRUE)) != 0) {
 		/* if the original is on the same page */
 
 		foreach (&page->pg_gGroups, sgg) {
@@ -146,7 +146,7 @@ FreePasteNode(struct PasteNode *pn)
 		return;
 
 	FreeString(pn->pn_Node.ln_Name);
-	while (obj = RemHead(&pn->pn_List)) {
+	while ((obj = MyRemHead(&pn->pn_List)) != 0) {
 		if (pn->pn_Node.ln_Type == PNT_OBJECTS)
 			FreeGGroup(obj);
 		else
@@ -167,7 +167,7 @@ Objects2Clipboard(struct PasteNode *pn)
 
 	InitIFFasClip(iff);
 
-	if (iff->iff_Stream = (ULONG)OpenClipboard(clipunit)) {
+	if ((iff->iff_Stream = (ULONG)OpenClipboard(clipunit)) != 0) {
 		if (!(error = OpenIFF(iff,IFFF_WRITE))) {
 			if (!(error = PushChunk(iff,ID_FTXT,ID_FORM,IFFSIZE_UNKNOWN))) {
 				struct gObject *go;
@@ -217,7 +217,7 @@ Cells2Clipboard(struct PasteNode *pn)
 
 	InitIFFasClip(iff);
 
-	if (iff->iff_Stream = (ULONG)OpenClipboard(clipunit)) {
+	if ((iff->iff_Stream = (ULONG)OpenClipboard(clipunit)) != 0) {
 		if (!(error = OpenIFF(iff, IFFF_WRITE))) {
 			if (!(error = PushChunk(iff, ID_ABSTRACT, ID_CAT, IFFSIZE_UNKNOWN))) {
 				// write FTXT chunk for exchanging data with other applications
@@ -267,7 +267,7 @@ Cells2Clipboard(struct PasteNode *pn)
 				{
 					ULONG handle;
 
-					if (handle = GetCellIteratorFromList(&pn->pn_List, NULL))
+					if ((handle = GetCellIteratorFromList(&pn->pn_List, NULL)) != 0)
 					{
 						error = SaveCells(iff, rxpage, handle, IO_SAVE_FULL_NAMES | IO_IGNORE_PROTECTED_CELLS);
 						FreeCellIterator(handle);
@@ -306,7 +306,7 @@ CutCopyObjects(struct Page *page,struct PasteNode *pn,UBYTE mode)
 
 	if (mode & CCC_CUT || mode & CCC_DELETE)
 	{
-		if (un = CreateUndo(page, UNDO_PRIVATE, mode & CCC_CUT ? GetString(&gLocaleInfo, MSG_CUT_UNDO) : GetString(&gLocaleInfo, MSG_DELETE_UNDO)))
+		if ((un = CreateUndo(page, UNDO_PRIVATE, mode & CCC_CUT ? GetString(&gLocaleInfo, MSG_CUT_UNDO) : GetString(&gLocaleInfo, MSG_DELETE_UNDO))) != 0)
 			un->un_Type = UNT_REMOVE_OBJECTS;
 		else
 		{
@@ -327,10 +327,10 @@ CutCopyObjects(struct Page *page,struct PasteNode *pn,UBYTE mode)
 				//RemoveGGroupReferences(page,gg,un);   // remove references
 
 				AddUndoLink(&un->un_UndoList, gg);	// add it to undo
-				AddTail(&un->un_RedoList, gg);		// it will be freed upon FreeUndo()
+				MyAddTail(&un->un_RedoList, gg);	// it will be freed upon FreeUndo()
 			}
 			if (mode & (CCC_COPY | CCC_CUT) && (gg = CopyGGroup(gg, TRUE)))
-				AddTail(&pn->pn_List, gg);
+				MyAddTail(&pn->pn_List, gg);
 		}
 	}
 	if (!pn)
@@ -345,7 +345,7 @@ CutCopyObjects(struct Page *page,struct PasteNode *pn,UBYTE mode)
 
 			foreach(&pn->pn_List,gg)
 			{
-				STRPTR t;
+				CONST_STRPTR t;
 
 				if (gg->gg_Type == GOT_GROUP)
 					t = GetString(&gLocaleInfo, MSG_GROUP);
@@ -379,7 +379,7 @@ CutCopyCells(struct Page *page, struct PasteNode *pn, uint8 mode)
 		else
 			strcpy(t, Coord2String(page->pg_Gad.cp.cp_Col, page->pg_Gad.cp.cp_Row));
 
-		if (s = pn->pn_Node.ln_Name = AllocPooled(pool, col = strlen(page->pg_Mappe->mp_Node.ln_Name) + strlen(page->pg_Node.ln_Name) + strlen(t) + 4))
+		if ((s = pn->pn_Node.ln_Name = AllocPooled(pool, col = strlen(page->pg_Mappe->mp_Node.ln_Name) + strlen(page->pg_Node.ln_Name) + strlen(t) + 4)) != 0)
 		{
 			strcpy(s, t);
 			strcat(s, ", ");
@@ -396,7 +396,7 @@ CutCopyCells(struct Page *page, struct PasteNode *pn, uint8 mode)
 	if (mode & (CCC_CUT | CCC_DELETE))
 		BeginUndo(page, UNDO_BLOCK, mode & CCC_CUT ? GetString(&gLocaleInfo, MSG_CUT_UNDO) : GetString(&gLocaleInfo, MSG_DELETE_UNDO));
 
-	while (tf = GetMarkedFields(page, tf, FALSE))
+	while ((tf = GetMarkedFields(page, tf, FALSE)) != 0)
 	{
 		if ((mode & (CCC_CUT | CCC_DELETE)) != 0 && (tf->tf_Flags & TFF_IMMUTABLE) != 0 && firstSecured) {
 			DocumentSecurity(page, tf);
@@ -429,7 +429,7 @@ CutCopyCells(struct Page *page, struct PasteNode *pn, uint8 mode)
 				maxColumn = stf->tf_Col + stf->tf_Width;
 		}
 		if (stf && pn != NULL)		// store copied or cut cell
-			AddTail((struct List *)&pn->pn_List, (struct Node *)stf);
+			MyAddTail(&pn->pn_List, stf);
 	}
 
 	// get upper left corder of the selection
@@ -506,14 +506,14 @@ CutCopyClip(struct Page *page,UBYTE mode)
 		if (pn) {
 			struct PasteNode *spn;
 
-			if (cwin = GetAppWindow(WDT_CLIP))
+			if ((cwin = GetAppWindow(WDT_CLIP)) != 0)
 				GT_SetGadgetAttrs(GadgetAddress(cwin, 1), cwin, NULL, GTLV_Labels, ~0L, TAG_END);
 
 			foreach (&clips,spn)
 				spn->pn_Node.ln_Pri = 0;
 
-			AddTail((struct List *)&clips,pn);
-			NewList((struct List *)&pn->pn_List);
+			MyAddTail(&clips,pn);
+			MyNewList(&pn->pn_List);
 			pn->pn_Node.ln_Type = mode & CCC_OBJECTS ? PNT_OBJECTS : PNT_CELLS;
 			pn->pn_Node.ln_Pri = PNF_SELECTED;
 		}
@@ -538,7 +538,7 @@ PasteObjects(struct Page *page, struct PasteNode *pn, UBYTE mode)
 	struct UndoNode *un;
 	struct gGroup *gg;
 
-	if (un = CreateUndo(page, UNDO_PRIVATE, GetString(&gLocaleInfo, MSG_INSERT_OBJECTS_UNDO)))
+	if ((un = CreateUndo(page, UNDO_PRIVATE, GetString(&gLocaleInfo, MSG_INSERT_OBJECTS_UNDO))) != 0)
 	{
 		un->un_Type = UNT_ADD_OBJECTS;
 
@@ -578,7 +578,7 @@ PasteCells(struct Page *page, struct MinList *list, uint8 mode)
 	baseCol = stf->tf_Col;  baseRow = stf->tf_Row;
 	maxCol -= baseCol;  maxRow -= baseRow;
 
-	if (un = CreateUndo(page, UNDO_BLOCK, GetString(&gLocaleInfo, MSG_INSERT_UNDO))) {
+	if ((un = CreateUndo(page, UNDO_BLOCK, GetString(&gLocaleInfo, MSG_INSERT_UNDO))) != 0) {
 		un->un_TablePos.tp_Width = maxCol;
 		un->un_TablePos.tp_Height = maxRow;
 		un->un_Type = UNT_BLOCK_CHANGED;
@@ -621,7 +621,7 @@ PasteCells(struct Page *page, struct MinList *list, uint8 mode)
 			}
 			else
 				DrawTablePos(page, stf->tf_Col + col, stf->tf_Row + row, 0, 0);
-		} else if (tf = CopyCell(page, stf)) {
+		} else if ((tf = CopyCell(page, stf)) != 0) {
 			bool isFormula = false;
 
 			// Paste in the whole cell (old cells have already been removed previously)
@@ -696,7 +696,7 @@ PasteClipboard(struct Page *page, struct ClipboardHandle *cbh, UBYTE mode)
 	if (!cbh || !(iff = AllocIFF()))
 		return false;
 
-	NewList(&list);
+	MyNewList(&list);
 
 	iff->iff_Stream = (ULONG)cbh;
 	InitIFFasClip(iff);
@@ -728,7 +728,7 @@ PasteClipboard(struct Page *page, struct ClipboardHandle *cbh, UBYTE mode)
 			if ((error = ParseIFF(iff, IFFPARSE_STEP)) && error != IFFERR_EOC)
 				break;
 
-			if (cn = CurrentChunk(iff))
+			if ((cn = CurrentChunk(iff)) != 0)
 			{
 				if (!error)   // entering a chunk
 				{
@@ -754,7 +754,7 @@ PasteClipboard(struct Page *page, struct ClipboardHandle *cbh, UBYTE mode)
 								if (t >= (uint8 *)sp->sp_Data + sp->sp_Size)
 									break;
 
-								if (tf = MakeTableField(page, col, row))
+								if ((tf = MakeTableField(page, col, row)) != 0)
 								{
 									int length;
 									if (t != NULL)
@@ -763,7 +763,7 @@ PasteClipboard(struct Page *page, struct ClipboardHandle *cbh, UBYTE mode)
 										length = (uint8 *)sp->sp_Data + sp->sp_Size	- s;
 
 									tf->tf_Text = AllocStringLength(s, length);
-									AddTail(&list, tf);
+									MyAddTail(&list, tf);
 								}
 								s = t + 1;
 								if (t && !*s)
@@ -792,7 +792,7 @@ PasteClipboard(struct Page *page, struct ClipboardHandle *cbh, UBYTE mode)
 
 	PasteCells(page, &list, mode | PC_CLIPBOARD);
 
-	while (tf = (struct tableField *)RemHead(&list))
+	while ((tf = (struct tableField *)MyRemHead(&list)) != 0)
 		FreeTableField(tf);
 
 	return true;
@@ -813,7 +813,7 @@ PasteClip(struct Page *page, struct PasteNode *pn, UBYTE mode)
 		struct ClipboardHandle *cbh;
 
 		pn = (APTR)~0L;
-		if (cbh = OpenClipboard(clipunit))
+		if ((cbh = OpenClipboard(clipunit)) != 0)
 		{
 			cbh->cbh_Req.io_Command = CBD_CURRENTREADID;
 			if (!DoIO((struct IORequest *)cbh))
@@ -859,7 +859,7 @@ PasteClip(struct Page *page, struct PasteNode *pn, UBYTE mode)
 		if (pn != (struct PasteNode *)clips.mlh_Head) {
 			struct Window *cwin;
 
-			if (cwin = GetAppWindow(WDT_CLIP)) {
+			if ((cwin = GetAppWindow(WDT_CLIP)) != 0) {
 				long i = 0;
 
 				foreach (&clips, spn) {
@@ -909,8 +909,8 @@ CreateClipboardGadgets(struct winData *wd, long wid, long hei)
 }
 
 
-void __asm
-handleClipIDCMP(reg (a0) struct TagItem *tag)
+void ASM
+handleClipIDCMP(REG(a0, struct TagItem *tag))
 {
 	struct PasteNode *pn;
 	long   i, id;
@@ -947,7 +947,7 @@ handleClipIDCMP(reg (a0) struct TagItem *tag)
 					} else if (id == wd->wd_ShortCuts[1]) {
 						/* delete */
 						GT_SetGadgetAttrs(gad = GadgetAddress(win, 1), win, NULL, GTLV_Labels, ~0L, TAG_END);
-						Remove(pn);
+						MyRemove(pn);
 						FreePasteNode(pn);
 						GT_SetGadgetAttrs(gad, win, NULL, GTLV_Labels, &clips, TAG_END);
 
@@ -969,5 +969,3 @@ handleClipIDCMP(reg (a0) struct TagItem *tag)
 			break;
 	}
 }
-
-

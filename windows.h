@@ -5,6 +5,10 @@
 #ifndef IGN_WINDOWS_H
 #define IGN_WINDOWS_H
 
+#include "wdt.h"
+
+struct gInterface;
+struct Prefs;
 
 #define APPIDCMP (IDCMP_CLOSEWINDOW | IDCMP_MENUPICK | IDCMP_INTUITICKS | IDCMP_RAWKEY | IDCMP_VANILLAKEY | IDCMP_MENUHELP)
 
@@ -74,8 +78,8 @@ struct winData
     UWORD  wd_IconY,wd_IconW,wd_IconH;
     UWORD  wd_BarW;
     struct MinList wd_Objs;
-    void   __asm (*wd_Server)(reg (a0) struct TagItem *);
-	void   __asm (*wd_CleanUp)(reg (a0) struct Window *, reg (d0) BOOL clean);
+    void   ASM (*wd_Server)(REG(a0, struct TagItem *));
+	void   ASM (*wd_CleanUp)(REG(a0, struct Window *), REG(d0, BOOL clean));
 	struct Window *wd_Mother;
 	struct Requester wd_Requester;
 	struct Gadget **wd_Pages;
@@ -119,78 +123,6 @@ struct winData
 #define WA_Map			TAG_USER + 1005	// definecmd.wd_Map
 
 
-typedef enum                 /* WDT_ window types */
-{
-    // misc
-    WDT_PROJECT = 0,
-    WDT_INFO,
-    WDT_CLIP,
-    WDT_FIND,
-    WDT_REPLACE,
-    WDT_PRINTER,
-    WDT_PRINTSTATUS,
-    WDT_FILETYPE,
-    WDT_COMMAND,      // 8
-
-    // prefs
-    WDT_PREFS,        // 9
-    WDT_PREFDISP,
-    WDT_PREFSCREEN,
-    WDT_PREFCOLORS,
-    WDT_PREFICON,
-    WDT_PREFTABLE,
-    WDT_PREFFILE,
-    WDT_PREFPRINTER,
-    WDT_PREFCMDS,
-    WDT_PREFFORMAT,
-    WDT_DEFINECMD,
-    WDT_PRESSKEY,
-    WDT_PREFMENU,
-    WDT_PREFKEYS,
-    WDT_PREFSYS,
-    WDT_PREFNAMES,
-    // WDT_PREFFONT      // vielleicht nicht in, v1
-    // WDT_PREFTOOL      // wohl erst in einer späteren Version
-    WDT_PREFCONTEXT,
-    WDT_PREFCHOICE,
-
-    // map
-    WDT_PAGE,            // 27
-    WDT_DOCUMENT,
-    WDT_PAGESETUP,
-    WDT_DOCINFO,
-    WDT_ZOOM,
-    WDT_SCRIPTS,
-    //WDT_TITLES,        // WDT_SETTITLE langt eigentlich...
-    WDT_SETTITLE,
-
-    // objects
-    WDT_GCLASSES,        // 34
-    WDT_OBJECT,
-    WDT_DIAGRAM,
-    WDT_PREVIEW,
-    WDT_GOBJECTS,
-
-    // cell properties
-    WDT_CELL,            // 39
-    WDT_BORDER,
-    WDT_CELLSIZE,
-    WDT_NOTES,
-
-    // database
-    WDT_INDEX,           // 43
-    WDT_DATABASE,
-    WDT_MASK,
-    WDT_FILTER,
-
-    // calc
-    WDT_FORMEL,          // 47
-    WDT_SETNAME,
-
-    NUM_WDT
-
-} WDTs;
-
 #define WDT_ANY 421
 #define WDT_ENDPREFS WDT_PREFCHOICE       // letzter Prefs-Fenstertyp
 
@@ -224,9 +156,8 @@ struct AttachedObj {
 };
 
 struct ImageObj {
-    struct MinNode io_Node;
+    struct Node io_Node;
     WORD   io_OpenCnt;
-    STRPTR io_Name;
     struct Image *io_Image;
     struct MinList io_Attached;
 };
@@ -265,10 +196,10 @@ struct saveWin {
 struct CreateWinData {
 	int32	cwd_Title;
 	STRPTR	cwd_HelpName;
-	void	__asm (*cwd_Server)(reg (a0) struct TagItem *);
-	void	__asm (*cwd_CleanUp)(reg (a0) struct Window *,reg (d0) BOOL clean);
-	void	__asm (*cwd_Init)(reg (a0) struct winData *);
-	void	__asm (*cwd_Gadgets)(reg (a0) struct winData *);
+	void	ASM (*cwd_Server)(REG(a0, struct TagItem *));
+	void	ASM (*cwd_CleanUp)(REG(a0, struct Window *), REG(d0, BOOL clean));
+	void	ASM (*cwd_Init)(REG(a0, struct winData *));
+	void	ASM (*cwd_Gadgets)(REG(a0, struct winData *));
 	void	(*cwd_ResizableGadgets)(struct winData *wd, int32 width, int32 height);
 	uint32	cwd_IDCMP;
 };
@@ -279,26 +210,26 @@ extern struct CreateWinData gCreateWinData[];
 /*************************** Prototypes ***************************/
 
 // gadgets.c
-extern STRPTR GetGLabel(struct gInterface *);
+extern CONST_STRPTR GetGLabel(struct gInterface *gi);
 extern void RemoveDiagramGadgets(struct winData *wd);
 extern void AddDiagramGadgets(struct gDiagram *gd,struct Gadget *pgad,struct MinList *list,int width,int height);
 
 // handlewindows.c
-extern void PUBLIC RxMapLock(reg (a0) struct LockNode *ln,reg (a1) struct MinNode *node,reg (d0) UBYTE flags);
-extern void PUBLIC ZoomWindowLock(reg (a0) struct LockNode *ln,reg (a1) struct MinNode *n,reg (d0) UBYTE flags);
-extern void PUBLIC CellWindowLock(reg (a0) struct LockNode *,reg (a1) struct MinNode *,reg (d0) UBYTE);
-extern void PUBLIC ScriptsWindowLock(reg (a0) struct LockNode *,reg (a1) struct MinNode *,reg (d0) UBYTE);
+extern void PUBLIC RxMapLock(REG(a0, struct LockNode *ln),REG(a1, struct MinNode *node),REG(d0, UBYTE flags));
+extern void PUBLIC ZoomWindowLock(REG(a0, struct LockNode *ln),REG(a1, struct MinNode *n),REG(d0, UBYTE flags));
+extern void PUBLIC CellWindowLock(REG(a0, struct LockNode *),REG(a1, struct MinNode *),REG(d0, UBYTE));
+extern void PUBLIC ScriptsWindowLock(REG(a0, struct LockNode *),REG(a1, struct MinNode *),REG(d0, UBYTE));
 
 // handleprefs.c
-extern void PUBLIC PrefIconAppCmdLock(reg (a0) struct LockNode *ln,reg (a1) struct MinNode *node,reg (d0) UBYTE flags);
+extern void PUBLIC PrefIconAppCmdLock(REG(a0, struct LockNode *ln),REG(a1, struct MinNode *node),REG(d0, UBYTE flags));
 
 // initwindows.c
 extern void MakePrefIconAppCmds(struct Prefs *pr,struct List *list);
 
 // popper.c
 extern void SetPattern(struct RastPort *rp,UBYTE pattern,UBYTE x,UBYTE y);
-extern void PUBLIC PatternPopper(reg (a0) struct RastPort *rp,reg (d0) UWORD x,reg (d1) UWORD y,reg (d2) UWORD cols,reg (d3) UWORD rows);
-extern void PUBLIC ColorPopper(reg (a0) struct RastPort *rp,reg (d0) UWORD x,reg (d1) UWORD y,reg (d2) UWORD cols,reg (d3) UWORD rows);
+extern void PUBLIC PatternPopper(REG(a0, struct RastPort *rp),REG(d0, UWORD x),REG(d1, UWORD y),REG(d2, UWORD cols),REG(d3, UWORD rows));
+extern void PUBLIC ColorPopper(REG(a0, struct RastPort *rp),REG(d0, UWORD x),REG(d1, UWORD y),REG(d2, UWORD cols),REG(d3, UWORD rows));
 extern long PopColors(struct Window *win,struct Gadget *gad);
 extern long PopUpTable(struct Window *win,struct Gadget *refgad,UWORD cols,UWORD rows,APTR func,ULONG tag1,...);
 extern long PopUpList(struct Window *,struct Gadget *,struct MinList *,ULONG tag1,...);
@@ -313,16 +244,16 @@ extern struct Screen *OpenAppScreen(void);
 extern void CloseAppScreen(struct Screen *scr);
  
 // windows.c
-extern long DoRequest(STRPTR t,STRPTR gads,...);
-extern void ErrorRequest(STRPTR t,...);
-extern void PUBLIC ErrorRequestA(reg (a0) STRPTR t,reg (a1) APTR args);
+extern long DoRequest(CONST_STRPTR t,CONST_STRPTR gads,...);
+extern void ErrorRequest(CONST_STRPTR t,...);
+extern void PUBLIC ErrorRequestA(REG(a0, CONST_STRPTR t),REG(a1, APTR args));
 extern void ErrorOpenLibrary(STRPTR lib,STRPTR paket);
 extern void MakeLocaleLabels(const char *labels[], ULONG id, ...);
 extern void MakeShortCutString(STRPTR shortCuts, ULONG ids, ...);
 extern void SetBusy(BOOL set,BYTE type);
 extern void DisposeProgressBar(struct ProgressBar *pb);
 extern struct ProgressBar *NewProgressBar(struct Window *win,long x,long y,long w,long h);
-extern void UpdateProgressBar(struct ProgressBar *pb,STRPTR t,float p);
+extern void UpdateProgressBar(struct ProgressBar *pb,CONST_STRPTR t,float p);
 extern struct TextFont *OpenBitmapFont(struct TextAttr *textAttr);
 extern void StandardNewSize(void (*create)(struct winData *,long,long));
 extern BOOL WindowIsProjectDependent(long type);
@@ -333,8 +264,8 @@ extern void DisableGadget(struct Gadget *gad,struct Window *win,BOOL disable);
 extern long CountGadToolGads(struct Window *win);
 extern APTR NewObj(struct winData *,short type,APTR,STRPTR,ULONG tag1,...);
 extern void DrawDithRect(struct RastPort *rp,long x1,long y1,long x2,long y2);
-extern void DrawGroupBorder(struct RastPort *rp, STRPTR t,long x, long y, long w, long h);
-extern void PUBLIC DrawRect(reg (a0) struct RastPort *rp,reg (d0) long x,reg (d1) long y,reg (d2) long w,reg (d3) long h);
+extern void DrawGroupBorder(struct RastPort *rp, CONST_STRPTR t,long x, long y, long w, long h);
+extern void PUBLIC DrawRect(REG(a0, struct RastPort *rp),REG(d0, long x),REG(d1, long y),REG(d2, long w),REG(d3, long h));
 extern void DrawRequesterBorder(struct Window *win);
 extern void DrawPointSliderValue(struct RastPort *rp,struct Gadget *gad,WORD komma);
 extern void DrawPatternField(struct RastPort *rp,struct Gadget *gad,ULONG col,BYTE pattern);

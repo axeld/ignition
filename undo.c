@@ -25,9 +25,9 @@ AddUndoLink(struct MinList *list, APTR obj)
 {
     struct UndoLink *ul;
 
-	if (ul = AllocPooled(pool, sizeof(struct UndoLink))) {
+	if ((ul = AllocPooled(pool, sizeof(struct UndoLink))) != 0) {
         ul->ul_Link = obj;
-        AddTail(list, ul);
+        MyAddTail(list, ul);
     }
 }
 
@@ -45,7 +45,7 @@ ApplyObjectsMoveUndoRedo(struct Page *page, struct UndoNode *un, char type)
         x = -x, y = -y;
 
 	foreach (&un->un_UndoList, ul) {
-		if (go = ul->ul_Link) {
+		if ((go = ul->ul_Link) != 0) {
 			for (i = 0; i < go->go_NumKnobs; i++) {
                 go->go_Knobs[i].x += x;
                 go->go_Knobs[i].y += y;
@@ -161,7 +161,7 @@ FreeObjectAttrsUndo(struct UndoNode *un)
 
 	for (i = 0; undoTags[i].ti_Tag != TAG_END; i++)
     {
-		if (gi = GetGInterfaceTag(go->go_Class, undoTags[i].ti_Tag))
+		if ((gi = GetGInterfaceTag(go->go_Class, undoTags[i].ti_Tag)) != 0)
         {
 			FreeGTagValue(gi->gi_Type, undoTags + i);
 			FreeGTagValue(gi->gi_Type, redoTags + i);
@@ -193,8 +193,8 @@ ApplyDiagramTypeUndoRedo(struct Page *page, struct UndoNode *un, BYTE type)
 	newDiagram->gd_Object.go_Window = win = oldDiagram->gd_Object.go_Window;
 	oldDiagram->gd_Object.go_Window = NULL;
 
-	Remove((struct Node *)oldDiagram);
-	AddTail(&page->pg_gDiagrams, (struct Node *)newDiagram);
+	MyRemove(oldDiagram);
+	MyAddTail(&page->pg_gDiagrams, newDiagram);
 
 	UpdateObjectReferences(oldDiagram, newDiagram);
 	
@@ -248,10 +248,10 @@ ApplyRemoveObjects(struct Page *page, struct UndoNode *un)
 {
     struct gObject *go;
 
-	if (go = un->un_Object)
+	if ((go = un->un_Object) != 0)
     {
 		RemoveGObject(page, go, ADDREM_DRAW | ADDREM_CLOSE_WINDOW);
-        AddTail(&un->un_RedoList, OBJECTGROUP(go));
+        MyAddTail(&un->un_RedoList, OBJECTGROUP(go));
     }
     else
     {
@@ -260,10 +260,10 @@ ApplyRemoveObjects(struct Page *page, struct UndoNode *un)
 
 		foreach (&un->un_UndoList, ul)
         {
-            if (gg = ul->ul_Link)
+            if ((gg = ul->ul_Link) != 0)
             {
                 RemoveGGroup(page, gg, ADDREM_DRAW, 0);
-                AddTail(&un->un_RedoList, gg);
+                MyAddTail(&un->un_RedoList, gg);
             }
         }
     }
@@ -275,9 +275,9 @@ ApplyAddObjects(struct Page *page, struct UndoNode *un)
 {
     struct gObject *go;
 
-	if (go = un->un_Object)
+	if ((go = un->un_Object) != 0)
     {
-        Remove((struct Node *)OBJECTGROUP(go));
+        MyRemove(OBJECTGROUP(go));
 		AddGObject(page, NULL, go, ADDREM_DRAW);
     }
     else
@@ -287,9 +287,9 @@ ApplyAddObjects(struct Page *page, struct UndoNode *un)
 
 		foreach (&un->un_UndoList, ul)
         {
-            if (gg = ul->ul_Link)
+            if ((gg = ul->ul_Link) != 0)
             {
-                Remove((struct Node *)gg);
+                MyRemove(gg);
 				AddGGroup(page, gg, ADDREM_DRAW, 0);
             }
         }
@@ -380,9 +380,9 @@ ApplyCellUndoRedo(struct Page *page, struct UndoNode *un, struct MinList *list)
 
 		DE(bug("ApplyUndoRedo(): change block, %ld cells\n", CountNodes(list)));
 
-        if (handle = GetCellIterator(page, &un->un_TablePos, FALSE))
+        if ((handle = GetCellIterator(page, &un->un_TablePos, FALSE)) != 0)
         {
-            while (tf = NextCell(handle))
+            while ((tf = NextCell(handle)))
             {
                 if (tf->tf_Col + tf->tf_Width > maxcol)
                     maxcol = tf->tf_Col + tf->tf_Width;
@@ -432,7 +432,7 @@ ApplyCellUndoRedo(struct Page *page, struct UndoNode *un, struct MinList *list)
             if (changedCells < 10)
                 DrawTableField(page, tf);
         }
-        else if (ntf = CopyCell(page, tf))
+        else if ((ntf = CopyCell(page, tf)) != 0)
         {
             DE(bug("ApplyUndoRedo(): insert cell at %ld:%ld\n", tf->tf_Col, tf->tf_Row));
 
@@ -626,16 +626,16 @@ FreeUndo(struct Page *page,struct UndoNode *un)
 		{
 			struct UndoCellSize *ucs;
 
-			while (ucs = (struct UndoCellSize *)RemHead((struct List *)&un->un_UndoList))
+			while ((ucs = (struct UndoCellSize *)MyRemHead(&un->un_UndoList)) != 0)
 				FreePooled(pool, ucs, sizeof(struct UndoCellSize));
-			while (ucs = (struct UndoCellSize *)RemHead((struct List *)&un->un_RedoList))
+			while ((ucs = (struct UndoCellSize *)MyRemHead(&un->un_RedoList)) != 0)
 				FreePooled(pool, ucs, sizeof(struct UndoCellSize));
             break;
 		}
 		case UNT_OBJECTS_MOVE:
 		{
 			struct UndoLink *ul;
-			while (ul = (struct UndoLink *)RemHead(&un->un_UndoList))
+			while ((ul = (struct UndoLink *)MyRemHead(&un->un_UndoList)) != 0)
 				FreePooled(pool, ul, sizeof(struct UndoLink));
             break;
 		}
@@ -653,7 +653,7 @@ FreeUndo(struct Page *page,struct UndoNode *un)
         {
             struct gGroup *gg;
 
-			while (gg = (APTR)RemHead(&un->un_RedoList))
+			while ((gg = (APTR)MyRemHead(&un->un_RedoList)) != 0)
                 FreeGGroup(gg);
             break;
         }
@@ -661,9 +661,9 @@ FreeUndo(struct Page *page,struct UndoNode *un)
 		{
 			struct tableField *tf;
 
-			while (tf = (struct tableField *)RemHead((struct List *)&un->un_UndoList))
+			while ((tf = (struct tableField *)MyRemHead(&un->un_UndoList)) != 0)
                 FreeTableField(tf);
-			while (tf = (struct tableField *)RemHead((struct List *)&un->un_RedoList))
+			while ((tf = (struct tableField *)MyRemHead(&un->un_RedoList)) != 0)
                 FreeTableField(tf);
 
             if (un->un_mmUndo)
@@ -681,14 +681,14 @@ FreeUndo(struct Page *page,struct UndoNode *un)
 
 
 struct UndoNode *
-CreateUndo(struct Page *page, UBYTE type, STRPTR t)
+CreateUndo(struct Page *page, UBYTE type, CONST_STRPTR t)
 {
     struct UndoNode *un;
 
     if (!page)
         return NULL;
 
-	if (un = AllocPooled(pool, sizeof(struct UndoNode)))
+	if ((un = AllocPooled(pool, sizeof(struct UndoNode))) != 0)
     {
         if (type & UNDO_BLOCK && page->pg_MarkCol != -1)
             CopyMem(&page->pg_MarkCol,&un->un_TablePos,sizeof(struct tablePos));
@@ -709,11 +709,11 @@ CreateUndo(struct Page *page, UBYTE type, STRPTR t)
         if (page->pg_CurrentUndo && page->pg_CurrentUndo != (struct UndoNode *)page->pg_Undos.mlh_Head)
         {
             while (page->pg_CurrentUndo != (struct UndoNode *)page->pg_Undos.mlh_Head)
-                FreeUndo(page,(struct UndoNode *)RemHead((struct List *)&page->pg_Undos));
+                FreeUndo(page,(struct UndoNode *)MyRemHead(&page->pg_Undos));
         }
-        NewList((struct List *)&un->un_UndoList);
-        NewList((struct List *)&un->un_RedoList);
-		AddHead((struct List *)&page->pg_Undos, un);
+        MyNewList(&un->un_UndoList);
+        MyNewList(&un->un_RedoList);
+		MyAddHead(&page->pg_Undos, un);
 
         page->pg_CurrentUndo = un;
         page->pg_Modified++;
@@ -730,24 +730,24 @@ MakeUndoRedoList(struct Page *page,struct UndoNode *un,struct MinList *list)
 
     if (un->un_Node.ln_Type & UNDO_CELL)
     {
-        if (tf = CopyCell(page, GetTableField(page, un->un_TablePos.tp_Col, un->un_TablePos.tp_Row)))
-            AddTail((struct List *)list, (struct Node *)tf);
+        if ((tf = CopyCell(page, GetTableField(page, un->un_TablePos.tp_Col, un->un_TablePos.tp_Row))) != 0)
+            MyAddTail(list, tf);
     }
     else
     {
         ULONG handle;
 
-		if (handle = GetCellIterator(page, &un->un_TablePos, FALSE))
+		if ((handle = GetCellIterator(page, &un->un_TablePos, FALSE)) != 0)
         {
             struct CellIterator *ci;
 
-			while (stf = NextCell(handle))
+			while ((stf = NextCell(handle)) != 0)
             {
-                if (tf = CopyCell(page, stf))
-                    AddTail((struct List *)list, (struct Node *)tf);
+                if ((tf = CopyCell(page, stf)) != 0)
+                    MyAddTail(list, tf);
             }
 
-            if (ci = GetCellIteratorStruct(handle))
+            if ((ci = GetCellIteratorStruct(handle)) != 0)
             {
                 if (un->un_TablePos.tp_Width == -1)
                     un->un_TablePos.tp_Width = ci->ci_MaxCol-un->un_TablePos.tp_Col;
@@ -774,11 +774,11 @@ EndUndo(struct Page *page)
 
 
 struct UndoNode *
-BeginUndo(struct Page *page, UBYTE type, STRPTR t)
+BeginUndo(struct Page *page, UBYTE type, CONST_STRPTR t)
 {
     struct UndoNode *un;
 
-    if (un = CreateUndo(page, type, t))
+    if ((un = CreateUndo(page, type, t)) != 0)
     {
 		un->un_Type = UNT_BLOCK_CHANGED;
         MakeUndoRedoList(page, un, &un->un_UndoList);

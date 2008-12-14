@@ -21,7 +21,7 @@ FreeImageObj(struct ImageObj *io)
 		FreeMem(io->io_Image->ImageData, (((io->io_Image->Width + 15) >> 4) << 1) * io->io_Image->Height * 3);
 		FreePooled(pool, io->io_Image, sizeof(struct Image));
 	}
-	FreeString(io->io_Name);
+	FreeString(io->io_Node.ln_Name);
 	FreePooled(pool, io, sizeof(struct ImageObj));
 }
 
@@ -34,10 +34,10 @@ FreeImage(struct Image *im)
 	if (!im)
 		return;
 
-	for (io = (APTR)images.mlh_Head; io->io_Node.mln_Succ && io->io_Image != im; io = (APTR)io->io_Node.mln_Succ);
-	if (io->io_Node.mln_Succ && io->io_Image == im) {
+	for (io = (APTR)images.mlh_Head; io->io_Node.ln_Succ && io->io_Image != im; io = (APTR)io->io_Node.ln_Succ);
+	if (io->io_Node.ln_Succ && io->io_Image == im) {
 		if (--io->io_OpenCnt <= 0) {
-			Remove((struct Node *)io);
+			MyRemove(io);
 			FreeImageObj(io);
 		}
 	}
@@ -64,11 +64,11 @@ AddImageObj(STRPTR t, struct Image *im)
 	if (!im)
 		return NULL;
 
-	if (io = AllocPooled(pool, sizeof(struct ImageObj))) {
-		io->io_Name = AllocString(t);
+	if ((io = AllocPooled(pool, sizeof(struct ImageObj))) != 0) {
+		io->io_Node.ln_Name = AllocString(t);
 		io->io_OpenCnt = 1;
 		io->io_Image = im;
-		AddTail((struct List *)&images,(struct Node *)io);
+		MyAddTail(&images, io);
 	}
 
 	return io;
@@ -78,18 +78,18 @@ AddImageObj(STRPTR t, struct Image *im)
 struct Image *
 InternalLoadImage(STRPTR t)
 {
-	struct FileInfoBlock __aligned fib;
+	struct FileInfoBlock ALIGNED fib;
 	struct Image *im;
 	long w, h, width;
 	STRPTR buffer;
 	APTR data;
 	BPTR dat;
 
-	if (im = NewObject(pictureiclass, NULL, DTA_Name, t, PIA_DelayLoad, TRUE, TAG_END))
+	if ((im = NewObject(pictureiclass, NULL, DTA_Name, t, PIA_DelayLoad, TRUE, TAG_END)) != 0)
 		AddImageObj(t, im);
 	else if ((dat = Open(t, MODE_OLDFILE)) && ExamineFH(dat, &fib)) {
 		/* TODO: remove this?? */
-		if (buffer = AllocPooled(pool, fib.fib_Size)) {
+		if ((buffer = AllocPooled(pool, fib.fib_Size)) != 0) {
 			if (fib.fib_Size == Read(dat, buffer, fib.fib_Size)) {
 				Close(dat);  dat = NULL;
 				if (!strncmp(buffer, "ign-icon", 8)) {
@@ -98,10 +98,10 @@ InternalLoadImage(STRPTR t)
 					width = *(long *)(buffer + 8);
 					w = ((width+15) >> 4) << 1;
 					h = *(long *)(buffer+12);
-					if (data = AllocMem(w*h*3,MEMF_CLEAR | MEMF_CHIP)) {
+					if ((data = AllocMem(w*h*3,MEMF_CLEAR | MEMF_CHIP)) != 0) {
 						CopyMem(buffer + 16, data, w * h * 3);
 
-						if (im = AllocPooled(pool, sizeof(struct Image))) {
+						if ((im = AllocPooled(pool, sizeof(struct Image))) != 0) {
 							im->Width = width;
 							im->Height = h;
 							im->Depth = 3;
@@ -136,13 +136,13 @@ LoadImage(STRPTR t)
 	if (!t)
 		return NULL;
 
-	if (io = (struct ImageObj *)FindName((struct List *)&images, t)) {
+	if ((io = (struct ImageObj *)MyFindName((struct List *)&images, t)) != 0) {
 		io->io_OpenCnt++;
 		im = io->io_Image;
 	} else if (!(im = InternalLoadImage(t))) {
 		BPTR olddir,dir;
 
-		if (dir = Lock(iconpath, SHARED_LOCK)) {
+		if ((dir = Lock(iconpath, SHARED_LOCK)) != 0) {
 			olddir = CurrentDir(dir);
 
 			im = InternalLoadImage(t);
@@ -169,12 +169,12 @@ FreeImages(void)
 
 
 static void
-CreateStyleImages(struct Screen *screen, struct TextAttr *ta, STRPTR t, long style)
+CreateStyleImages(struct Screen *screen, struct TextAttr *ta, CONST_STRPTR t, long style)
 {
 	struct TextFont *tf;
 
 	ta->ta_Style = style;
-	if (tf = OpenBitmapFont(ta)) {
+	if ((tf = OpenBitmapFont(ta)) != 0) {
 		SetFont(grp, tf);
 		SetSoftStyle(grp, style, 0);
 		itext.ITextFont = ta;
@@ -192,16 +192,16 @@ AllocBitmapImage(struct Screen *screen, struct BitMap **bmA, struct BitMap **bmB
 {
 	long depth = GetBitMapAttr(screen->RastPort.BitMap, BMA_DEPTH);
 
-	if (*bmA = AllocBitMap(width, height, depth, BMF_MINPLANES, screen->RastPort.BitMap)) {
-		if (*bmB = AllocBitMap(width, height, depth, BMF_MINPLANES, screen->RastPort.BitMap)) {
+	if ((*bmA = AllocBitMap(width, height, depth, BMF_MINPLANES, screen->RastPort.BitMap)) != 0) {
+		if ((*bmB = AllocBitMap(width, height, depth, BMF_MINPLANES, screen->RastPort.BitMap)) != 0) {
 			struct Image *img;
 
-			if (img = NewObject(bitmapiclass, NULL,
+			if ((img = NewObject(bitmapiclass, NULL,
 						IA_Width,           width,
 						IA_Height,          height,
 						BIA_Bitmap,         *bmA,
 						BIA_SelectedBitmap, *bmB,
-						TAG_END))
+						TAG_END)) != 0)
 				return img;
 
 			FreeBitMap(*bmB);
@@ -237,7 +237,7 @@ AllocImages(struct Screen *screen)
 	grp->Layer = NULL;
 	SetDrMd(grp,JAM2);
 
-	if (popImage = AllocBitmapImage(screen, &bm, &selectedbm, boxwidth, fontheight + 4)) {
+	if ((popImage = AllocBitmapImage(screen, &bm, &selectedbm, boxwidth, fontheight + 4)) != 0) {
 		for (selected = 0; selected < 2; selected++) {
 			PrepareBitmap(selected, bm, selectedbm);
 
@@ -266,7 +266,7 @@ AllocImages(struct Screen *screen)
 
 	ta = *screen->Font;  itext.DrawMode = JAM1;
 	for (i = 0;i < 9;i++) {
-		if (toolImage[i] = AllocBitmapImage(screen, &bm, &selectedbm, boxwidth, fontheight + 3)) {
+		if ((toolImage[i] = AllocBitmapImage(screen, &bm, &selectedbm, boxwidth, fontheight + 3)) != 0) {
 			for (selected = 0; selected < 2; selected++) {
 				PrepareBitmap(selected, bm, selectedbm);
 
@@ -310,7 +310,7 @@ AllocImages(struct Screen *screen)
 						break;
 					case IMG_JTOP:
 						ta.ta_Name = "Times.font";  ta.ta_YSize = 11;  ta.ta_Style = 0;
-						if (tf = OpenBitmapFont(&ta)) {
+						if ((tf = OpenBitmapFont(&ta)) != 0) {
 							SetFont(grp,tf);
 							itext.ITextFont = &ta;
 							itext.IText = GetString(&gLocaleInfo, MSG_VALIGN_TOP_CHAR);

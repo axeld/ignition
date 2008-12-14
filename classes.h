@@ -28,8 +28,8 @@ struct gEmbedded {
 #define GEA_Type         GOA_TagBase + 101
 #define GEA_AdoptSize    GOA_TagBase + 102
 
-extern ULONG PUBLIC gEmbeddedDispatch(reg (a0) struct gClass *gc,reg (a1) struct gObject *go,reg (a2) Msg msg);
-extern void PUBLIC gEmbeddedDraw(reg (d0) struct Page *page,reg (d1) ULONG dpi,reg (a0) struct RastPort *rp,reg (a1) struct gClass *gc,reg (a2) struct gObject *go,reg (a3) struct gBounds *gb);
+extern ULONG PUBLIC gEmbeddedDispatch(REG(a0, struct gClass *gc),REG(a2, struct gObject *go),REG(a1, Msg msg));
+extern void PUBLIC gEmbeddedDraw(REG(d0, struct Page *page),REG(d1, ULONG dpi),REG(a0, struct RastPort *rp),REG(a1, struct gClass *gc),REG(a2, struct gObject *go),REG(a3, struct gBounds *gb));
 
 extern struct gInterface gEmbeddedInterface[];
 extern struct gInterface gEmbedDiagramInterface[];
@@ -52,8 +52,8 @@ struct gPicture {
 #define GPA_KeepAspectRatio	GOA_TagBase + 202
 #define GPA_Center			GOA_TagBase + 203
 
-extern ULONG PUBLIC gPictureDispatch(reg (a0) struct gClass *gc,reg (a1) struct gObject *go,reg (a2) Msg msg);
-extern void PUBLIC gPictureDraw(reg (d0) struct Page *page,reg (d1) ULONG dpi,reg (a0) struct RastPort *rp,reg (a1) struct gClass *gc,reg (a2) struct gObject *go,reg (a3) struct gBounds *gb);
+extern ULONG PUBLIC gPictureDispatch(REG(a0, struct gClass *gc),REG(a2, struct gObject *go),REG(a1, Msg msg));
+extern void PUBLIC gPictureDraw(REG(d0, struct Page *page),REG(d1, ULONG dpi),REG(a0, struct RastPort *rp),REG(a1, struct gClass *gc),REG(a2, struct gObject *go),REG(a3, struct gBounds *gb));
 
 extern struct gInterface gPictureInterface[];
 
@@ -85,20 +85,20 @@ extern struct TagItem *LoadGObjectTags(struct gcpIO *gcpio);
 extern void SaveGInterface(struct gcpIO *gcpio,struct gInterface *gi,struct gObject *go);
 
 // objects.c
-extern ULONG PUBLIC gRootDispatch(reg (a0) struct gClass *gc,reg (a1) struct gObject *go,reg (a2) Msg msg);
+extern ULONG PUBLIC gRootDispatch(REG(a0, struct gClass *gc),REG(a2, struct gObject *go),REG(a1, Msg msg));
 
 // diagram.c
-extern ULONG PUBLIC gDiagramDispatch(reg (a0) struct gClass *gc,reg (a1) struct gDiagram *gd,reg (a2) Msg msg);
-extern ULONG PUBLIC gDiagram3dDispatch(reg (a0) struct gClass *gc,reg (a1) struct gDiagram3d *gd,reg (a2) Msg msg);
-extern void PUBLIC gDiagram3dDraw(reg (d0) struct Page *page,reg (d1) ULONG dpi,reg (a0) struct RastPort *rp,reg (a1) struct gClass *gc,reg (a2) struct gObject *go,reg (a3) struct gBounds *gb);
-extern ULONG PUBLIC gAxesDispatch(reg (a0) struct gClass *gc,reg (a1) struct gObject *go,reg (a2) Msg msg);
-extern void PUBLIC gAxesDraw(reg (d0) struct Page *page,reg (d1) ULONG dpi,reg (a0) struct RastPort *rp,reg (a1) struct gClass *gc,reg (a2) struct gObject *go,reg (a3) struct gBounds *gb);
-extern ULONG PUBLIC gBalkenDispatch(reg (a0) struct gClass *gc,reg (a1) struct gObject *go,reg (a2) Msg msg);
-extern void PUBLIC gBalkenDraw(reg (d0) struct Page *page,reg (d1) ULONG dpi,reg (a0) struct RastPort *rp,reg (a1) struct gClass *gc,reg (a2) struct gObject *go,reg (a3) struct gBounds *gb);
-extern ULONG PUBLIC gBalken3dDispatch(reg (a0) struct gClass *gc,reg (a1) struct gObject *go,reg (a2) Msg msg);
-extern void PUBLIC gBalken3dDraw(reg (d0) struct Page *page,reg (d1) ULONG dpi,reg (a0) struct RastPort *rp,reg (a1) struct gClass *gc,reg (a2) struct gObject *go,reg (a3) struct gBounds *gb);
-extern ULONG PUBLIC gEmbedDiagramDispatch(reg (a0) struct gClass *gc,reg (a1) struct gObject *go,reg (a2) Msg msg);
-extern void PUBLIC gEmbedDiagramDraw(reg (d0) struct Page *page,reg (d1) ULONG dpi,reg (a0) struct RastPort *rp,reg (a1) struct gClass *gc,reg (a2) struct gObject *go,reg (a3) struct gBounds *gb);
+extern ULONG PUBLIC gDiagramDispatch(REG(a0, struct gClass *gc),REG(a2, struct gDiagram *gd),REG(a1, Msg msg));
+extern ULONG PUBLIC gDiagram3dDispatch(REG(a0, struct gClass *gc),REG(a2, Msg msg),REG(a1, struct gDiagram3d *gd));
+extern void PUBLIC gDiagram3dDraw(REG(d0, struct Page *page),REG(d1, ULONG dpi),REG(a0, struct RastPort *rp),REG(a1, struct gClass *gc),REG(a2, struct gObject *go),REG(a3, struct gBounds *gb));
+extern ULONG PUBLIC gAxesDispatch(REG(a0, struct gClass *gc), REG(a2, struct gDiagram *gd), REG(a1, Msg msg));
+extern void PUBLIC gAxesDraw(REG(d0, struct Page *page), REG(d1, ULONG dpi), REG(a0, struct RastPort *rp),REG(a1, struct gClass *gc), REG(a2, struct gDiagram *gd), REG(a3, struct gBounds *gb));
+extern ULONG PUBLIC gBalkenDispatch(REG(a0, struct gClass *gc),REG(a2, Msg msg),REG(a1, struct gObject *go));
+extern void PUBLIC gBalkenDraw(REG(d0, struct Page *page),REG(d1, ULONG dpi),REG(a0, struct RastPort *rp),REG(a1, struct gClass *gc),REG(a2, struct gObject *go),REG(a3, struct gBounds *gb));
+extern ULONG PUBLIC gBalken3dDispatch(REG(a0, struct gClass *gc),REG(a2, Msg msg),REG(a1, struct gObject *go));
+extern void PUBLIC gBalken3dDraw(REG(d0, struct Page *page),REG(d1, ULONG dpi),REG(a0, struct RastPort *rp),REG(a1, struct gClass *gc),REG(a2, struct gObject *go),REG(a3, struct gBounds *gb));
+extern ULONG PUBLIC gEmbedDiagramDispatch(REG(a0, struct gClass *gc), REG(a2, struct gObject *go), REG(a1, Msg msg));
+extern void PUBLIC gEmbedDiagramDraw(REG(d0, struct Page *page), REG(d1, ULONG dpi), REG(a0, struct RastPort *rp), REG(a1, struct gClass *gc),REG(a2, struct gDiagram *gd), REG(a3, struct gBounds *gb));
 
 
 #endif   /* IGN_CLASSES_H */

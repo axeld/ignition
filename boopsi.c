@@ -9,6 +9,7 @@
 #include "funcs.h"
 
 #include <graphics/rpattr.h>
+#include <intuition/gadgetclass.h>
 //#include <datatypes/pictureclass.h>
 
 #if !defined(PDTM_WRITEPIXELARRAY)
@@ -36,15 +37,15 @@
 #define IM(o) ((struct Image *)o)
 
 
-extern ULONG PUBLIC RenderHook(reg (a1) struct LVDrawMsg *msg,reg (a2) struct ImageNode *in);
-extern ULONG PUBLIC PopUpHook(reg (a1) struct LVDrawMsg *msg,reg (a2) struct Node *n);
-extern ULONG PUBLIC FormelHook(reg (a1) struct LVDrawMsg *msg,reg (a2) struct Node *n);
-extern ULONG PUBLIC gLinkHook(reg (a1) struct LVDrawMsg *msg,reg (a2) struct gLink *gl);
-extern ULONG PUBLIC LinkHook(reg (a1) struct LVDrawMsg *msg,reg (a2) struct Link *l);
-extern ULONG PUBLIC FormatHook(reg (a1) struct LVDrawMsg *msg,reg (a2) struct Node *n);
-extern ULONG PUBLIC SelectHook(reg (a1) struct LVDrawMsg *msg,reg (a2) struct Node *n);
-extern ULONG PUBLIC ColorHook(reg (a1) struct LVDrawMsg *msg,reg (a2) struct colorPen *cp);
-extern void PUBLIC fillHookFunc(reg (a0) struct Hook *h, reg (a2) struct RastPort *rastp, reg (a1) struct Rectangle *rect);
+extern ULONG PUBLIC RenderHook(REG(a0, struct Hook *h),REG(a2, struct ImageNode *in),REG(a1, struct LVDrawMsg *msg));
+extern ULONG PUBLIC PopUpHook(REG(a0, struct Hook *h),REG(a2, struct Node *n),REG(a1, struct LVDrawMsg *msg));
+extern ULONG PUBLIC FormelHook(REG(a0, struct Hook *h),REG(a2, struct Node *n),REG(a1, struct LVDrawMsg *msg));
+extern ULONG PUBLIC gLinkHook(REG(a0, struct Hook *h),REG(a2, struct gLink *gl),REG(a1, struct LVDrawMsg *msg));
+extern ULONG PUBLIC LinkHook(REG(a0, struct Hook *h),REG(a2, struct Link *l),REG(a1, struct LVDrawMsg *msg));
+extern ULONG PUBLIC FormatHook(REG(a0, struct Hook *h),REG(a2, struct Node *n),REG(a1, struct LVDrawMsg *msg));
+extern ULONG PUBLIC SelectHook(REG(a0, struct Hook *h),REG(a2, struct Node *n),REG(a1, struct LVDrawMsg *msg));
+extern ULONG PUBLIC ColorHook(REG(a0, struct Hook *h),REG(a2, struct colorPen *cp),REG(a1, struct LVDrawMsg *msg));
+extern void PUBLIC fillHookFunc(REG(a0, struct Hook *h), REG(a2, struct RastPort *rastp), REG(a1, struct Rectangle *rect));
 
 
 /********************************** Page-Gadget **********************************/
@@ -81,22 +82,22 @@ RemovePageGadgets(struct RastPort *rp, struct Gadget *gad, struct PageGData *pd)
 }
 
 
-ULONG PUBLIC
-DispatchPageGadget(reg (a0) Class *cl, reg (a2) Object *o, reg (a1) Msg msg)
+IPTR PUBLIC
+DispatchPageGadget(REG(a0, Class *cl), REG(a2, Object *o), REG(a1, Msg msg))
 {
 	struct PageGData *pd = INST_DATA(cl, o);
-	ULONG retval = 0;
+	IPTR retval = 0;
 	long i;
 
 	switch (msg->MethodID) {
 		case OM_NEW:
-			if (retval = DoSuperMethodA(cl, o, msg)) {
+			if ((retval = DoSuperMethodA(cl, o, msg)) != 0) {
 				struct Gadget *gad;
 
 				pd = INST_DATA(cl, retval);
 				pd->pd_Active = GetTagData(PAGEGA_Active, 0L, ((struct opSet *)msg)->ops_AttrList);
-				pd->pd_Pages = (struct Gadget **)GetTagData(PAGEGA_Pages, NULL, ((struct opSet *)msg)->ops_AttrList);
-				pd->pd_Refresh = (APTR)GetTagData(PAGEGA_RefreshFunc, NULL, ((struct opSet *)msg)->ops_AttrList);
+				pd->pd_Pages = (struct Gadget **)GetTagData(PAGEGA_Pages, 0, ((struct opSet *)msg)->ops_AttrList);
+				pd->pd_Refresh = (APTR)GetTagData(PAGEGA_RefreshFunc, 0, ((struct opSet *)msg)->ops_AttrList);
 				
 				// Count pages and gadgets in the pages
 				for (i = 0; pd->pd_Pages[i]; i++);
@@ -129,7 +130,7 @@ DispatchPageGadget(reg (a0) Class *cl, reg (a2) Object *o, reg (a1) Msg msg)
 				struct RastPort *rp;
 
 				tstate = ((struct opSet *)msg)->ops_AttrList;
-				while (ti = NextTagItem(&tstate)) {
+				while ((ti = NextTagItem(&tstate)) != 0) {
 					switch (ti->ti_Tag) {
 						case PAGEGA_Active:
 							i = ti->ti_Data;
@@ -218,7 +219,7 @@ DrawIndexGadget(struct RastPort *rp, struct Gadget *gad, struct GadgetInfo *gi, 
 	if (all) {  // draw the whole gadget
 		APTR obj;
 
-		if (obj = NewObject(NULL, "frameiclass", IA_Width, gad->Width, IA_Height, gad->Height - h, IA_EdgesOnly, TRUE, TAG_END)) {
+		if ((obj = NewObject(NULL, "frameiclass", IA_Width, gad->Width, IA_Height, gad->Height - h, IA_EdgesOnly, TRUE, TAG_END)) != 0) {
 			DrawImage(rp, obj, gad->LeftEdge, gad->TopEdge + h);
 			DisposeObject(obj);
 		}
@@ -349,10 +350,10 @@ NotifyIndexSuperClass(APTR cl, APTR o, Msg msg, struct GadgetInfo *gi, struct In
 }
 
 
-ULONG PUBLIC
-DispatchIndexGadget(reg (a0) Class *cl, reg (a2) Object *o, reg (a1) Msg msg)
+IPTR PUBLIC
+DispatchIndexGadget(REG(a0, Class *cl), REG(a2, Object *o), REG(a1, Msg msg))
 {
-	ULONG retval = 0;
+	IPTR retval = 0;
 	struct IndexGData *id;
 	long i;
 
@@ -360,9 +361,9 @@ DispatchIndexGadget(reg (a0) Class *cl, reg (a2) Object *o, reg (a1) Msg msg)
 
 	switch(msg->MethodID) {
 		case OM_NEW:
-			if (!GetTagData(GA_DrawInfo,NULL,((struct opSet *)msg)->ops_AttrList))
+			if (!GetTagData(GA_DrawInfo, 0, ((struct opSet *)msg)->ops_AttrList))
 				break;
-			if (retval = DoSuperMethodA(cl, o, msg)) {
+			if ((retval = DoSuperMethodA(cl, o, msg)) != 0) {
 				id = INST_DATA(cl,retval);
 				id->id_Active = id->id_Current = id->id_NewCurrent = GetTagData(IGA_Active,0L,((struct opSet *)msg)->ops_AttrList);
 				id->id_Labels = (STRPTR *)GetTagData(IGA_Labels,0L,((struct opSet *)msg)->ops_AttrList);
@@ -390,7 +391,7 @@ DispatchIndexGadget(reg (a0) Class *cl, reg (a2) Object *o, reg (a1) Msg msg)
 				struct TagItem *tstate,*ti;
 
 				tstate = ((struct opSet *)msg)->ops_AttrList;
-				while (ti = NextTagItem(&tstate)) {
+				while ((ti = NextTagItem(&tstate)) != 0) {
 					switch (ti->ti_Tag) {
 						case IGA_Active:
 							id->id_Active = id->id_NewCurrent = ti->ti_Data;
@@ -482,7 +483,6 @@ DispatchIndexGadget(reg (a0) Class *cl, reg (a2) Object *o, reg (a1) Msg msg)
 	}
 	return retval;
 }
-
 
 /********************************** Frames-Gadget **********************************/
 
@@ -581,10 +581,10 @@ DrawFramesGadget(struct RastPort *rp, struct Gadget *gad, struct GadgetInfo *gi,
 
 	if (all) {
 		// draw the whole gadget
-		if (img = NewObject(NULL,"frameiclass",
+		if ((img = NewObject(NULL,"frameiclass",
 				IA_Width,  stdframe_width,
 				IA_Height, stdframe_height,
-				TAG_END)) {
+				TAG_END)) != 0) {
 			for (x = 0, y = 0; y < stdframe_rows; x++) {
 				if (x >= stdframe_cols)
 					x = 0,y++;
@@ -597,24 +597,30 @@ DrawFramesGadget(struct RastPort *rp, struct Gadget *gad, struct GadgetInfo *gi,
 		}
 	}
 	if (stdframe_new != stdframe_active) {
-		if (stdframe_active != ~0L)
-			EraseFatRect(rp,x = gad->LeftEdge+(stdframe_width+3)*(stdframe_active % stdframe_cols)-2,y = gad->TopEdge+(stdframe_height+3)*(stdframe_active/stdframe_cols)-2,x+stdframe_width+3,y+stdframe_height+3);
+		if (stdframe_active != ~0L) {
+			x = gad->LeftEdge + (stdframe_width + 3) * (stdframe_active % stdframe_cols) - 2;
+			y = gad->TopEdge + (stdframe_height + 3) * (stdframe_active / stdframe_cols) - 2;
+			EraseFatRect(rp, x, y, x + stdframe_width + 3, y + stdframe_height + 3);
+		}
 		SetAPen(rp,3);  stdframe_active = stdframe_new;
-		if (stdframe_active != ~0L)
-			DrawFatRect(rp,x = gad->LeftEdge+(stdframe_width+3)*(stdframe_active % stdframe_cols)-2,y = gad->TopEdge+(stdframe_height+3)*(stdframe_active/stdframe_cols)-2,x+stdframe_width+3,y+stdframe_height+3);
+		if (stdframe_active != ~0L)	{
+			x = gad->LeftEdge + (stdframe_width + 3) * (stdframe_active % stdframe_cols) - 2;
+			y = gad->TopEdge + (stdframe_height + 3) * (stdframe_active / stdframe_cols) - 2;
+			DrawFatRect(rp ,x ,y ,x + stdframe_width + 3, y + stdframe_height + 3);
+		}
 	}
 }
 
 
-ULONG PUBLIC
-DispatchFramesGadget(reg (a0) Class *cl, reg (a2) Object *o, reg (a1) Msg msg)
+IPTR PUBLIC
+DispatchFramesGadget(REG(a0, Class *cl), REG(a2, Object *o), REG(a1, Msg msg))
 {
-	ULONG retval = 0;
+	IPTR retval = 0;
 	long x, y;
 
 	switch (msg->MethodID) {
 		case OM_NEW:
-			if (retval = DoSuperMethodA(cl,o,msg))
+			if ((retval = DoSuperMethodA(cl,o,msg)) != 0)
 				SetAttrs((Object *)retval,GA_RelVerify,TRUE,TAG_END);
 			break;
 		case GM_DOMAIN:
@@ -686,8 +692,8 @@ DispatchFramesGadget(reg (a0) Class *cl, reg (a2) Object *o, reg (a1) Msg msg)
 /********************************** PopUp-Image **********************************/
 
 
-ULONG PUBLIC
-DispatchPopUpImage(reg (a0) Class *cl, reg (a2) Object *o, reg (a1) Msg msg)
+IPTR PUBLIC
+DispatchPopUpImage(REG(a0, Class *cl), REG(a2, Object *o), REG(a1, Msg msg))
 {
 	if (msg->MethodID == IM_DRAW || msg->MethodID == IM_DRAWFRAME) {
 		/*struct impDraw *imp = (struct impDraw *)msg;
@@ -718,8 +724,8 @@ DispatchPopUpImage(reg (a0) Class *cl, reg (a2) Object *o, reg (a1) Msg msg)
 /********************************** Bitmap-Image **********************************/
 
 
-ULONG PUBLIC
-DispatchBitmapImage(reg (a0) Class *cl, reg (a2) Object *o, reg (a1) Msg msg)
+IPTR PUBLIC
+DispatchBitmapImage(REG(a0, Class *cl), REG(a2, Object *o), REG(a1, Msg msg))
 {
 	struct BitmapIData *bd;
 
@@ -730,10 +736,10 @@ DispatchBitmapImage(reg (a0) Class *cl, reg (a2) Object *o, reg (a1) Msg msg)
 		{
 			Object *this;
 
-			if (this = (Object *)DoSuperMethodA(cl, o, msg)) {
+			if ((this = (Object *)DoSuperMethodA(cl, o, msg))) {
 				bd = INST_DATA(cl,this);
-				bd->bd_Bitmap = (struct BitMap *)GetTagData(BIA_Bitmap,NULL,((struct opSet *)msg)->ops_AttrList);
-				bd->bd_SelectedBitmap = (struct BitMap *)GetTagData(BIA_SelectedBitmap,NULL,((struct opSet *)msg)->ops_AttrList);
+				bd->bd_Bitmap = (struct BitMap *)GetTagData(BIA_Bitmap, 0, ((struct opSet *)msg)->ops_AttrList);
+				bd->bd_SelectedBitmap = (struct BitMap *)GetTagData(BIA_SelectedBitmap, 0, ((struct opSet *)msg)->ops_AttrList);
 			}
 			return (ULONG)this;
 		}
@@ -789,7 +795,7 @@ SetBitMapHeader(struct PictureIData *pd, struct Image *im, Object *pic)
 ULONG
 GetBestPictureModeID(ULONG width, ULONG height, ULONG depth)
 {
-	ULONG mode_id = NULL;
+	ULONG mode_id = 0;
 
 	mode_id = BestModeID(BIDTAG_NominalWidth,	width,
 						 BIDTAG_NominalHeight,	height,
@@ -849,11 +855,11 @@ SetPictureScreen(struct PictureIData *pd, struct Image *im, struct Screen *scr)
 
 			TRACE(("loading true color image...\n"));
 
-			if (pic = NewObject(NULL, "picture.datatype",
+			if ((pic = NewObject(NULL, "picture.datatype",
 					DTA_ObjName,	pd->pd_Name ? pd->pd_Name : (STRPTR)"image", PDTA_Screen,  scr,
 					PDTA_Remap,		TRUE,
 					DTA_Name,		"picture",
-					TAG_END))
+					TAG_END)) != 0)
 			{
 				ULONG tags[] = {LBMI_WIDTH, 0, LBMI_HEIGHT, 0, LBMI_PIXFMT, 0, LBMI_BYTESPERROW, 0, LBMI_BASEADDRESS, 0, TAG_END};
 				ULONG mod, format, w, h, data;
@@ -871,7 +877,7 @@ SetPictureScreen(struct PictureIData *pd, struct Image *im, struct Screen *scr)
 				tags[1] = (ULONG)&w;  tags[3] = (ULONG)&h;
 				tags[5] = (ULONG)&format;  tags[7] = (ULONG)&mod;  tags[9] = (ULONG)&data;
 
-				if (handle = LockBitMapTagList(bm, (struct TagItem *)tags)) {
+				if ((handle = LockBitMapTagList(bm, (struct TagItem *)tags)) != 0) {
 					if (format == PIXFMT_RGB24)
 						format = PBPAFMT_RGB;
 					else if (format == PIXFMT_RGBA32)
@@ -886,7 +892,7 @@ SetPictureScreen(struct PictureIData *pd, struct Image *im, struct Screen *scr)
 			bm = NULL;
 		} else {
 			/* clut/standard bitmap */
-			if (bm = AllocBitMap(im->Width, im->Height, pd->pd_Depth, BMF_MINPLANES, pd->pd_BitMap))
+			if ((bm = AllocBitMap(im->Width, im->Height, pd->pd_Depth, BMF_MINPLANES, pd->pd_BitMap)) != 0)
 				BltBitMap(pd->pd_BitMap, 0, 0, bm, 0, 0, im->Width, im->Height, 0xc0, 0xff, NULL);
 
 			TRACE(("setting CLUT8 picture data...\n"));
@@ -954,14 +960,14 @@ CopyFromPictureImage(struct PictureIData *pd, struct Image *fim, LONG *cregs, st
 
 		cols = 1 << depth;
 
-		if (pd->pd_ColorMap = AllocVec(sizeof(struct ColorRegister) * cols, MEMF_PUBLIC)) {
+		if ((pd->pd_ColorMap = AllocVec(sizeof(struct ColorRegister) * cols, MEMF_PUBLIC)) != 0) {
 			for (i = 0;i < cols;i++) {
 				pd->pd_ColorMap[i].red =	cregs[i * 3 + 0];
 				pd->pd_ColorMap[i].green = cregs[i * 3 + 1];
 				pd->pd_ColorMap[i].blue =  cregs[i * 3 + 2];
 			}
 
-			if (pd->pd_ColorRegs = AllocVec(sizeof(LONG) * 3 * cols, MEMF_PUBLIC)) {
+			if ((pd->pd_ColorRegs = AllocVec(sizeof(LONG) * 3 * cols, MEMF_PUBLIC)) != 0) {
 				CopyMem(cregs, pd->pd_ColorRegs, sizeof(LONG) * 3 * cols);
 
 				pd->pd_NumColors = cols;
@@ -970,7 +976,7 @@ CopyFromPictureImage(struct PictureIData *pd, struct Image *fim, LONG *cregs, st
 				im->Width = width;
 				im->Height = height;
 
-				if (pd->pd_SourceBitMap = AllocBitMap(width, height, depth, 0, NULL)) {
+				if ((pd->pd_SourceBitMap = AllocBitMap(width, height, depth, 0, NULL))) {
 					BltBitMap(&bm, 0, 0, pd->pd_SourceBitMap, 0, 0, width, height, 0xc0, 0xff, NULL);
 					return TRUE;
 				}
@@ -996,9 +1002,9 @@ CopyFromPictureObject(struct PictureIData *pd, Object *obj, struct Image *im)
 						PDTA_BitMapHeader,		&bmh,
 						TAG_DONE) > 4) {
 		if (bm && cregs && cmap && bmh) {
-			if (pd->pd_ColorMap = AllocVec(sizeof(struct ColorRegister) * cols, MEMF_PUBLIC)) {
+			if ((pd->pd_ColorMap = AllocVec(sizeof(struct ColorRegister) * cols, MEMF_PUBLIC)) != 0) {
 				CopyMem(cmap, pd->pd_ColorMap, sizeof(struct ColorRegister) * cols);
-				if (pd->pd_ColorRegs = AllocVec(sizeof(LONG) * 3 * cols, MEMF_PUBLIC)) {
+				if ((pd->pd_ColorRegs = AllocVec(sizeof(LONG) * 3 * cols, MEMF_PUBLIC)) != 0) {
 					CopyMem(cregs, pd->pd_ColorRegs, sizeof(LONG) * 3 * cols);
 
 					pd->pd_NumColors = cols;
@@ -1007,7 +1013,7 @@ CopyFromPictureObject(struct PictureIData *pd, Object *obj, struct Image *im)
 					im->Width = bmh->bmh_Width;
 					im->Height = bmh->bmh_Height;
 
-					if (pd->pd_SourceBitMap = AllocBitMap(bmh->bmh_Width, bmh->bmh_Height, bmh->bmh_Depth, BMF_MINPLANES, bm)) {
+					if ((pd->pd_SourceBitMap = AllocBitMap(bmh->bmh_Width, bmh->bmh_Height, bmh->bmh_Depth, BMF_MINPLANES, bm)) != 0) {
 						BltBitMap(bm, 0, 0, pd->pd_SourceBitMap, 0, 0, im->Width, im->Height, 0xc0, 0xff, NULL);
 						return TRUE;
 					}
@@ -1030,7 +1036,7 @@ LoadPictureObject(struct PictureIData *pd, struct Image *im)
 	};
 	Object *obj;
 
-	if (obj = NewDTObjectA(pd->pd_Name, (struct TagItem *)tags)) {
+	if ((obj = NewDTObjectA(pd->pd_Name, (struct TagItem *)tags)) != 0) {
 		if (DoMethod(obj, DTM_PROCLAYOUT, NULL, 1) && CopyFromPictureObject(pd, obj, im)) {
 			DisposeDTObject(obj);
 			SetPictureScreen(pd, im, pd->pd_Screen);
@@ -1042,24 +1048,24 @@ LoadPictureObject(struct PictureIData *pd, struct Image *im)
 }
 
 
-ULONG PUBLIC
-DispatchPictureImage(reg (a0) Class *cl, reg (a2) Object *o, reg (a1) Msg msg)
+IPTR PUBLIC
+DispatchPictureImage(REG(a0, Class *cl), REG(a2, Object *o), REG(a1, Msg msg))
 {
 	struct PictureIData *pd;
-	ULONG  retval = 0;
+	IPTR   retval = 0;
 
 	pd = INST_DATA(cl, o);
 
 	switch (msg->MethodID) {
 		case OM_NEW:
-			if (retval = DoSuperMethodA(cl, o, msg)) {
+			if ((retval = DoSuperMethodA(cl, o, msg)) != 0) {
 				pd = INST_DATA(cl, retval);
-				pd->pd_Screen = (struct Screen *)GetTagData(PDTA_Screen, NULL, ((struct opSet *)msg)->ops_AttrList);
+				pd->pd_Screen = (struct Screen *)GetTagData(PDTA_Screen, 0, ((struct opSet *)msg)->ops_AttrList);
 
 				IM(retval)->Height = 5;
 				IM(retval)->Width = 5;
 
-				if (pd->pd_Name = AllocString((STRPTR)GetTagData(DTA_Name, NULL, ((struct opSet *)msg)->ops_AttrList))) {
+				if ((pd->pd_Name = AllocString((STRPTR)GetTagData(DTA_Name, 0, ((struct opSet *)msg)->ops_AttrList))) != 0) {
 					if (!GetTagData(PIA_DelayLoad, FALSE, ((struct opSet *)msg)->ops_AttrList)) {
 						if (LoadPictureObject(pd, (struct Image *)retval))
 							break;
@@ -1069,8 +1075,8 @@ DispatchPictureImage(reg (a0) Class *cl, reg (a2) Object *o, reg (a1) Msg msg)
 					struct Image *im;
 					LONG *cregs;
 
-					if (im = (APTR)GetTagData(PIA_FromImage, NULL, ((struct opSet *)msg)->ops_AttrList)) {
-						if (cregs = (APTR)GetTagData(PIA_WithColors, NULL, ((struct opSet *)msg)->ops_AttrList)) {
+					if ((im = (APTR)GetTagData(PIA_FromImage, 0, ((struct opSet *)msg)->ops_AttrList)) != 0) {
+						if ((cregs = (APTR)GetTagData(PIA_WithColors, 0, ((struct opSet *)msg)->ops_AttrList)) != 0) {
 							if (CopyFromPictureImage(pd, im, cregs, (struct Image *)retval)) {
 								SetPictureScreen(pd, (struct Image *)retval, pd->pd_Screen);
 								break;
@@ -1079,7 +1085,7 @@ DispatchPictureImage(reg (a0) Class *cl, reg (a2) Object *o, reg (a1) Msg msg)
 					}
 				}
 				DoSuperMethod(cl, (Object *)retval, OM_DISPOSE);
-				retval = NULL;
+				retval = 0;
 			}
 			break;
 		case OM_DISPOSE:
@@ -1099,7 +1105,7 @@ DispatchPictureImage(reg (a0) Class *cl, reg (a2) Object *o, reg (a1) Msg msg)
 			struct TagItem *ti;
 
 			retval = DoSuperMethodA(cl, o, msg);
-			if (ti = FindTagItem(PDTA_Screen, ((struct opSet *)msg)->ops_AttrList)) {
+			if ((ti = FindTagItem(PDTA_Screen, ((struct opSet *)msg)->ops_AttrList)) != 0) {
 				if (pd->pd_SourceBitMap)
 					SetPictureScreen(pd, (struct Image *)o, (struct Screen *)ti->ti_Data);
 				else if (pd->pd_Name) {
@@ -1143,10 +1149,10 @@ DispatchPictureImage(reg (a0) Class *cl, reg (a2) Object *o, reg (a1) Msg msg)
 /********************************** Button-Class **********************************/
 
 
-ULONG PUBLIC
-DispatchButton(reg (a0) Class *cl, reg (a2) Object *o, reg (a1) Msg msg)
+IPTR PUBLIC
+DispatchButton(REG(a0, Class *cl), REG(a2, Object *o), REG(a1, Msg msg))
 {
-	ULONG  rc;
+	IPTR  rc;
 
 	switch(msg->MethodID) {
 		case GM_GOACTIVE:
@@ -1226,7 +1232,7 @@ SetColorButton(struct Gadget *gad, struct GadgetInfo *gi, struct ColorGData *cd,
 	struct TagItem *ti;
 	ULONG pen = cd->cd_Pen;
 
-	while (ti = NextTagItem(&tstate)) {
+	while ((ti = NextTagItem(&tstate))) {
 		switch (ti->ti_Tag) {
 			case CGA_Color:
 				cd->cd_Color = ti->ti_Data;
@@ -1248,17 +1254,17 @@ SetColorButton(struct Gadget *gad, struct GadgetInfo *gi, struct ColorGData *cd,
 }
 
 
-ULONG PUBLIC
-DispatchColorButton(reg (a0) Class *cl, reg (a2) struct Gadget *gad, reg (a1) Msg msg)
+IPTR PUBLIC
+DispatchColorButton(REG(a0, Class *cl), REG(a2, struct Gadget *gad), REG(a1, Msg msg))
 {
 	struct ColorGData *cd;
-	ULONG rc = 0L;
+	IPTR rc = 0L;
 
 	cd = INST_DATA(cl,gad);
 
 	switch (msg->MethodID) {
 		case OM_NEW:
-			if (rc = DoSuperMethodA(cl, (Object *)gad, msg)) {
+			if ((rc = DoSuperMethodA(cl, (Object *)gad, msg)) != 0) {
 				cd = INST_DATA(cl, rc);
 				SetAttrs((APTR)rc, GA_RelVerify, TRUE, TAG_END);
 				SetColorButton((struct Gadget *)rc, NULL, cd, ((struct opSet *)msg)->ops_AttrList);
@@ -1308,10 +1314,9 @@ DispatchColorButton(reg (a0) Class *cl, reg (a2) struct Gadget *gad, reg (a1) Ms
 /********************************** Icon-Obj **********************************/
 
 
-ULONG PUBLIC
-DispatchIconObj(reg (a0) Class *cl,reg (a2) Object *o,reg (a1) Msg msg)
+IPTR PUBLIC
+DispatchIconObj(REG(a0, Class *cl), REG(a2, Object *o), REG(a1, Msg msg))
 {
-
 	switch (msg->MethodID) {
 		case GM_GOACTIVE:
 		case GM_HANDLEINPUT:
@@ -1359,46 +1364,44 @@ FreeAppClasses(void)
 void
 InitAppClasses(void)
 {
-	fillHook.h_Entry = (ULONG (*)())fillHookFunc;
-	renderHook.h_Entry = (ULONG (*)())RenderHook;
-	formelHook.h_Entry = (ULONG (*)())FormelHook;
-	formatHook.h_Entry = (ULONG (*)())FormatHook;
-	glinkHook.h_Entry = (ULONG (*)())gLinkHook;
-	linkHook.h_Entry = (ULONG (*)())LinkHook;
-	colorHook.h_Entry = (ULONG (*)())ColorHook;
-	selectHook.h_Entry = (ULONG (*)())SelectHook;
-	popUpHook.h_Entry = (ULONG (*)())PopUpHook;
-	fileHook.h_Entry = (ULONG (*)())HandleFileTypeIDCMP;
+	SETHOOK(fillHook, fillHookFunc);
+	SETHOOK(renderHook, RenderHook);
+	SETHOOK(formelHook, FormelHook);
+	SETHOOK(formatHook, FormatHook);
+	SETHOOK(glinkHook, gLinkHook);
+	SETHOOK(linkHook, LinkHook);
+	SETHOOK(colorHook, ColorHook);
+	SETHOOK(selectHook, SelectHook);
+	SETHOOK(popUpHook, PopUpHook);
+	SETHOOK(fileHook, HandleFileTypeIDCMP);
 
 	CopyMem(GTD_GetHook(GTDH_TREE),&treeHook,sizeof(struct Hook));
 
-	if (buttonclass = MakeClass(NULL,"buttongclass",NULL,0,0))
-		buttonclass->cl_Dispatcher.h_Entry = (ULONG (*)())DispatchButton;
+	if ((buttonclass = MakeClass(NULL, "buttongclass", NULL, 0, 0)) != 0)
+		SETDISPATCHER(buttonclass, DispatchButton);
 
-	if (colorgclass = MakeClass(NULL,"buttongclass",NULL,sizeof(struct ColorGData),0))
-		colorgclass->cl_Dispatcher.h_Entry = (ULONG (*)())DispatchColorButton;
+	if ((colorgclass = MakeClass(NULL, "buttongclass", NULL, sizeof(struct ColorGData), 0)) != 0)
+		SETDISPATCHER(colorgclass, DispatchColorButton);
 
-	if (iconobjclass = MakeClass(NULL,"frbuttonclass",NULL,0,0))
-		iconobjclass->cl_Dispatcher.h_Entry = (ULONG (*)())DispatchIconObj;
+	if ((iconobjclass = MakeClass(NULL, "frbuttonclass", NULL, 0, 0)) != 0)
+		SETDISPATCHER(iconobjclass, DispatchIconObj);
 
-	if (pagegclass = MakeClass(NULL,"gadgetclass",NULL,sizeof(struct PageGData),0))
-		pagegclass->cl_Dispatcher.h_Entry = (ULONG (*)())DispatchPageGadget;
+	if ((pagegclass = MakeClass(NULL, "gadgetclass", NULL, sizeof(struct PageGData), 0)) != 0)
+		SETDISPATCHER(pagegclass, DispatchPageGadget);
 
-	if (indexgclass = MakeClass(NULL,"gadgetclass",NULL,sizeof(struct IndexGData),0))
-		indexgclass->cl_Dispatcher.h_Entry = (ULONG (*)())DispatchIndexGadget;
+	if ((indexgclass = MakeClass(NULL, "gadgetclass", NULL, sizeof(struct IndexGData), 0)) != 0)
+		SETDISPATCHER(indexgclass, DispatchIndexGadget);
 
-	if (framesgclass = MakeClass(NULL,"gadgetclass",NULL,0,0))
-		framesgclass->cl_Dispatcher.h_Entry = (ULONG (*)())DispatchFramesGadget;
+	if ((framesgclass = MakeClass(NULL, "gadgetclass", NULL, 0, 0)) != 0)
+		SETDISPATCHER(framesgclass, DispatchFramesGadget);
 
-	if (pictureiclass = MakeClass(NULL,"imageclass",NULL,sizeof(struct PictureIData),0)) {
-		pictureiclass->cl_Dispatcher.h_Entry = (ULONG (*)())DispatchPictureImage;
-		pictureiclass->cl_UserData = (ULONG)OpenLibrary("datatypes/picture.datatype",39);
+	if ((pictureiclass = MakeClass(NULL, "imageclass", NULL, sizeof(struct PictureIData), 0)) != 0) {
+		SETDISPATCHER(pictureiclass, DispatchPictureImage);
+		pictureiclass->cl_UserData = (IPTR)OpenLibrary("datatypes/picture.datatype",39);
 	}
-	if (bitmapiclass = MakeClass(NULL,"imageclass",NULL,sizeof(struct BitmapIData),0))
-		bitmapiclass->cl_Dispatcher.h_Entry = (ULONG (*)())DispatchBitmapImage;
+	if ((bitmapiclass = MakeClass(NULL, "imageclass", NULL, sizeof(struct BitmapIData), 0)) != 0)
+		SETDISPATCHER(bitmapiclass, DispatchBitmapImage);
 
-	if (popupiclass = MakeClass(NULL,"imageclass",NULL,0,0))
-		popupiclass->cl_Dispatcher.h_Entry = (ULONG (*)())DispatchPopUpImage;
+	if ((popupiclass = MakeClass(NULL, "imageclass", NULL, 0, 0)) != 0)
+		SETDISPATCHER(popupiclass, DispatchPopUpImage);
 }
-
-

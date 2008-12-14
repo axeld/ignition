@@ -48,7 +48,7 @@ STRPTR gcLabels[4];
 
 struct gInterface gRootInterface[] = {
 	{GOA_Name, NULL, GIT_TEXT, NULL, "name"},
-	{NULL}
+	{0}
 };
 
 
@@ -58,7 +58,7 @@ gRootSet(struct gObject *go,struct TagItem *tstate)
 	struct TagItem *ti;
 
 	if (tstate) {
-		while (ti = NextTagItem(&tstate)) {
+		while ((ti = NextTagItem(&tstate)) != 0) {
 			switch (ti->ti_Tag) {
 				case GOA_Name:
 					FreeString(go->go_Node.ln_Name);
@@ -117,8 +117,8 @@ AddGObjectTag(struct TagItem **tags, long *tagpos, ULONG tag, UBYTE type, APTR d
 		struct TagItem *newtags;
 		UBYTE  *newtypes;
 
-		if (newtags = AllocPooled(pool,(gio_numtags+14)*sizeof(struct TagItem))) {
-			if (newtypes = AllocPooled(pool,(gio_numtags+14))) {
+		if ((newtags = AllocPooled(pool, (gio_numtags + 14) * sizeof(struct TagItem))) != 0) {
+			if ((newtypes = AllocPooled(pool, (gio_numtags + 14))) != 0) {
 				if (gio_types) {
 					CopyMem(gio_types,newtypes,gio_numtags);
 					FreePooled(pool,gio_types,gio_numtags);
@@ -200,13 +200,13 @@ LoadGObjectTags(struct gcpIO *gcpio)
 					&& ReadChunkBytes(iff, &style, 4)) {
 					struct Node *ln;
 
-					if (ln = FindListNumber(gcpio->gcpio_Fonts, number)) {
+					if ((ln = FindListNumber(gcpio->gcpio_Fonts, number)) != 0) {
 						struct FontInfo *fi;
 
-						if (fi = NewFontInfo(NULL, gDPI, FA_Family,	  ln->ln_Name,
+						if ((fi = NewFontInfo(NULL, gDPI, FA_Family,	  ln->ln_Name,
 														 FA_PointHeight, size,
 														 FA_Style,	   style,
-														 TAG_END))
+														 TAG_END)) != 0)
 							AddGObjectTag(&tags, &tagpos, tag, type, fi);
 						GLOAD(bug("  font: %s - size: %ld - style: %ld\n",((struct Node *)ln->ln_Name)->ln_Name,size >> 16,style));
 					} else {
@@ -217,13 +217,13 @@ LoadGObjectTags(struct gcpIO *gcpio)
 			}
 			case GIT_FILENAME:
 			case GIT_TEXT:
-				if (s = AllocString(ReadChunkString(iff,buf,GRLOAD_BUFFERSIZE)))
+				if ((s = AllocString(ReadChunkString(iff, buf, GRLOAD_BUFFERSIZE))) != 0)
 					AddGObjectTag(&tags,&tagpos,tag,type,s);
 				GLOAD(bug("  text: '%s'\n",s));
 				break;
 			case GIT_FORMULA:
 			{
-				if (s = ReadChunkString(iff,buf,GRLOAD_BUFFERSIZE)) {
+				if ((s = ReadChunkString(iff, buf, GRLOAD_BUFFERSIZE)) != 0) {
 					long   oldflags = calcflags;
 					struct Term *term = NULL;
 
@@ -353,7 +353,7 @@ SaveGInterface(struct gcpIO *gcpio, struct gInterface *gi, struct gObject *go)
 	if (!gi)
 		return;
 
-	for (; tag = gi->gi_Tag; gi++)
+	for (; (tag = gi->gi_Tag); gi++)
 	{
 		UBYTE c;
 
@@ -480,7 +480,7 @@ gRootSave(struct gObject *go,struct gcpIO *gcpio)
 
 
 ULONG PUBLIC
-gRootDispatch(reg (a0) struct gClass *gc, reg (a1) struct gObject *go, reg (a2) Msg msg)
+gRootDispatch(REG(a0, struct gClass *gc), REG(a2, struct gObject *go), REG(a1, Msg msg))
 {
 	ULONG rc = 0L;
 
@@ -491,14 +491,14 @@ gRootDispatch(reg (a0) struct gClass *gc, reg (a1) struct gObject *go, reg (a2) 
 			struct gObject *ngo;
 
 			if (((struct gClass *)go)->gc_Dispatch == gRootDispatch)  // keine Instanzen dieser Klasse
-				return NULL;
+				return 0;
 			if (go && (ngo = AllocPooled(pool,((struct gClass *)go)->gc_InstSize)))
 			{
 				ngo->go_Class = (struct gClass *)go;
 				ngo->go_Type = GOT_OBJECT;
 				ngo->go_Page = ((struct gcpNew *)msg)->gcpn_Page;
 				ngo->go_Pos = -1;
-				NewList(&ngo->go_ReferencedBy);
+				MyNewList(&ngo->go_ReferencedBy);
 				gRootSet(ngo,((struct gcpNew *)msg)->gcpn_AttrList);
 
 				rc = (ULONG)ngo;
@@ -512,8 +512,11 @@ gRootDispatch(reg (a0) struct gClass *gc, reg (a1) struct gObject *go, reg (a2) 
 
 			CloseAppWindow(go->go_Window, TRUE);
 
-			while (l = (struct Link *)RemHead(&go->go_ReferencedBy))
-				SetGObjectAttrs((rgo = l->l_Link)->go_Page, rgo, GEA_References, NULL, TAG_END);
+			while ((l = (struct Link *)MyRemHead(&go->go_ReferencedBy)) != 0)
+			{
+				rgo = l->l_Link;
+				SetGObjectAttrs(rgo->go_Page, rgo, GEA_References, NULL, TAG_END);
+			}
 
 			FreeString(go->go_Node.ln_Name);
 			FreeString(go->go_Help);
@@ -531,9 +534,9 @@ gRootDispatch(reg (a0) struct gClass *gc, reg (a1) struct gObject *go, reg (a2) 
 				cgo->go_Node.ln_Name = AllocString(go->go_Node.ln_Name);
 				cgo->go_Help = AllocString(go->go_Help);
 				cgo->go_Command = AllocString(go->go_Command);
-				NewList(&cgo->go_ReferencedBy);
+				MyNewList(&cgo->go_ReferencedBy);
 
-				if (cgo->go_Knobs = AllocPooled(pool,go->go_NumKnobs*sizeof(struct point2d)))
+				if ((cgo->go_Knobs = AllocPooled(pool, go->go_NumKnobs * sizeof(struct point2d))) != 0)
 					CopyMem(go->go_Knobs,cgo->go_Knobs,sizeof(struct point2d)*go->go_NumKnobs);
 				cgo->go_Pos = -1;
 				cgo->go_Page = NULL;
@@ -577,7 +580,7 @@ gRootDispatch(reg (a0) struct gClass *gc, reg (a1) struct gObject *go, reg (a2) 
 			struct point2d *p;
 			UWORD  num = 2;
 
-			if (p = AllocPooled(pool,sizeof(struct point2d)*num))
+			if ((p = AllocPooled(pool, sizeof(struct point2d) * num)) != 0)
 			{
 				p[0] = go->go_Knobs[0];
 				p[1] = go->go_Knobs[3];
@@ -607,7 +610,7 @@ gRootDispatch(reg (a0) struct gClass *gc, reg (a1) struct gObject *go, reg (a2) 
 				num = 4;
 			}
 #elif (G_POINTS == 8)
-			if (t = AllocPooled(pool,sizeof(struct point2d)*8))
+			if ((t = AllocPooled(pool, sizeof(struct point2d) * 8)) != 0)
 			{
 				t[0] = s[0];
 				t[1].x = s[1].x;  t[1].y = s[0].y;
@@ -668,13 +671,13 @@ gRootDispatch(reg (a0) struct gClass *gc, reg (a1) struct gObject *go, reg (a2) 
 			}
 			if (p[0].x > p[1].x)
 			{
-				swmem(&p[0].x,&p[1].x,sizeof(long));
-				swmem(&p[2].x,&p[3].x,sizeof(long));
+				swmem((UBYTE *)&p[0].x, (UBYTE *)&p[1].x, sizeof(long));
+				swmem((UBYTE *)&p[2].x, (UBYTE *)&p[3].x, sizeof(long));
 			}
 			if (p[0].y > p[2].y)
 			{
-				swmem(&p[0].y,&p[2].y,sizeof(long));
-				swmem(&p[1].y,&p[3].y,sizeof(long));
+				swmem((UBYTE *)&p[0].y, (UBYTE *)&p[2].y, sizeof(long));
+				swmem((UBYTE *)&p[1].y, (UBYTE *)&p[3].y, sizeof(long));
 			}
 #if (G_POINTS == 8)
 			gRootSetEdgeKnobs(p);
@@ -782,13 +785,13 @@ gRootDispatch(reg (a0) struct gClass *gc, reg (a1) struct gObject *go, reg (a2) 
 struct gInterface gEmbeddedInterface[] = {
 	{GEA_References, NULL, GIT_BUTTON, NULL, NULL},
 	{GEA_AdoptSize, NULL, GIT_BUTTON, NULL, NULL},
-	{NULL}
+	{0}
 };
 
 
 void PUBLIC
-gEmbeddedDraw(reg (d0) struct Page *page, reg (d1) ULONG dpi, reg (a0) struct RastPort *rp, reg (a1) struct gClass *gc,
-	reg (a2) struct gObject *go, reg (a3) struct gBounds *gb)
+gEmbeddedDraw(REG(d0, struct Page *page), REG(d1, ULONG dpi), REG(a0, struct RastPort *rp), REG(a1, struct gClass *gc),
+	REG(a2, struct gObject *go), REG(a3, struct gBounds *gb))
 {
 	struct gEmbedded *ge = GINST_DATA(gc, go);
 	struct gObject *rgo;
@@ -799,7 +802,7 @@ gEmbeddedDraw(reg (d0) struct Page *page, reg (d1) ULONG dpi, reg (a0) struct Ra
 	/*SetHighColor(grp,page->pg_BPen);
 	RectFill(grp,x,y,x+width,y+height);*/
 
-	if (rgo = ge->ge_References)
+	if ((rgo = ge->ge_References) != 0)
 		rgo->go_Class->gc_Draw(page,dpi,grp,rgo->go_Class,rgo,gb);
 	else
 	{
@@ -837,7 +840,7 @@ gEmbeddedSet(struct gObject *go, struct gEmbedded *ge, struct TagItem *tstate)
 
 	if (tstate)
 	{
-		while (ti = NextTagItem(&tstate))
+		while ((ti = NextTagItem(&tstate)) != 0)
 		{
 			switch (ti->ti_Tag)
 			{
@@ -868,9 +871,9 @@ gEmbeddedSet(struct gObject *go, struct gEmbedded *ge, struct TagItem *tstate)
 					}
 
 					if (ge->ge_References)
-						Remove((struct Node *)&ge->ge_Link);
+						MyRemove(&ge->ge_Link);
 					if (rgo)
-						AddTail(&rgo->go_ReferencedBy,&ge->ge_Link);
+						MyAddTail(&rgo->go_ReferencedBy, &ge->ge_Link);
 
 					ge->ge_References = rgo;
 
@@ -916,7 +919,7 @@ gEmbeddedSet(struct gObject *go, struct gEmbedded *ge, struct TagItem *tstate)
 
 
 ULONG PUBLIC
-gEmbeddedDispatch(reg (a0) struct gClass *gc, reg (a1) struct gObject *go, reg (a2) Msg msg)
+gEmbeddedDispatch(REG(a0, struct gClass *gc), REG(a2, struct gObject *go), REG(a1, Msg msg))
 {
 	struct gEmbedded *ge = GINST_DATA(gc, go);
 	ULONG  rc;
@@ -924,7 +927,7 @@ gEmbeddedDispatch(reg (a0) struct gClass *gc, reg (a1) struct gObject *go, reg (
 	switch (msg->MethodID)
 	{
 		case GCM_NEW:
-			if (rc = gDoSuperMethodA(gc, go, msg))
+			if ((rc = gDoSuperMethodA(gc, go, msg)) != 0)
 			{
 				go = (struct gObject *)rc;  ge = GINST_DATA(gc, go);
 				go->go_Flags |= GOF_FRAMED;
@@ -938,13 +941,13 @@ gEmbeddedDispatch(reg (a0) struct gClass *gc, reg (a1) struct gObject *go, reg (
 		{
 			struct gObject *cgo;
 
-			if (cgo = (struct gObject *)(rc = gDoSuperMethodA(gc, go, msg)))
+			if ((cgo = (struct gObject *)(rc = gDoSuperMethodA(gc, go, msg))) != 0)
 			{
 				struct gEmbedded *cge = GINST_DATA(gc, cgo);
 
 				cge->ge_Link.l_Link = cgo;
 				if (cge->ge_References)
-					AddTail(&cge->ge_References->go_ReferencedBy, &cge->ge_Link);
+					MyAddTail(&cge->ge_References->go_ReferencedBy, &cge->ge_Link);
 			}
 			break;
 		}
@@ -981,7 +984,7 @@ gEmbeddedDispatch(reg (a0) struct gClass *gc, reg (a1) struct gObject *go, reg (
 			{
 				if (rgo->go_Pos == ge->ge_Pos)
 				{
-					ULONG tags[3] = {GEA_References, NULL, TAG_END};
+					ULONG tags[3] = {GEA_References, 0, TAG_END};
 
 					tags[1] = (ULONG)rgo;
 					gDoMethod(go, GCM_SET, tags);
@@ -1041,7 +1044,7 @@ struct gInterface gPictureInterface[] = {
 	{GPA_RealSize, NULL, GIT_BUTTON, NULL, NULL},
 	{GPA_KeepAspectRatio, NULL, GIT_CHECKBOX, NULL, "keepaspectratio"},
 	{GPA_Center,   NULL, GIT_CHECKBOX, NULL, "center"},
-	{NULL}
+	{0}
 };
 
 
@@ -1051,7 +1054,7 @@ gPictureNewImage(struct gPicture *gp)
 	FreeImage(gp->gp_Image);
 
 	//if (gp->gp_Image = NewObject(pictureiclass,NULL,DTA_Name,gp->gp_FileName/*,PIA_DelayLoad,TRUE*/,TAG_END))
-	if (gp->gp_Image = LoadImage(gp->gp_FileName))
+	if ((gp->gp_Image = LoadImage(gp->gp_FileName)) != 0)
 	{
 		//AddImageObj(gp->gp_FileName,gp->gp_Image);
 		SetAttrs(gp->gp_Image, PDTA_Screen, scr, TAG_END);
@@ -1071,7 +1074,7 @@ gPictureSet(struct gObject *go,struct gPicture *gp,struct TagItem *tstate)
 
 	if (tstate)
 	{
-		while (ti = NextTagItem(&tstate))
+		while ((ti = NextTagItem(&tstate)) != 0)
 		{
 			switch(ti->ti_Tag)
 			{
@@ -1126,7 +1129,7 @@ gPictureSet(struct gObject *go,struct gPicture *gp,struct TagItem *tstate)
 
 
 void PUBLIC
-gPictureDraw(reg (d0) struct Page *page,reg (d1) ULONG dpi,reg (a0) struct RastPort *rp,reg (a1) struct gClass *gc,reg (a2) struct gObject *go,reg (a3) struct gBounds *gb)
+gPictureDraw(REG(d0, struct Page *page),REG(d1, ULONG dpi),REG(a0, struct RastPort *rp),REG(a1, struct gClass *gc),REG(a2,struct gObject *go),REG(a3, struct gBounds *gb))
 {
 	struct gPicture *gp = GINST_DATA(gc,go);
 	long x = gb->gb_Left,y = gb->gb_Top;
@@ -1137,7 +1140,7 @@ gPictureDraw(reg (d0) struct Page *page,reg (d1) ULONG dpi,reg (a0) struct RastP
 	{
 		struct BitMap *bm;
 
-		if (GetAttr(PIA_BitMap, gp->gp_Image, (ULONG *)&bm))
+		if (GetAttr(PIA_BitMap, (Object *)gp->gp_Image, (IPTR *)&bm))
 		{
 			struct BitScaleArgs bsa;
 			double factorX, factorY;
@@ -1206,7 +1209,7 @@ gPictureDraw(reg (d0) struct Page *page,reg (d1) ULONG dpi,reg (a0) struct RastP
 
 
 ULONG PUBLIC
-gPictureDispatch(reg (a0) struct gClass *gc, reg (a1) struct gObject *go, reg (a2) Msg msg)
+gPictureDispatch(REG(a0, struct gClass *gc), REG(a2, struct gObject *go), REG(a1, Msg msg))
 {
 	struct gPicture *gp = GINST_DATA(gc, go);
 	ULONG  rc;
@@ -1214,7 +1217,7 @@ gPictureDispatch(reg (a0) struct gClass *gc, reg (a1) struct gObject *go, reg (a
 	switch (msg->MethodID)
 	{
 		case GCM_NEW:
-			if (rc = gDoSuperMethodA(gc, go, msg))
+			if ((rc = gDoSuperMethodA(gc, go, msg)) != 0)
 			{
 				go = (struct gObject *)rc;  gp = GINST_DATA(gc, go);
 
@@ -1225,7 +1228,7 @@ gPictureDispatch(reg (a0) struct gClass *gc, reg (a1) struct gObject *go, reg (a
 		{
 			struct gObject *cgo;
 
-			if (cgo = (struct gObject *)(rc = gDoSuperMethodA(gc, go, msg)))
+			if ((cgo = (struct gObject *)(rc = gDoSuperMethodA(gc, go, msg))) != 0)
 			{
 				struct gPicture *cgp = GINST_DATA(gc, cgo);
 
@@ -1341,7 +1344,7 @@ MakeGClass(STRPTR name, UBYTE type, struct gClass *sgc, STRPTR label, STRPTR ima
 	if (!(type & GCT_ROOT) && !sgc)
 		return NULL;
 
-	if (gc = AllocPooled(pool, sizeof(struct gClass)))
+	if ((gc = AllocPooled(pool, sizeof(struct gClass))) != 0)
 	{
 		gc->gc_Node.in_Name = label;
 		gc->gc_Node.in_Type = type;
@@ -1364,7 +1367,7 @@ MakeGClass(STRPTR name, UBYTE type, struct gClass *sgc, STRPTR label, STRPTR ima
 			if (!gi)
 				gc->gc_Interface = sgc->gc_Interface;
 		}
-		AddTail((type & GCT_OBJECT ? &gclasses : (type & GCT_DIAGRAM ? &gdiagrams : &intclasses)),gc);
+		MyAddTail((type & GCT_OBJECT ? &gclasses : (type & GCT_DIAGRAM ? &gdiagrams : &intclasses)),gc);
 		D(bug("add class: (%lx) %s [%s]\n",gc,name,(type & GCT_OBJECT ? "gclasses" : (type & GCT_DIAGRAM ? "gdiagrams" : "intclasses"))));
 	}
 	return gc;
@@ -1374,17 +1377,20 @@ MakeGClass(STRPTR name, UBYTE type, struct gClass *sgc, STRPTR label, STRPTR ima
 BOOL
 LoadGClass(struct gClass *gc)
 {
-	BOOL __asm (*initGCSegment)(reg (a0) APTR, reg (a1) APTR, reg (a2) APTR, reg (a3) APTR, reg (a6) APTR,
-		reg (d0) APTR, reg (d1) APTR, reg (d2) APTR, reg (d3) APTR, reg (d4) long);
+#if defined(__AROS__)
+	return FALSE;
+#else
+	BOOL ASM (*initGCSegment)(REG(a0, APTR), REG(a1, APTR), REG(a2, APTR), REG(a3, APTR), REG(a6, APTR),
+		REG(d0, APTR), REG(d1, APTR), REG(d2, APTR), REG(d3, APTR), REG(d4, long));
 	BPTR dir,olddir,segment;
 
 	if (gc->gc_Segment || !gc->gc_ClassName)
 		return TRUE;
 
-	if (dir = Lock(CLASSES_PATH, ACCESS_READ))
+	if ((dir = Lock(CLASSES_PATH, ACCESS_READ)) != 0)
 	{
 		olddir = CurrentDir(dir);
-		if (segment = LoadSeg(gc->gc_ClassName))
+		if ((segment = LoadSeg(gc->gc_ClassName)) != 0)
 		{
 			initGCSegment = ((segment + 1) << 2);
 			if (initGCSegment(gc, (UBYTE *)gClassFuncTable + gClassFuncTableSize, pool, GfxBase, SysBase, MathIeeeDoubBasBase,
@@ -1415,6 +1421,7 @@ LoadGClass(struct gClass *gc)
 		return FALSE;
 	}
 	return TRUE;
+#endif
 }
 
 
@@ -1423,11 +1430,11 @@ FreeGClasses(void)
 {
 	struct gClass *gc;
 
-	while (gc = (struct gClass *)RemHead(&gclasses))
+	while ((gc = (struct gClass *)MyRemHead(&gclasses)) != 0)
 		FreeGClass(gc);
-	while (gc = (struct gClass *)RemHead(&gdiagrams))
+	while ((gc = (struct gClass *)MyRemHead(&gdiagrams)) != 0)
 		FreeGClass(gc);
-	while (gc = (struct gClass *)RemHead(&intclasses))
+	while ((gc = (struct gClass *)MyRemHead(&intclasses)) != 0)
 		FreeGClass(gc);
 }
 
@@ -1436,20 +1443,20 @@ void
 InitGClasses(void)
 {
 	struct gClass *gc,*dgc;
-	struct AnchorPath __aligned ap;
+	struct AnchorPath ALIGNED ap;
 	BPTR dir, olddir, dat;
 	char t[512];
 	long rc, i;
 
-	NewList(&gclasses);
-	NewList(&gdiagrams);
-	NewList(&intclasses);
+	MyNewList(&gclasses);
+	MyNewList(&gdiagrams);
+	MyNewList(&intclasses);
 
 	/*** initialize internal classes ***/
 
-	if (gc = MakeGClass("root", GCT_ROOT | GCT_INTERNAL, NULL, NULL, NULL, gRootDispatch, NULL, gRootInterface, sizeof(struct gObject))) {
-		if (dgc = MakeGClass("diagram", GCT_ROOT | GCT_INTERNAL, gc, NULL, NULL, gDiagramDispatch, NULL, gDiagramInterface,
-				sizeof(struct gDiagram) - sizeof(struct gObject))) {
+	if ((gc = MakeGClass("root", GCT_ROOT | GCT_INTERNAL, NULL, NULL, NULL, gRootDispatch, NULL, gRootInterface, sizeof(struct gObject))) != 0) {
+		if ((dgc = MakeGClass("diagram", GCT_ROOT | GCT_INTERNAL, gc, NULL, NULL, gDiagramDispatch, NULL, gDiagramInterface,
+				sizeof(struct gDiagram) - sizeof(struct gObject))) != 0) {
 #ifdef ENABLE_DIAGRAM_3D
 			MakeGClass("diagram3d", GCT_ROOT | GCT_INTERNAL, dgc, NULL, NULL, gDiagram3dDispatch, gDiagram3dDraw,
 				NULL, sizeof(struct gDiagram3d) - sizeof(struct gDiagram));
@@ -1464,18 +1471,18 @@ InitGClasses(void)
 
 	/*** externe Klassenbeschreibungen laden ***/
 
-	if (dir = Lock(CLASSES_PATH, ACCESS_READ)) {
+	if ((dir = Lock(CLASSES_PATH, ACCESS_READ)) != 0) {
 		olddir = CurrentDir(dir);
 		memset(&ap, 0, sizeof(struct AnchorPath));
 		for (rc = MatchFirst("#?.gcdescr", &ap); !rc; rc = MatchNext(&ap)) {
-			if (dat = Open(ap.ap_Info.fib_FileName, MODE_OLDFILE)) {
+			if ((dat = Open(ap.ap_Info.fib_FileName, MODE_OLDFILE)) != 0) {
 				STRPTR name = NULL, super = NULL, icon = NULL, filename;
 				STRPTR localizedNames[10];
 					// Note: this is not save against changes to the loc_PrefLanguages table
 					//	while parsing the class description file
 				long type = 0;
 
-				if (filename = AllocPooled(pool, i = strlen(ap.ap_Info.fib_FileName) - 4))
+				if ((filename = AllocPooled(pool, i = strlen(ap.ap_Info.fib_FileName) - 4)) != 0)
 					CopyMem(ap.ap_Info.fib_FileName, filename, i - 1);
 				
 				for (i = 0; i < 10; i++)

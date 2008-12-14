@@ -43,7 +43,7 @@ CopyToolTypes(STRPTR *tooltype)
 
 	for (num = 0; tooltype[num]; num++);
 
-	if (tt = AllocToolTypes(num)) {
+	if ((tt = AllocToolTypes(num)) != 0) {
 		for (i = 0; i < num; i++)
 			tt[i] = AllocString(tooltype[i]);
 	}
@@ -97,9 +97,9 @@ SetToolTypes(STRPTR name, STRPTR tt1, ...)
 	struct DiskObject *dio;
 	STRPTR *tt,*oldtt,*tooltype;
 
-	if (dio = GetDiskObject(name))
+	if ((dio = GetDiskObject(name)) != 0)
 	{
-		if (tt = CopyToolTypes(oldtt = dio->do_ToolTypes))
+		if ((tt = CopyToolTypes(oldtt = dio->do_ToolTypes)) != 0)
 		{
 			for(tooltype = &tt1;*tooltype;tooltype += 2)
 				SetToolType(&tt,*tooltype,*(tooltype+1));
@@ -121,6 +121,8 @@ SetToolTypes(STRPTR name, STRPTR tt1, ...)
 static void
 spDisp(struct IFFHandle *iff, struct Prefs *pr)
 {
+	UWORD store2;
+
 	SetPrefsModule(pr, WDT_PREFDISP, FALSE);
 
 	PushChunk(iff, ID_IGNP, ID_DISP, IFFSIZE_UNKNOWN);
@@ -132,7 +134,8 @@ spDisp(struct IFFHandle *iff, struct Prefs *pr)
 	WriteChunkBytes(iff,&pr->pr_Disp->pd_ShowAntis,1);
 
 	WriteChunkString(iff,pr->pr_Disp->pd_AntiAttr.ta_Name);
-	WriteChunkBytes(iff,&pr->pr_Disp->pd_AntiAttr.ta_YSize,2);
+	store2 = WORD2BE(pr->pr_Disp->pd_AntiAttr.ta_YSize);
+	WriteChunkBytes(iff, &store2, 2);
 	PopChunk(iff);
 }
 
@@ -140,12 +143,60 @@ spDisp(struct IFFHandle *iff, struct Prefs *pr)
 static void
 spScreen(struct IFFHandle *iff)
 {
+	UBYTE pad=0;
+	ULONG store4;
+	UWORD store2;
+
 	SetPrefsModule(&prefs, WDT_PREFSCREEN, FALSE);
 	PushChunk(iff, ID_IGNP, ID_SCREEN, IFFSIZE_UNKNOWN);
 
-	WriteChunkBytes(iff, prefs.pr_Screen, PREFSCREEN_SIZE);
+	store2 = WORD2BE(prefs.pr_Screen->ps_Width);
+	WriteChunkBytes(iff, &store2, 2);
+
+	store2 = WORD2BE(prefs.pr_Screen->ps_Height);
+	WriteChunkBytes(iff, &store2, 2);
+
+	store2 = WORD2BE(prefs.pr_Screen->ps_Depth);
+	WriteChunkBytes(iff, &store2, 2);
+
+	store2 = WORD2BE(prefs.pr_Screen->ps_dimWidth);
+	WriteChunkBytes(iff, &store2, 2);
+
+	store2 = WORD2BE(prefs.pr_Screen->ps_dimHeight);
+	WriteChunkBytes(iff, &store2, 2);
+
+	store4 = LONG2BE(prefs.pr_Screen->ps_ModeID);
+	WriteChunkBytes(iff, &store4, 4);
+
+	store4 = LONG2BE(prefs.pr_Screen->ps_Overscan);
+	WriteChunkBytes(iff, &store4, 4);
+
+	WriteChunkBytes(iff, &prefs.pr_Screen->ps_Interleaved, 1);
+
+	WriteChunkBytes(iff, &pad, 1);
+
+	store2 = WORD2BE(prefs.pr_Screen->ps_Type);
+	WriteChunkBytes(iff, &store2, 2);
+
+	WriteChunkBytes(iff, prefs.pr_Screen->ps_PubName, PS_NAMELEN);
+
+	WriteChunkBytes(iff, &prefs.pr_Screen->ps_BackFill, 1);
+
+	WriteChunkBytes(iff, &pad, 1);
+
+	store4 = LONG2BE(prefs.pr_Screen->ps_BFColor);
+	WriteChunkBytes(iff, &store4, 4);
+
+	store4 = LONG2BE(prefs.pr_Screen->ps_mmWidth);
+	WriteChunkBytes(iff, &store4, 4);
+
+	store4 = LONG2BE(prefs.pr_Screen->ps_mmHeight);
+	WriteChunkBytes(iff, &store4, 4);
+
 	WriteChunkString(iff, prefs.pr_Screen->ps_TextAttr.ta_Name);
-	WriteChunkBytes(iff, &prefs.pr_Screen->ps_TextAttr.ta_YSize, 2);
+
+	store2 = WORD2BE(prefs.pr_Screen->ps_TextAttr.ta_YSize);
+	WriteChunkBytes(iff, &store2, 2);
 
 	PopChunk(iff);
 }
@@ -155,11 +206,20 @@ static void
 spFile(struct IFFHandle *iff)
 {
 	BPTR   olddir;
+	ULONG  store4;
+	UWORD  store2;
+	UBYTE  pad=0;
 
 	SetPrefsModule(&prefs,WDT_PREFFILE,FALSE);
 	PushChunk(iff,ID_IGNP,ID_FILE,IFFSIZE_UNKNOWN);
 
-	WriteChunkBytes(iff,prefs.pr_File,sizeof(struct PrefFile));
+	store2 = WORD2BE(prefs.pr_File->pf_Flags);
+	WriteChunkBytes(iff, &store2, 2);
+	WriteChunkBytes(iff, &prefs.pr_File->pf_AutoSave, 1);
+	WriteChunkBytes(iff, &pad, 1);
+	store4 = LONG2BE(prefs.pr_File->pf_AutoSaveIntervall);
+	WriteChunkBytes(iff, &store4, 4);
+
 	if (sm)
 	{
 		olddir = CurrentDir(sm->sm_ArgList[0].wa_Lock);
@@ -215,6 +275,8 @@ static void
 spKeys(struct IFFHandle *iff,struct Prefs *pr)
 {
 	struct AppKey *ak;
+	ULONG store4;
+	UWORD store2;
 
 	SetPrefsModule(pr,WDT_PREFKEYS,FALSE);
 	if (IsListEmpty((struct List *)&pr->pr_AppKeys))
@@ -222,9 +284,12 @@ spKeys(struct IFFHandle *iff,struct Prefs *pr)
 	PushChunk(iff,ID_IGNP,ID_KEYS,IFFSIZE_UNKNOWN);
 	foreach(&pr->pr_AppKeys,ak)
 	{
-		WriteChunkBytes(iff,&ak->ak_Class,4);
-		WriteChunkBytes(iff,&ak->ak_Code,2);
-		WriteChunkBytes(iff,&ak->ak_Qualifier,2);
+		store4 = LONG2BE(ak->ak_Class);
+		WriteChunkBytes(iff, &store4, 4);
+		store2 = WORD2BE(ak->ak_Code);
+		WriteChunkBytes(iff, &store2, 2);
+		store2 = WORD2BE(ak->ak_Qualifier);
+		WriteChunkBytes(iff, &store2, 2);
 		WriteChunkBytes(iff,&ak->ak_Node.ln_Type,1);
 		WriteChunkString(iff,ak->ak_AppCmd);
 	}
@@ -317,7 +382,7 @@ spFormat(struct IFFHandle *iff, struct Prefs *pr, struct MinList *list)
 	struct Node *ln;
 	long   error;
 
-	if (error = PushChunk(iff, 0, ID_FORMAT, IFFSIZE_UNKNOWN))
+	if ((error = PushChunk(iff, 0, ID_FORMAT, IFFSIZE_UNKNOWN)) != 0)
 		return error;
 
 	SetPrefsModule(pr, WDT_PREFFORMAT, FALSE);
@@ -340,7 +405,10 @@ spFormat(struct IFFHandle *iff, struct Prefs *pr, struct MinList *list)
 		WriteChunkBytes(iff, &fv->fv_Alignment, 1);
 		WriteChunkBytes(iff, &fv->fv_Flags, 1);
 		if (fv->fv_Flags & FVF_NEGATIVEPEN)
+		{
+			// FIXME endian?
 			WriteChunkBytes(iff, (UBYTE *)&fv->fv_NegativePen + 1, 3);
+		}
 	}
 
 	return PopChunk(iff);
@@ -353,8 +421,9 @@ spNames(struct IFFHandle *iff,struct Prefs *pr,struct MinList *list)
 	struct Mappe *mp = GetPrefsMap(pr);
 	struct Name *nm;
 	long   error,i;
+	LONG store4;
 
-	if (error = PushChunk(iff,0,ID_NAMES,IFFSIZE_UNKNOWN))
+	if ((error = PushChunk(iff,0,ID_NAMES,IFFSIZE_UNKNOWN)) != 0)
 		return error;
 
 	SetPrefsModule(pr, WDT_PREFNAMES, FALSE);
@@ -369,8 +438,8 @@ spNames(struct IFFHandle *iff,struct Prefs *pr,struct MinList *list)
 			i = FindListEntry(&mp->mp_Pages, nm->nm_Page);
 		else
 			i = 0L;
-		WriteChunkBytes(iff, &i, sizeof(LONG));
-
+		store4 = LONG2BE(i);
+		WriteChunkBytes(iff, &store4, 4);
 	}
 	return PopChunk(iff);
 }
@@ -379,11 +448,18 @@ spNames(struct IFFHandle *iff,struct Prefs *pr,struct MinList *list)
 static void
 spTable(struct IFFHandle *iff,struct Prefs *pr)
 {
+	UBYTE pad = 0;
+	UWORD store2;
+
 	SetPrefsModule(pr, WDT_PREFTABLE, FALSE);
 	PushChunk(iff, ID_IGNP, ID_TABLE, IFFSIZE_UNKNOWN);
 
-	WriteChunkBytes(iff, pr->pr_Table, sizeof(struct PrefTable));
-	WriteChunkBytes(iff, &calcflags, sizeof(UWORD));
+	store2 = WORD2BE(pr->pr_Table->pt_Flags);
+	WriteChunkBytes(iff, &store2, 2);
+	WriteChunkBytes(iff, pr->pr_Table->pt_EditFunc, PTEQ_NUM);
+	WriteChunkBytes(iff, &pad, 1);
+	store2 = WORD2BE(calcflags);
+	WriteChunkBytes(iff, &store2, 2);
 
 	PopChunk(iff);
 }
@@ -392,10 +468,14 @@ spTable(struct IFFHandle *iff,struct Prefs *pr)
 static void
 spSystem(struct IFFHandle *iff)
 {
+	ULONG store4;
+
 	SetPrefsModule(&prefs,WDT_PREFSYS,FALSE);
 	PushChunk(iff,ID_IGNP,ID_SYSTEM,IFFSIZE_UNKNOWN);
-	WriteChunkBytes(iff,&prefs.pr_Flags,sizeof(prefs.pr_Flags));
-	WriteChunkBytes(iff,&clipunit,sizeof(clipunit));
+	store4 = LONG2BE(prefs.pr_Flags);
+	WriteChunkBytes(iff, &store4, 4);
+	store4 = LONG2BE(clipunit);
+	WriteChunkBytes(iff, &store4, 4);
 
 	PopChunk(iff);
 }
@@ -427,9 +507,11 @@ static void
 spVersion(struct IFFHandle *iff)
 {
 	ULONG version = IGNP_VERSION;
+	ULONG store4;
 
 	PushChunk(iff, ID_IGNP, ID_VERSION, IFFSIZE_UNKNOWN);
-	WriteChunkBytes(iff, &version, sizeof(ULONG));
+	store4 = LONG2BE(version);
+	WriteChunkBytes(iff, &store4, 4);
 	PopChunk(iff);
 }
 
@@ -467,8 +549,8 @@ SavePrefs(struct Prefs *pr, STRPTR name, long flags)
 {
 	struct IFFHandle *iff;
 
-	if (iff = AllocIFF()) {
-		if (iff->iff_Stream = Open(name,MODE_NEWFILE)) {
+	if ((iff = AllocIFF()) != 0) {
+		if ((iff->iff_Stream = (IPTR)Open(name,MODE_NEWFILE)) != 0) {
 			ULONG modules = pr->pr_ModuleFlags;
 
 			InitIFFasDOS(iff);
@@ -494,7 +576,7 @@ SavePrefs(struct Prefs *pr, STRPTR name, long flags)
 			PopChunk(iff);
 
 			CloseIFF(iff);
-			Close(iff->iff_Stream);
+			Close((void*)iff->iff_Stream);
 		}
 		FreeIFF(iff);
 	}
@@ -509,7 +591,7 @@ lpPreamble(struct Prefs *pr,UWORD type,BOOL set)
 {
 	struct Window *win;
 
-	if (win = GetPrefsWindow(pr,type))
+	if ((win = GetPrefsWindow(pr,type)) != 0)
 		CloseAppWindow(win,TRUE);
 
 	if (&prefs != pr)
@@ -526,7 +608,7 @@ lpDisp(struct IFFHandle *iff, LONG context, struct Prefs *pr)
 	struct StoredProperty *sp;
 	STRPTR t;
 
-	if (sp = FindProp(iff, context, ID_DISP)) {
+	if ((sp = FindProp(iff, context, ID_DISP)) != 0) {
 		lpPreamble(pr, WDT_PREFDISP, TRUE);
 
 		FreeString(pr->pr_Disp->pd_AntiAttr.ta_Name);
@@ -538,8 +620,9 @@ lpDisp(struct IFFHandle *iff, LONG context, struct Prefs *pr)
 		pr->pr_Disp->pd_IconBar = *t++;
 		pr->pr_Disp->pd_FormBar = *t++;
 		pr->pr_Disp->pd_ShowAntis = *t++;
-		pr->pr_Disp->pd_AntiAttr.ta_Name = AllocString(t);  t += strlen(t)+1;
-		pr->pr_Disp->pd_AntiAttr.ta_YSize = *(UWORD *)t;
+		pr->pr_Disp->pd_AntiAttr.ta_Name = AllocString(t);
+		t += strlen(t) + 1;
+		pr->pr_Disp->pd_AntiAttr.ta_YSize = BE2WORD(*(UWORD *)t);
 		UpdateAntiFont(pr);
 
 		RefreshPrefsModule(pr, NULL, WDT_PREFDISP);
@@ -553,15 +636,30 @@ lpScreen(struct IFFHandle *iff)
 	struct StoredProperty *sp;
 	STRPTR t;
 
-	if (sp = FindProp(iff, ID_IGNP, ID_SCREEN)) {
+	if ((sp = FindProp(iff, ID_IGNP, ID_SCREEN)) != 0) {
 		lpPreamble(&prefs, WDT_PREFSCREEN, TRUE);
 
 		FreeString(prefs.pr_Screen->ps_TextAttr.ta_Name);
 
 		t = sp->sp_Data;
-		CopyMem(t,prefs.pr_Screen,PREFSCREEN_SIZE);  t += PREFSCREEN_SIZE;
-		prefs.pr_Screen->ps_TextAttr.ta_Name = AllocString(t);  t += strlen(t)+1;
-		prefs.pr_Screen->ps_TextAttr.ta_YSize = *(UWORD *)t;
+		prefs.pr_Screen->ps_Width = BE2WORD(*(UWORD *)t);
+		prefs.pr_Screen->ps_Height = BE2WORD(*(UWORD *)(t+2));
+		prefs.pr_Screen->ps_Depth = BE2WORD(*(UWORD *)(t+4));
+		prefs.pr_Screen->ps_dimWidth = BE2WORD(*(UWORD *)(t+6));
+		prefs.pr_Screen->ps_dimHeight = BE2WORD(*(UWORD *)(t+8));
+		prefs.pr_Screen->ps_ModeID = BE2LONG(*(LONG *)(t+10));
+		prefs.pr_Screen->ps_Overscan = BE2LONG(*(LONG *)(t+14));
+		prefs.pr_Screen->ps_Interleaved = *(t+18);
+		prefs.pr_Screen->ps_Type = BE2WORD(*(WORD *)(t+20));
+		CopyMem(t + 22, prefs.pr_Screen->ps_PubName, PS_NAMELEN);
+		prefs.pr_Screen->ps_BackFill = *(t+86);
+		prefs.pr_Screen->ps_BFColor = BE2LONG(*(LONG *)(t+88));
+		prefs.pr_Screen->ps_mmWidth = BE2LONG(*(ULONG *)(t+92));
+		prefs.pr_Screen->ps_mmHeight = BE2LONG(*(ULONG *)(t+96));
+		t += 100;
+		prefs.pr_Screen->ps_TextAttr.ta_Name = AllocString(t);
+		t += strlen(t)+1;
+		prefs.pr_Screen->ps_TextAttr.ta_YSize = BE2WORD(*(UWORD *)t);
 		if (scr)
 			ChangeAppScreen(TRUE);
 	}
@@ -576,21 +674,25 @@ lpFile(struct IFFHandle *iff)
 	BPTR   olddir;
 	STRPTR t;
 
-	if (sp = FindProp(iff,ID_IGNP,ID_FILE))
+	if ((sp = FindProp(iff,ID_IGNP,ID_FILE)) != 0)
 	{
 		lpPreamble(&prefs,WDT_PREFFILE,TRUE);
-		CopyMem(sp->sp_Data,prefs.pr_File,sizeof(struct PrefFile));
+		
+		t=sp->sp_Data;
+		prefs.pr_File->pf_Flags = BE2WORD(*(UWORD *)t);
+		prefs.pr_File->pf_AutoSave = *(t+2);
+		prefs.pr_File->pf_AutoSaveIntervall = BE2LONG(*(LONG *)(t+4));
 	}
 	if (sm)
 	{
 		olddir = CurrentDir(sm->sm_ArgList[0].wa_Lock);
-		if (dio = GetDiskObject(sm->sm_ArgList[0].wa_Name))
+		if ((dio = GetDiskObject(sm->sm_ArgList[0].wa_Name)) != 0)
 		{
-			if (t = FindToolType(dio->do_ToolTypes,"SHEETS"))
+			if ((t = FindToolType(dio->do_ToolTypes,"SHEETS")) != 0)
 				FreeString(projpath),  projpath = AllocString(t);
-			if (t = FindToolType(dio->do_ToolTypes,"GRAPHICS"))
+			if ((t = FindToolType(dio->do_ToolTypes,"GRAPHICS")) != 0)
 				FreeString(graphicpath),  graphicpath = AllocString(t);
-			if (t = FindToolType(dio->do_ToolTypes,"ICONS"))
+			if ((t = FindToolType(dio->do_ToolTypes,"ICONS")) != 0)
 				FreeString(iconpath),  iconpath = AllocString(t);
 			FreeDiskObject(dio);
 		}
@@ -609,12 +711,12 @@ lpCmds(struct IFFHandle *iff, LONG context, struct Prefs *pr, BYTE add, BYTE kee
 	STRPTR t;
 	ULONG  pos = 0,i;
 
-	if (sp = FindProp(iff,context,ID_CMDS))
+	if ((sp = FindProp(iff,context,ID_CMDS)) != 0)
 	{
 		{
 			struct Window *win;
 
-			while(win = GetAppWindow(WDT_DEFINECMD))
+			while((win = GetAppWindow(WDT_DEFINECMD)) != 0)
 				CloseAppWindow(win,TRUE);
 		}
 		lpPreamble(pr,WDT_PREFCMDS,!add);
@@ -624,7 +726,7 @@ lpCmds(struct IFFHandle *iff, LONG context, struct Prefs *pr, BYTE add, BYTE kee
 			if (!add)
 			{
 				moveList(&pr->pr_AppCmds,&list);
-				while(cmd = (struct Command *)RemHead(&outputs))
+				while((cmd = (struct Command *)MyRemHead(&outputs)) != 0)
 				{
 					FreeString(cmd->cmd_Name);
 					FreePooled(pool,cmd,sizeof(struct Node));
@@ -633,18 +735,18 @@ lpCmds(struct IFFHandle *iff, LONG context, struct Prefs *pr, BYTE add, BYTE kee
 			}
 			for(t = sp->sp_Data;sp->sp_Size-1 > pos;)
 			{
-				if (ac = NewAppCmd(NULL))
+				if ((ac = NewAppCmd(NULL)))
 				{
 					ac->ac_Node.in_Name = AllocString(t);
 					i = strlen(t)+1;  pos += i;  t += i;
-					if (ac->ac_ImageName = AllocString(t))
+					if ((ac->ac_ImageName = AllocString(t)))
 						ac->ac_Node.in_Image = LoadImage(t);
 					i = strlen(t)+1;  pos += i;  t += i;
 					ac->ac_Output = AllocString(t);
-					if (ac->ac_Output && !FindName(&outputs,t) && (cmd = AllocPooled(pool,sizeof(struct Node))))
+					if (ac->ac_Output && !MyFindName(&outputs,t) && (cmd = AllocPooled(pool,sizeof(struct Node))))
 					{
 						cmd->cmd_Name = AllocString(t);
-						AddTail(&outputs,(struct Node *)cmd);
+						MyAddTail(&outputs,(struct Node *)cmd);
 					}
 					i = strlen(t)+1;  pos += i;  t += i;
 					ac->ac_HelpText = AllocString(t);
@@ -653,33 +755,33 @@ lpCmds(struct IFFHandle *iff, LONG context, struct Prefs *pr, BYTE add, BYTE kee
 					i = strlen(t)+1;  pos += i;  t += i;
 					while(*t)
 					{
-						if (cmd = AllocPooled(pool,sizeof(struct Command)))
+						if ((cmd = AllocPooled(pool,sizeof(struct Command))) != 0)
 						{
 							cmd->cmd_Name = AllocString(t);
 							i = strlen(t)+1;  pos += i;  t += i;
 							cmd->cmd_Type = *t++;  pos++;
-							AddTail(&ac->ac_Cmds,(struct Node *)cmd);
+							MyAddTail(&ac->ac_Cmds, cmd);
 						}
 					}
 					t++;  pos++;
-					if (add && (oac = (APTR)FindName(&pr->pr_AppCmds,ac->ac_Node.in_Name)))
+					if (add && (oac = (APTR)MyFindName(&pr->pr_AppCmds, ac->ac_Node.in_Name)))
 					{
 						if (!keep)
 						{
-							Remove((struct Node *)oac);
+							MyRemove(oac);
 							FreeAppCmd(oac);
-							AddHead(&pr->pr_AppCmds,(struct Node *)ac);
+							MyAddHead(&pr->pr_AppCmds, ac);
 						}
 					}
 					else
-						AddHead(&pr->pr_AppCmds,(struct Node *)ac);
+						MyAddHead(&pr->pr_AppCmds, ac);
 				}
 				else
 					pos = ~0L;
 			}
 			if (!add)
 			{
-				while(ac = (struct AppCmd *)RemHead(&list))
+				while((ac = (struct AppCmd *)MyRemHead(&list)) != 0)
 					FreeAppCmd(ac);
 			}
 			sortList(&pr->pr_AppCmds);
@@ -699,7 +801,7 @@ lpMenu(struct IFFHandle *iff, LONG context, struct Prefs *pr)
 	STRPTR t;
 	long   pos = 0;
 
-	if (sp = FindProp(iff,context,ID_MENU))
+	if ((sp = FindProp(iff, context, ID_MENU)) != 0)
 	{
 		lpPreamble(pr,WDT_PREFMENU,TRUE);
 		FreeAppMenus(&pr->pr_AppMenus);
@@ -710,8 +812,8 @@ lpMenu(struct IFFHandle *iff, LONG context, struct Prefs *pr)
 			{
 				am->am_Node.ln_Name = AllocString(t+1);
 				pos += strlen(t+1)+2;  t = pos+(UBYTE *)sp->sp_Data;
-				NewList(&am->am_Items);
-				AddTail(&pr->pr_AppMenus,am);
+				MyNewList(&am->am_Items);
+				MyAddTail(&pr->pr_AppMenus, am);
 			}
 			if (*t == NM_ITEM && am && (ame = AllocPooled(pool,sizeof(struct AppMenuEntry))))
 			{
@@ -721,8 +823,8 @@ lpMenu(struct IFFHandle *iff, LONG context, struct Prefs *pr)
 				pos += strlen(t)+1;  t = pos+(UBYTE *)sp->sp_Data;
 				ame->am_AppCmd = AllocString(t);
 				pos += strlen(t)+1;  t = pos+(UBYTE *)sp->sp_Data;
-				NewList(&ame->am_Subs);
-				AddTail(&am->am_Items,ame);
+				MyNewList(&ame->am_Subs);
+				MyAddTail(&am->am_Items, ame);
 			}
 			if (*t == NM_SUB && am && ame && (same = AllocPooled(pool,sizeof(struct AppMenuEntry))))
 			{
@@ -732,8 +834,8 @@ lpMenu(struct IFFHandle *iff, LONG context, struct Prefs *pr)
 				pos += strlen(t)+1;  t = pos+(UBYTE *)sp->sp_Data;
 				same->am_AppCmd = AllocString(t);
 				pos += strlen(t)+1;  t = pos+(UBYTE *)sp->sp_Data;
-				NewList(&same->am_Subs);
-				AddTail(&ame->am_Subs,same);
+				MyNewList(&same->am_Subs);
+				MyAddTail(&ame->am_Subs, same);
 			}
 		}
 		RefreshPrefsModule(pr, NULL, WDT_PREFMENU);
@@ -749,25 +851,25 @@ lpKeys(struct IFFHandle *iff, LONG context, struct Prefs *pr)
 	STRPTR t;
 	long   pos = 0;
 
-	if (sp = FindProp(iff,context,ID_KEYS))
+	if ((sp = FindProp(iff, context, ID_KEYS)) != 0)
 	{
 		lpPreamble(pr,WDT_PREFKEYS,TRUE);
 		FreeAppKeys(&pr->pr_AppKeys);
 
 		for(t = sp->sp_Data;sp->sp_Size-1 > pos;)
 		{
-			if (ak = AllocPooled(pool,sizeof(struct AppKey)))
+			if ((ak = AllocPooled(pool, sizeof(struct AppKey))) != 0)
 			{
-				ak->ak_Class = *(ULONG *)t;
-				ak->ak_Code = *(UWORD *)(t+4);
-				ak->ak_Qualifier = *(UWORD *)(t+6);
+				ak->ak_Class = BE2LONG(*(ULONG *)t);
+				ak->ak_Code = BE2WORD(*(UWORD *)(t+4));
+				ak->ak_Qualifier = BE2WORD(*(UWORD *)(t+6));
 				ak->ak_Node.ln_Type = *(t+8);
 				t += 9;
 				if (*t)
 					ak->ak_AppCmd = AllocString(t);
 				pos += 10+strlen(t);  t += strlen(t)+1;
 				SetAppKeyName(ak);
-				AddTail(&pr->pr_AppKeys,ak);
+				MyAddTail(&pr->pr_AppKeys,ak);
 			}
 		}
 		/** RefreshPrefsModule() bislang nicht notwendig **/
@@ -783,7 +885,7 @@ lpColors(struct IFFHandle *iff, struct Prefs *pr)
 	STRPTR t;
 	long   pos = 0;
 
-	if (sp = FindProp(iff,ID_IGNP,ID_COLORS))
+	if ((sp = FindProp(iff,ID_IGNP,ID_COLORS)) != 0)
 	{
 		lpPreamble(pr,WDT_PREFCOLORS,TRUE);
 		FreeAppColors();
@@ -809,7 +911,7 @@ lpIcon(struct IFFHandle *iff, LONG context, struct Prefs *pr)
 	STRPTR t;
 	long   pos = 0;
 
-	if (sp = FindProp(iff,context,ID_ICON))
+	if ((sp = FindProp(iff,context,ID_ICON)))
 	{
 		lpPreamble(pr,WDT_PREFICON,TRUE);
 
@@ -820,14 +922,14 @@ lpIcon(struct IFFHandle *iff, LONG context, struct Prefs *pr)
 
 		for (t = sp->sp_Data; sp->sp_Size-1 > pos;)
 		{
-			if (io = AllocPooled(pool, sizeof(struct IconObj)))
+			if ((io = AllocPooled(pool, sizeof(struct IconObj))) != 0)
 			{
 				if (*t)
 				{
-					struct AppCmd *ac = (APTR)FindName(&pr->pr_AppCmds,t);
+					struct AppCmd *ac = (APTR)MyFindName(&pr->pr_AppCmds, t);
 
 					if (!ac && pr != &prefs)
-						ac = (APTR)FindName(&prefs.pr_AppCmds,t);
+						ac = (APTR)MyFindName(&prefs.pr_AppCmds, t);
 					AddIconObj(&pr->pr_IconObjs,ac,-1);
 				}
 				else
@@ -874,7 +976,7 @@ lpFormat(struct IFFHandle *iff, LONG context, struct Prefs *pr, struct MinList *
 	lpPreamble(pr, WDT_PREFFORMAT, TRUE);
 	/* MERKER: muß das Fenster wirklich noch geschlossen werden? */
 
-	while (fv = (struct FormatVorlage *)RemHead(&pr->pr_Formats))
+	while ((fv = (struct FormatVorlage *)MyRemHead(&pr->pr_Formats)) != 0)
 		FreeFormat(fv);
 
 	t = sp->sp_Data;
@@ -903,10 +1005,10 @@ lpFormat(struct IFFHandle *iff, LONG context, struct Prefs *pr, struct MinList *
 		{
 			struct Node *ln;
 
-			if (ln = AllocPooled(pool, sizeof(struct Node)))
+			if ((ln = AllocPooled(pool, sizeof(struct Node))))
 			{
 				ln->ln_Name = AllocString(s);
-				AddTail(list, ln);
+				MyAddTail(list, ln);
 			}
 		}
 	}
@@ -916,7 +1018,7 @@ lpFormat(struct IFFHandle *iff, LONG context, struct Prefs *pr, struct MinList *
 	{
 		struct FormatVorlage *sfv = (APTR)prefs.pr_Formats.mlh_Head, *nfv;
 
-		for (fv = (APTR)pr->pr_Formats.mlh_Head; nfv = (APTR)fv->fv_Node.ln_Succ; fv = nfv)  // Vergleich über zwei sortierte Listen
+		for (fv = (APTR)pr->pr_Formats.mlh_Head; (nfv = (APTR)fv->fv_Node.ln_Succ); fv = nfv)  // Vergleich über zwei sortierte Listen
 		{
 			while (sfv->fv_Node.ln_Succ && FormatSort(&sfv, &fv) < 0) {
 				sfv = (APTR)sfv->fv_Node.ln_Succ;
@@ -931,7 +1033,7 @@ lpFormat(struct IFFHandle *iff, LONG context, struct Prefs *pr, struct MinList *
 				&& sfv->fv_Komma == fv->fv_Komma
 				&& sfv->fv_NegativePen == fv->fv_NegativePen)
 			{
-				Remove(fv);
+				MyRemove(fv);
 				FreeFormat(fv);
 				continue;
 			}
@@ -960,7 +1062,7 @@ lpNames(struct IFFHandle *iff, LONG context, struct Prefs *pr)
 
 	lpPreamble(pr, WDT_PREFNAMES, TRUE);
 
-	while (nm = (struct Name *)RemHead(&pr->pr_Names))
+	while ((nm = (struct Name *)MyRemHead(&pr->pr_Names)) != 0)
 		FreeName(nm);
 
 	if (mp)
@@ -971,7 +1073,8 @@ lpNames(struct IFFHandle *iff, LONG context, struct Prefs *pr)
 
 	for (; sp->sp_Size-1 > pos;) {
 		s = t;  i = strlen(t)+1;  pos += i;  s += i;
-		i = strlen(s)+1;  pos += i + 5;  type = s[i];  page = *(ULONG *)(s+i+1);
+		i = strlen(s)+1;  pos += i + 5;  type = s[i];
+		page = BE2LONG(*(ULONG *)(s + i + 1));
 		
 		if ((type & NMT_TYPEMASK) > NMT_DATABASE || (type & NMT_TYPEMASK) < NMT_NONE)
 			break;
@@ -989,14 +1092,17 @@ void
 lpTable(struct IFFHandle *iff,struct Prefs *pr)
 {
 	struct StoredProperty *sp;
+	STRPTR t;
 
-	if (sp = FindProp(iff,ID_IGNP,ID_TABLE))
+	if ((sp = FindProp(iff,ID_IGNP,ID_TABLE)) != 0)
 	{
 		lpPreamble(pr,WDT_PREFTABLE,TRUE);
 
-		CopyMem(sp->sp_Data,pr->pr_Table,sizeof(struct PrefTable));
-		if (sp->sp_Size > sizeof(struct PrefTable))
-			calcflags = *(UWORD *)((UBYTE *)sp->sp_Data+sizeof(struct PrefTable));
+		t = sp->sp_Data;
+		pr->pr_Table->pt_Flags = BE2WORD(*(UWORD *)t);
+		CopyMem(t + 2, pr->pr_Table->pt_EditFunc, PTEQ_NUM);
+		if (sp->sp_Size > 8)
+			calcflags = BE2WORD(*(UWORD *)(t+8));
 	}
 }
 
@@ -1005,15 +1111,15 @@ void
 lpSystem(struct IFFHandle *iff)
 {
 	struct StoredProperty *sp;
-	long   i;
 	STRPTR t;
 
-	if (sp = FindProp(iff,ID_IGNP,ID_SYSTEM))
+	if ((sp = FindProp(iff,ID_IGNP,ID_SYSTEM)) != 0)
 	{
 		lpPreamble(&prefs,WDT_PREFSYS,TRUE);
 
-		CopyMem(t = sp->sp_Data,&prefs.pr_Flags,i = sizeof(prefs.pr_Flags));
-		CopyMem(t += i, &clipunit, sizeof(clipunit));
+		t = sp->sp_Data;
+		prefs.pr_Flags = BE2LONG(*(ULONG *)t);
+		clipunit = BE2LONG(*(ULONG *)(t+4));
 	}
 }
 
@@ -1025,7 +1131,7 @@ lpContext(struct IFFHandle *iff, LONG context, struct Prefs *pr)
 	long   i,pos,len;
 	STRPTR t;
 
-	if (sp = FindProp(iff,context,ID_CONTEXT))
+	if ((sp = FindProp(iff,context,ID_CONTEXT)) != 0)
 	{
 		lpPreamble(pr,WDT_PREFCONTEXT,TRUE);
 		for(i = 0;i < NUM_CMT;i++)
@@ -1054,8 +1160,8 @@ lpVersion(struct IFFHandle *iff)
 	struct StoredProperty *sp;
 	ULONG  version = 0;
 
-	if (sp = FindProp(iff,ID_IGNP,ID_VERSION))
-		version = *(ULONG *)sp->sp_Data;
+	if ((sp = FindProp(iff, ID_IGNP, ID_VERSION)) != 0)
+		version = BE2LONG(*(ULONG *)sp->sp_Data);
 	if (version > IGNP_VERSION)
 		ErrorRequest(GetString(&gLocaleInfo, MSG_PREFERENCES_VERSION_ERR));
 }
@@ -1127,7 +1233,7 @@ LoadPrefs(struct Prefs *prefs, STRPTR name, BPTR lock, long flags)
 	if ((iff = AllocIFF()) == NULL)
 		return FALSE;
 
-	if (iff->iff_Stream = name ? Open(name, MODE_OLDFILE) : OpenFromLock(lock))
+	if ((iff->iff_Stream = (IPTR)(name ? Open(name, MODE_OLDFILE) : OpenFromLock(lock))) != 0)
 	{
 		InitIFFasDOS(iff);
 		if (!OpenIFF(iff, IFFF_READ))
@@ -1136,7 +1242,7 @@ LoadPrefs(struct Prefs *prefs, STRPTR name, BPTR lock, long flags)
 			CloseIFF(iff);
 			rc = TRUE;
 		}
-		Close(iff->iff_Stream);
+		Close((void*)iff->iff_Stream);
 	}
 	else if (!name && lock)
 		UnLock(lock);
@@ -1144,5 +1250,3 @@ LoadPrefs(struct Prefs *prefs, STRPTR name, BPTR lock, long flags)
 	FreeIFF(iff);
 	return rc;
 }
-
-

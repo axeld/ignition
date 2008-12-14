@@ -357,7 +357,7 @@ extern void DumpReference(struct Reference *r);
 			 
 // calc.c
 extern void InitCalc(void);
-extern STRPTR PUBLIC AbsCoord2String(reg (d0) BOOL,reg (d1) long,reg (d2) BOOL,reg (d3) long);
+extern STRPTR PUBLIC AbsCoord2String(REG(d0, BOOL),REG(d1, long),REG(d2, BOOL),REG(d3, long));
 extern STRPTR Coord2String(long col,long row);
 extern void TablePos2String(struct Page *page,struct tablePos *tp,STRPTR t);
 extern void Pos2String(long pos,STRPTR t);
@@ -378,8 +378,8 @@ extern struct Name *CopyName(struct Name *nm);
 extern void AttachNameList(struct MinList *list);
 extern void DetachNameList(struct MinList *list);
 extern void SetNameContent(struct Name *nm, STRPTR content);
-extern struct Name *AddName(struct MinList *list,STRPTR n,STRPTR t,BYTE type,struct Page *page);
-extern BOOL IsValidName(struct MinList *list, STRPTR t);
+extern struct Name *AddName(struct MinList *list,CONST_STRPTR n,STRPTR t,BYTE type,struct Page *page);
+extern bool IsValidName(struct List *list, STRPTR t);
 extern bool GetNameAndField(STRPTR t, struct Database **_db, struct Field **_fi, int32 *_fiPos);
 extern STRPTR ita(double f,long nach,UBYTE flags);
 extern STRPTR FitValueInFormat(double val,struct Node *fv,STRPTR fvt,long komma,UBYTE flags);
@@ -389,7 +389,7 @@ extern struct tableField *GetExtTableField(struct Term *t);
 extern BYTE GetFVType(struct Node *fv,long *pos);
 extern void GetValue(struct Page *,struct tableField *tf);
 extern void GetFormula(struct Page *,struct tableField *tf);
-extern long CheckFormat(struct Node *fv,STRPTR t,double *value);
+extern int32 CheckFormat(struct Node *fv,STRPTR t,double *value);
 extern long GetFormatOfValue(STRPTR t,double *value);
 extern void RecalcTableFields(struct Page *);
 extern void RecalcMapPages(struct Mappe *mp);
@@ -398,19 +398,19 @@ extern void RecalcReferencesList(struct ArrayList *al);
 extern void RecalcReferencingObjects(struct Reference *r, bool recalcThis);
 extern STRPTR StaticTreeTerm(struct Term *t,BOOL formula);
 extern STRPTR TreeTerm(struct Term *k,BOOL formula);
-extern struct Term * PUBLIC CopyTree(reg (a0) struct Term *t);
-extern struct Term * PUBLIC CreateTree(reg (a0) struct Page *page,reg (a1) STRPTR t);
-extern void PUBLIC DeleteTree(reg (a0) struct Term *t);
-extern long PUBLIC CalcTree(reg (a0) struct Result *r,reg (a1) struct Term *t);
+extern struct Term * PUBLIC CopyTree(REG(a0, struct Term *t));
+extern struct Term * PUBLIC CreateTree(REG(a0, struct Page *page),REG(a1, STRPTR t));
+extern void PUBLIC DeleteTree(REG(a0, struct Term *t));
+extern int32 PUBLIC CalcTree(REG(a0, struct Result *r),REG(a1, struct Term *t));
 extern STRPTR TreeText(struct Term *t);
 extern double TreeValue(struct Term *t);
 extern struct tableField *TreeCell(struct Term *t);
 
 // calc.c - support functions for gObjects and others
-extern struct Term * PUBLIC CopyTerm(reg (a0) struct Term *term);
-extern void PUBLIC DeleteTerm(reg (a0) struct Term *term);
+extern struct Term * PUBLIC CopyTerm(REG(a0, struct Term *term));
+extern void PUBLIC DeleteTerm(REG(a0, struct Term *term));
 extern struct Term *CreateTreeFrom(struct Page *page, long col, long row, STRPTR t);
-extern struct Term * PUBLIC CreateTerm(reg (a0) struct Page *page,reg (a1) STRPTR text);
-extern STRPTR PUBLIC CalcTerm(reg (a0) struct Page *page,reg (a1) STRPTR text,reg (a2) struct Term *term,reg (a3) STRPTR format);
+extern struct Term * PUBLIC CreateTerm(REG(a0, struct Page *page),REG(a1, STRPTR text));
+extern STRPTR PUBLIC CalcTerm(REG(a0, struct Page *page),REG(a1, STRPTR text),REG(a2, struct Term *term),REG(a3, STRPTR format));
 
 #endif   /* IGN_CALC_H */

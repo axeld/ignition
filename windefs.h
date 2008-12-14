@@ -10,168 +10,168 @@
 
 
 // handlewindows.c
-extern void __asm closeNotesWin(reg (a0) struct Window *,reg (d0) BOOL);
-extern void __asm handleNotesIDCMP(reg (a0) struct TagItem *);
-extern void __asm CloseFormelWindow(reg (a0) struct Window *,reg (d0) BOOL);
-extern void __asm HandleFormelIDCMP(reg (a0) struct TagItem *);
-extern void __asm CloseBorderWindow(reg (a0) struct Window *,reg (d0) BOOL);
-extern void __asm HandleBorderIDCMP(reg (a0) struct TagItem *);
-extern void __asm handlePreviewIDCMP(reg (a0) struct TagItem *);
-extern void __asm CloseDiagramWindow(reg (a0) struct Window *,reg (d0) BOOL);
-extern void __asm HandleDiagramIDCMP(reg (a0) struct TagItem *);
-extern void __asm HandlePageSetupIDCMP(reg (a0) struct TagItem *tag);
-extern void __asm HandleDocInfoIDCMP(reg (a0) struct TagItem *);
-extern void __asm CloseDocumentWindow(reg (a0) struct Window *,reg (d0) BOOL);
-extern void __asm HandleDocumentIDCMP(reg (a0) struct TagItem *);
-extern void __asm HandlePageIDCMP(reg (a0) struct TagItem *);
-extern void __asm handleCellSizeIDCMP(reg (a0) struct TagItem *);
-extern void __asm handleZoomIDCMP(reg (a0) struct TagItem *);
-extern void __asm closeGClassesWindow(reg (a0) struct Window *,reg (d0) BOOL);
-extern void __asm handleGClassesIDCMP(reg (a0) struct TagItem *);
-extern void __asm CloseObjectWindow(reg (a0) struct Window *,reg (d0) BOOL);
-extern void __asm HandleObjectIDCMP(reg (a0) struct TagItem *);
-extern void __asm handleCommandIDCMP(reg (a0) struct TagItem *);
-extern void __asm CloseFileTypeWindow(reg (a0) struct Window *,reg (d0) BOOL);
-extern void __asm closeCellWin(reg (a0) struct Window *win,reg (d0) BOOL clean);
-extern void __asm handleCellIDCMP(reg (a0) struct TagItem *);
-extern void __asm handleSetNameIDCMP(reg (a0) struct TagItem *tag);
-extern void __asm handleSetTitleIDCMP(reg (a0) struct TagItem *tag);
-extern void __asm CloseScriptsWindow(reg (a0) struct Window *,reg (d0) BOOL);
-extern void __asm HandleScriptsIDCMP(reg (a0) struct TagItem *tag);
+extern void ASM closeNotesWin(REG(a0, struct Window *),REG(d0, BOOL));
+extern void ASM handleNotesIDCMP(REG(a0, struct TagItem *));
+extern void ASM CloseFormelWindow(REG(a0, struct Window *),REG(d0, BOOL));
+extern void ASM HandleFormelIDCMP(REG(a0, struct TagItem *));
+extern void ASM CloseBorderWindow(REG(a0, struct Window *),REG(d0, BOOL));
+extern void ASM HandleBorderIDCMP(REG(a0, struct TagItem *));
+extern void ASM handlePreviewIDCMP(REG(a0, struct TagItem *));
+extern void ASM CloseDiagramWindow(REG(a0, struct Window *),REG(d0, BOOL));
+extern void ASM HandleDiagramIDCMP(REG(a0, struct TagItem *));
+extern void ASM HandlePageSetupIDCMP(REG(a0, struct TagItem *tag));
+extern void ASM HandleDocInfoIDCMP(REG(a0, struct TagItem *));
+extern void ASM CloseDocumentWindow(REG(a0, struct Window *),REG(d0, BOOL));
+extern void ASM HandleDocumentIDCMP(REG(a0, struct TagItem *));
+extern void ASM HandlePageIDCMP(REG(a0, struct TagItem *));
+extern void ASM handleCellSizeIDCMP(REG(a0, struct TagItem *));
+extern void ASM handleZoomIDCMP(REG(a0, struct TagItem *));
+extern void ASM closeGClassesWindow(REG(a0, struct Window *),REG(d0, BOOL));
+extern void ASM handleGClassesIDCMP(REG(a0, struct TagItem *));
+extern void ASM CloseObjectWindow(REG(a0, struct Window *),REG(d0, BOOL));
+extern void ASM HandleObjectIDCMP(REG(a0, struct TagItem *));
+extern void ASM handleCommandIDCMP(REG(a0, struct TagItem *));
+extern void ASM CloseFileTypeWindow(REG(a0, struct Window *),REG(d0, BOOL));
+extern void ASM closeCellWin(REG(a0, struct Window *win),REG(d0, BOOL clean));
+extern void ASM handleCellIDCMP(REG(a0, struct TagItem *));
+extern void ASM handleSetNameIDCMP(REG(a0, struct TagItem *tag));
+extern void ASM handleSetTitleIDCMP(REG(a0, struct TagItem *tag));
+extern void ASM CloseScriptsWindow(REG(a0, struct Window *),REG(d0, BOOL));
+extern void ASM HandleScriptsIDCMP(REG(a0, struct TagItem *tag));
 
 // handleprefs.c
-extern void __asm handlePrefsIDCMP(reg (a0) struct TagItem *);
-extern void __asm HandlePrefChoiceIDCMP(reg (a0) struct TagItem *);
-extern void __asm handlePrefDispIDCMP(reg (a0) struct TagItem *);
-extern void __asm handlePrefMenuIDCMP(reg (a0) struct TagItem *);
-extern void __asm handlePrefIconIDCMP(reg (a0) struct TagItem *);
-extern void __asm handlePressKeyIDCMP(reg (a0) struct TagItem *);
-extern void __asm HandleKeyboardPrefsIDCMP(reg (a0) struct TagItem *);
-extern void __asm handlePrefScreenIDCMP(reg (a0) struct TagItem *);
-extern void __asm handlePrefCmdsIDCMP(reg (a0) struct TagItem *);
-extern void __asm handlePrefNamesIDCMP(reg (a0) struct TagItem *);
-extern void __asm HandleFormatPrefsIDCMP(reg (a0) struct TagItem *);
-extern void __asm HandleFilePrefsIDCMP(reg (a0) struct TagItem *);
-extern void __asm HandleTablePrefsIDCMP(reg (a0) struct TagItem *);
-extern void __asm handlePrefColorsIDCMP(reg (a0) struct TagItem *);
-extern void __asm handleDefineCmdIDCMP(reg (a0) struct TagItem *);
-extern void __asm HandleSystemPrefsIDCMP(reg (a0) struct TagItem *);
-extern void __asm handlePrefContextIDCMP(reg (a0) struct TagItem *tag);
-extern void __asm closePrefsWindow(reg (a0) struct Window *,reg (d0) BOOL);
-extern void __asm ClosePrefChoiceWindow(reg (a0) struct Window *,reg (d0) BOOL);
-extern void __asm closePrefDispWin(reg (a0) struct Window *,reg (d0) BOOL);
-extern void __asm CloseKeyboardPrefsWindow(reg (a0) struct Window *,reg (d0) BOOL);
-extern void __asm closePrefMenuWin(reg (a0) struct Window *,reg (d0) BOOL);
-extern void __asm closePrefIconWin(reg (a0) struct Window *,reg (d0) BOOL);
-extern void __asm closePrefColorsWin(reg (a0) struct Window *,reg (d0) BOOL);
-extern void __asm CloseFilePrefsWindow(reg (a0) struct Window *,reg (d0) BOOL);
-extern void __asm CloseTablePrefsWindow(reg (a0) struct Window *,reg (d0) BOOL);
-extern void __asm closePrefNamesWin(reg (a0) struct Window *,reg (d0) BOOL);
-extern void __asm CloseFormatPrefsWindow(reg (a0) struct Window *,reg (d0) BOOL);
-extern void __asm closePrefCmdsWin(reg (a0) struct Window *,reg (d0) BOOL);
-extern void __asm closeDefineCmdWin(reg (a0) struct Window *,reg (d0) BOOL);
-extern void __asm closePrefContextWindow(reg (a0) struct Window *win,reg (d0) BOOL clean);
+extern void ASM handlePrefsIDCMP(REG(a0, struct TagItem *));
+extern void ASM HandlePrefChoiceIDCMP(REG(a0, struct TagItem *));
+extern void ASM handlePrefDispIDCMP(REG(a0, struct TagItem *));
+extern void ASM handlePrefMenuIDCMP(REG(a0, struct TagItem *));
+extern void ASM handlePrefIconIDCMP(REG(a0, struct TagItem *));
+extern void ASM handlePressKeyIDCMP(REG(a0, struct TagItem *));
+extern void ASM HandleKeyboardPrefsIDCMP(REG(a0, struct TagItem *));
+extern void ASM handlePrefScreenIDCMP(REG(a0, struct TagItem *));
+extern void ASM handlePrefCmdsIDCMP(REG(a0, struct TagItem *));
+extern void ASM handlePrefNamesIDCMP(REG(a0, struct TagItem *));
+extern void ASM HandleFormatPrefsIDCMP(REG(a0, struct TagItem *));
+extern void ASM HandleFilePrefsIDCMP(REG(a0, struct TagItem *));
+extern void ASM HandleTablePrefsIDCMP(REG(a0, struct TagItem *));
+extern void ASM handlePrefColorsIDCMP(REG(a0, struct TagItem *));
+extern void ASM handleDefineCmdIDCMP(REG(a0, struct TagItem *));
+extern void ASM HandleSystemPrefsIDCMP(REG(a0, struct TagItem *));
+extern void ASM handlePrefContextIDCMP(REG(a0, struct TagItem *tag));
+extern void ASM closePrefsWindow(REG(a0, struct Window *),REG(d0, BOOL));
+extern void ASM ClosePrefChoiceWindow(REG(a0, struct Window *),REG(d0, BOOL));
+extern void ASM closePrefDispWin(REG(a0, struct Window *),REG(d0, BOOL));
+extern void ASM CloseKeyboardPrefsWindow(REG(a0, struct Window *),REG(d0, BOOL));
+extern void ASM closePrefMenuWin(REG(a0, struct Window *),REG(d0, BOOL));
+extern void ASM closePrefIconWin(REG(a0, struct Window *),REG(d0, BOOL));
+extern void ASM closePrefColorsWin(REG(a0, struct Window *),REG(d0, BOOL));
+extern void ASM CloseFilePrefsWindow(REG(a0, struct Window *),REG(d0, BOOL));
+extern void ASM CloseTablePrefsWindow(REG(a0, struct Window *),REG(d0, BOOL));
+extern void ASM closePrefNamesWin(REG(a0, struct Window *),REG(d0, BOOL));
+extern void ASM CloseFormatPrefsWindow(REG(a0, struct Window *),REG(d0, BOOL));
+extern void ASM closePrefCmdsWin(REG(a0, struct Window *),REG(d0, BOOL));
+extern void ASM closeDefineCmdWin(REG(a0, struct Window *),REG(d0, BOOL));
+extern void ASM closePrefContextWindow(REG(a0, struct Window *win),REG(d0, BOOL clean));
 
 // database.c
-extern void __asm CloseDatabaseWindow(reg (a0) struct Window *,reg (d0) BOOL);
-extern void __asm HandleDatabaseIDCMP(reg (a0) struct TagItem *);
-extern void __asm CloseMaskWindow(reg (a0) struct Window *,reg (d0) BOOL);
-extern void __asm HandleMaskIDCMP(reg (a0) struct TagItem *);
-extern void __asm CloseIndexWindow(reg (a0) struct Window *,reg (d0) BOOL);
-extern void __asm HandleIndexIDCMP(reg (a0) struct TagItem *);
-extern void __asm HandleFilterIDCMP(reg (a0) struct TagItem *);
-extern void __asm CloseFilterWindow(reg (a0) struct Window *,reg (d0) BOOL);
-extern void __asm CreateDatabaseGadgets(reg (a0) struct winData *wd);
-extern void __asm CreateMaskGadgets(reg (a0) struct winData *wd);
-extern void __asm CreateIndexGadgets(reg (a0) struct winData *wd);
-extern void __asm CreateFilterGadgets(reg (a0) struct winData *wd);
+extern void ASM CloseDatabaseWindow(REG(a0, struct Window *),REG(d0, BOOL));
+extern void ASM HandleDatabaseIDCMP(REG(a0, struct TagItem *));
+extern void ASM CloseMaskWindow(REG(a0, struct Window *),REG(d0, BOOL));
+extern void ASM HandleMaskIDCMP(REG(a0, struct TagItem *));
+extern void ASM CloseIndexWindow(REG(a0, struct Window *),REG(d0, BOOL));
+extern void ASM HandleIndexIDCMP(REG(a0, struct TagItem *));
+extern void ASM HandleFilterIDCMP(REG(a0, struct TagItem *));
+extern void ASM CloseFilterWindow(REG(a0, struct Window *),REG(d0, BOOL));
+extern void ASM CreateDatabaseGadgets(REG(a0, struct winData *wd));
+extern void ASM CreateMaskGadgets(REG(a0, struct winData *wd));
+extern void ASM CreateIndexGadgets(REG(a0, struct winData *wd));
+extern void ASM CreateFilterGadgets(REG(a0, struct winData *wd));
 
 // search.c
-extern void __asm CreateFindReplaceGadgets(reg (a0) struct winData *wd);
-extern void __asm CloseFindReplaceWindow(reg (a0) struct Window *win,reg (d0) BOOL clean);
-extern void __asm HandleFindReplaceIDCMP(reg (a0) struct TagItem *);
+extern void ASM CreateFindReplaceGadgets(REG(a0, struct winData *wd));
+extern void ASM CloseFindReplaceWindow(REG(a0, struct Window *win),REG(d0, BOOL clean));
+extern void ASM HandleFindReplaceIDCMP(REG(a0, struct TagItem *));
 
 // paste.c
 extern void CreateClipboardGadgets(struct winData *wd, long wid, long hei);
-extern void __asm handleClipIDCMP(reg (a0) struct TagItem *);
+extern void ASM handleClipIDCMP(REG(a0, struct TagItem *));
 
 // printer.c
-extern void __asm ClosePrinterWindow(reg (a0) struct Window *,reg (d0) BOOL);
-extern void __asm HandlePrinterIDCMP(reg (a0) struct TagItem *);
-extern void __asm CreatePrinterGadgets(reg (a0) struct winData *wd);
-extern void __asm ClosePrintStatusWindow(reg (a0) struct Window *,reg (d0) BOOL);
-extern void __asm HandlePrintStatusIDCMP(reg (a0) struct TagItem *);
-extern void __asm CreatePrintStatusGadgets(reg (a0) struct winData *wd);
+extern void ASM ClosePrinterWindow(REG(a0, struct Window *),REG(d0, BOOL));
+extern void ASM HandlePrinterIDCMP(REG(a0, struct TagItem *));
+extern void ASM CreatePrinterGadgets(REG(a0, struct winData *wd));
+extern void ASM ClosePrintStatusWindow(REG(a0, struct Window *),REG(d0, BOOL));
+extern void ASM HandlePrintStatusIDCMP(REG(a0, struct TagItem *));
+extern void ASM CreatePrintStatusGadgets(REG(a0, struct winData *wd));
 
 // prefsgadgets.c
 extern void CreatePrefsGadgets(struct winData *wd, long wid, long hei);
-extern void __asm CreatePrefChoiceGads(reg (a0) struct winData *wd);
-extern void __asm CreatePrefDispGads(reg (a0) struct winData *wd);
-extern void __asm CreatePrefScreenGads(reg (a0) struct winData *wd);
-extern void __asm CreatePrefMenuGads(reg (a0) struct winData *wd);
+extern void ASM CreatePrefChoiceGads(REG(a0, struct winData *wd));
+extern void ASM CreatePrefDispGads(REG(a0, struct winData *wd));
+extern void ASM CreatePrefScreenGads(REG(a0, struct winData *wd));
+extern void ASM CreatePrefMenuGads(REG(a0, struct winData *wd));
 extern void CreateKeyboardPrefsGadgets(struct winData *wd, long width, long height);
-extern void __asm CreatePrefIconGads(reg (a0) struct winData *wd);
-extern void __asm CreatePrefCmdsGads(reg (a0) struct winData *wd);
-extern void __asm CreatePrefNamesGads(reg (a0) struct winData *wd);
-extern void __asm CreateFormatPrefsGadgets(reg (a0) struct winData *wd);
-extern void __asm CreateFilePrefsGadgets(reg (a0) struct winData *wd);
-extern void __asm CreateTablePrefsGadgets(reg (a0) struct winData *wd);
-extern void __asm CreatePrefColorsGads(reg (a0) struct winData *wd);
-extern void __asm CreateDefineCmdGads(reg (a0) struct winData *wd);
-extern void __asm CreatePressKeyGads(reg (a0) struct winData *wd);
-extern void __asm CreateSystemPrefsGadgets(reg (a0) struct winData *wd);
-extern void __asm CreatePrefContextGads(reg (a0) struct winData *wd);
+extern void ASM CreatePrefIconGads(REG(a0, struct winData *wd));
+extern void ASM CreatePrefCmdsGads(REG(a0, struct winData *wd));
+extern void ASM CreatePrefNamesGads(REG(a0, struct winData *wd));
+extern void ASM CreateFormatPrefsGadgets(REG(a0, struct winData *wd));
+extern void ASM CreateFilePrefsGadgets(REG(a0, struct winData *wd));
+extern void ASM CreateTablePrefsGadgets(REG(a0, struct winData *wd));
+extern void ASM CreatePrefColorsGads(REG(a0, struct winData *wd));
+extern void ASM CreateDefineCmdGads(REG(a0, struct winData *wd));
+extern void ASM CreatePressKeyGads(REG(a0, struct winData *wd));
+extern void ASM CreateSystemPrefsGadgets(REG(a0, struct winData *wd));
+extern void ASM CreatePrefContextGads(REG(a0, struct winData *wd));
 
 // gadgets.c
-extern void __asm CreateInfoGadgets(reg (a0) struct winData *wd);
-extern void __asm CreateBorderGadgets(reg (a0) struct winData *wd);
-extern void __asm CreateDiagramGadgets(reg (a0) struct winData *wd);
-extern void __asm CreatePaletteGadgets(reg (a0) struct winData *wd);
-extern void __asm CreateFormelGadgets(reg (a0) struct winData *wd);
-extern void __asm CreateFormatGadgets(reg (a0) struct winData *wd);
-extern void __asm CreatePageSetupGadgets(reg (a0) struct winData *wd);
-extern void __asm CreateDocInfoGadgets(reg (a0) struct winData *wd);
-extern void __asm CreateDocumentGadgets(reg (a0) struct winData *wd);
-extern void __asm CreatePageGadgets(reg (a0) struct winData *wd);
-extern void __asm CreateAlignGadgets(reg (a0) struct winData *wd);
-extern void __asm CreateCellSizeGadgets(reg (a0) struct winData *wd);
-extern void __asm CreateZoomGadgets(reg (a0) struct winData *wd);
-extern void __asm CreateColorsGadgets(reg (a0) struct winData *wd);
-extern void __asm CreateObjectGadgets(reg (a0) struct winData *wd);
-extern void __asm CreateCommandGadgets(reg (a0) struct winData *wd);
-extern void __asm CreateFileTypeGadgets(reg (a0) struct winData *wd);
-extern void __asm CreateCellGadgets(reg (a0) struct winData *wd);
-extern void __asm CreateSetNameGadgets(reg (a0) struct winData *wd);
+extern void ASM CreateInfoGadgets(REG(a0, struct winData *wd));
+extern void ASM CreateBorderGadgets(REG(a0, struct winData *wd));
+extern void ASM CreateDiagramGadgets(REG(a0, struct winData *wd));
+extern void ASM CreatePaletteGadgets(REG(a0, struct winData *wd));
+extern void ASM CreateFormelGadgets(REG(a0, struct winData *wd));
+extern void ASM CreateFormatGadgets(REG(a0, struct winData *wd));
+extern void ASM CreatePageSetupGadgets(REG(a0, struct winData *wd));
+extern void ASM CreateDocInfoGadgets(REG(a0, struct winData *wd));
+extern void ASM CreateDocumentGadgets(REG(a0, struct winData *wd));
+extern void ASM CreatePageGadgets(REG(a0, struct winData *wd));
+extern void ASM CreateAlignGadgets(REG(a0, struct winData *wd));
+extern void ASM CreateCellSizeGadgets(REG(a0, struct winData *wd));
+extern void ASM CreateZoomGadgets(REG(a0, struct winData *wd));
+extern void ASM CreateColorsGadgets(REG(a0, struct winData *wd));
+extern void ASM CreateObjectGadgets(REG(a0, struct winData *wd));
+extern void ASM CreateCommandGadgets(REG(a0, struct winData *wd));
+extern void ASM CreateFileTypeGadgets(REG(a0, struct winData *wd));
+extern void ASM CreateCellGadgets(REG(a0, struct winData *wd));
+extern void ASM CreateSetNameGadgets(REG(a0, struct winData *wd));
 
 extern void CreateGClassesGadgets(struct winData *wd, long wid, long hei);
 extern void CreateScriptsGadgets(struct winData *wd, long wid, long hei);
 extern void CreateNotesGadgets(struct winData *wd, long wid, long hei);
 
 // initwindows.c
-extern void __asm InitBorderWindow(reg (a0) struct winData *wd);
-extern void __asm InitDatabaseWindow(reg (a0) struct winData *wd);
-extern void __asm InitDiagramWindow(reg (a0) struct winData *wd);
-extern void __asm InitDocumentWindow(reg (a0) struct winData *wd);
-extern void __asm InitFileTypeWindow(reg (a0) struct winData *wd);
-extern void __asm InitFindReplaceWindow(reg (a0) struct winData *wd);
-extern void __asm InitFormelWindow(reg (a0) struct winData *wd);
-extern void __asm InitIndexWindow(reg (a0) struct winData *wd);
-extern void __asm InitFilterWindow(reg (a0) struct winData *wd);
-extern void __asm InitMaskWindow(reg (a0) struct winData *wd);
-extern void __asm initPrefNames(reg (a0) struct winData *wd);
-extern void __asm initNotes(reg (a0) struct winData *wd);
-extern void __asm InitObjectWindow(reg (a0) struct winData *wd);
-extern void __asm initPrefChoiceWindow(reg (a0) struct winData *wd);
-extern void __asm initPrefColors(reg (a0) struct winData *wd);
-extern void __asm InitFilePrefsWindow(reg (a0) struct winData *wd);
-extern void __asm InitFormatPrefsWindow(reg (a0) struct winData *wd);
-extern void __asm initPrefIcon(reg (a0) struct winData *wd);
-extern void __asm InitKeyboardPrefsWindow(reg (a0) struct winData *wd);
-extern void __asm initPrefContext(reg (a0) struct winData *wd);
-extern void __asm initPrefMenu(reg (a0) struct winData *wd);
-extern void __asm InitTablePrefsWindow(reg (a0) struct winData *wd);
-extern void __asm InitPrinterWindow(reg (a0) struct winData *wd);
-extern void __asm InitPrintStatusWindow(reg (a0) struct winData *wd);
+extern void ASM InitBorderWindow(REG(a0, struct winData *wd));
+extern void ASM InitDatabaseWindow(REG(a0, struct winData *wd));
+extern void ASM InitDiagramWindow(REG(a0, struct winData *wd));
+extern void ASM InitDocumentWindow(REG(a0, struct winData *wd));
+extern void ASM InitFileTypeWindow(REG(a0, struct winData *wd));
+extern void ASM InitFindReplaceWindow(REG(a0, struct winData *wd));
+extern void ASM InitFormelWindow(REG(a0, struct winData *wd));
+extern void ASM InitIndexWindow(REG(a0, struct winData *wd));
+extern void ASM InitFilterWindow(REG(a0, struct winData *wd));
+extern void ASM InitMaskWindow(REG(a0, struct winData *wd));
+extern void ASM initPrefNames(REG(a0, struct winData *wd));
+extern void ASM initNotes(REG(a0, struct winData *wd));
+extern void ASM InitObjectWindow(REG(a0, struct winData *wd));
+extern void ASM initPrefChoiceWindow(REG(a0, struct winData *wd));
+extern void ASM initPrefColors(REG(a0, struct winData *wd));
+extern void ASM InitFilePrefsWindow(REG(a0, struct winData *wd));
+extern void ASM InitFormatPrefsWindow(REG(a0, struct winData *wd));
+extern void ASM initPrefIcon(REG(a0, struct winData *wd));
+extern void ASM InitKeyboardPrefsWindow(REG(a0, struct winData *wd));
+extern void ASM initPrefContext(REG(a0, struct winData *wd));
+extern void ASM initPrefMenu(REG(a0, struct winData *wd));
+extern void ASM InitTablePrefsWindow(REG(a0, struct winData *wd));
+extern void ASM InitPrinterWindow(REG(a0, struct winData *wd));
+extern void ASM InitPrintStatusWindow(REG(a0, struct winData *wd));
 
 
 struct CreateWinData gCreateWinData[] = {
@@ -225,7 +225,7 @@ struct CreateWinData gCreateWinData[] = {
 	{MSG_PREFS_FILE_TITLE, "prefs_file",									/* WDT_PREFFILE */
 	 HandleFilePrefsIDCMP, CloseFilePrefsWindow, InitFilePrefsWindow, CreateFilePrefsGadgets, NULL,
      APPIDCMP | IDCMP_GADGETUP | IDCMP_GADGETDOWN},
-	{NULL},																	/* WDT_PREFPRINTER */
+	{0},																	/* WDT_PREFPRINTER */
 	{MSG_PREFS_COMMANDS_TITLE, "prefs_commands",							/* WDT_PREFCMDS */
 	 handlePrefCmdsIDCMP,closePrefCmdsWin,NULL,CreatePrefCmdsGads, NULL,
      APPIDCMP | LISTVIEWIDCMP},
@@ -254,7 +254,7 @@ struct CreateWinData gCreateWinData[] = {
 	 handlePrefContextIDCMP,closePrefContextWindow,initPrefContext,CreatePrefContextGads, NULL,
      APPIDCMP | LISTVIEWIDCMP},
 //  {NULL},                                                        /* WDT_PREFFONT/WDT_PREFTOOL */
-    {NULL, "prefs_add_prefs",                                      /* WDT_PREFCHOICE */
+    {0, "prefs_add_prefs",                                      /* WDT_PREFCHOICE */
 	 HandlePrefChoiceIDCMP,ClosePrefChoiceWindow,initPrefChoiceWindow,CreatePrefChoiceGads, NULL,
      APPIDCMP | LISTVIEWIDCMP},
 

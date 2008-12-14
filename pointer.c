@@ -53,7 +53,7 @@ loadPointers(STRPTR name)
         return IFFERR_NOMEM;
 
     InitIFFasDOS(iff);
-	iff->iff_Stream = Open(name, MODE_OLDFILE);
+	iff->iff_Stream = (IPTR)Open(name, MODE_OLDFILE);
 
 	if (!(error = OpenIFF(iff, IFFF_READ))) {
 		//int32 chunks[] = {ID_PREF, ID_PRHD, ID_PREF, ID_PNTR};
@@ -85,6 +85,15 @@ loadPointers(STRPTR name)
                                 break;
 
 							error = ReadChunkBytes(iff, pp[count], cn->cn_Size);
+							pp[count]->pp_Which = BE2WORD(pp[count]->pp_Which);
+							pp[count]->pp_Size = BE2WORD(pp[count]->pp_Size);
+							pp[count]->pp_Width = BE2WORD(pp[count]->pp_Width);
+							pp[count]->pp_Height = BE2WORD(pp[count]->pp_Height);
+							pp[count]->pp_Depth = BE2WORD(pp[count]->pp_Depth);
+							pp[count]->pp_YSize = BE2WORD(pp[count]->pp_YSize);
+							pp[count]->pp_X = BE2WORD(pp[count]->pp_X);
+							pp[count]->pp_Y = BE2WORD(pp[count]->pp_Y);
+
 							if (pp[count]->pp_Which != count + POINTER_OFFSET) {
 								D(bug("Zeiger %d hat unzulässige ID %d.\n", count, pp[count]->pp_Which));
 								FreePooled(pool, pp[count], cn->cn_Size);
@@ -105,7 +114,7 @@ loadPointers(STRPTR name)
         if (error == IFFERR_EOF)
             error = 0;
     }
-    Close(iff->iff_Stream);
+    Close((void*)iff->iff_Stream);
     FreeIFF(iff);
 
     return error;
@@ -132,7 +141,7 @@ InitPointers(void)
 {
     int i;
 
-    if (i = loadPointers(POINTER_FILE))
+    if ((i = loadPointers(POINTER_FILE)) != 0)
         ErrorRequest(GetString(&gLocaleInfo, MSG_LOAD_MOUSE_POINTER_ERR), IFFErrorText(i));
 
 	for (i = 0; i < NUM_POINTER; i++) {

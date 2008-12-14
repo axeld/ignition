@@ -43,7 +43,7 @@ RecalcTableSize(struct Page *page)
 
 
 void PUBLIC
-AllocTableSize(reg (a0) struct Page *page,reg (d0) long w,reg (d1) long h)
+AllocTableSize(REG(a0, struct Page *page), REG(d0, long w),REG(d1, long h))
 {
 	struct tableSize *tsw,*tsh;
 	long i;
@@ -197,7 +197,7 @@ SetBorder(struct Page *page,BOOL block,long col,long point,long col1,long point1
 			{
 				for(i = page->pg_MarkCol;i <= page->pg_MarkCol+page->pg_MarkWidth;i++)
 				{
-					if (tf = AllocTableField(page,i,page->pg_MarkRow))
+					if ((tf = AllocTableField(page, i, page->pg_MarkRow)) != 0)
 					{
 						tf->tf_BorderColor[3] = col3;
 						tf->tf_Border[3] = (point3) > 255 ? 255 : point3;
@@ -208,7 +208,7 @@ SetBorder(struct Page *page,BOOL block,long col,long point,long col1,long point1
 			{
 				for(i = page->pg_MarkCol;i <= page->pg_MarkCol+page->pg_MarkWidth;i++)
 				{
-					if (tf = AllocTableField(page,i,page->pg_MarkRow+page->pg_MarkHeight))
+					if ((tf = AllocTableField(page, i, page->pg_MarkRow+page->pg_MarkHeight)) != 0)
 					{
 						tf->tf_BorderColor[2] = col2;
 						tf->tf_Border[2] = (point2) > 255 ? 255 : point2;
@@ -222,7 +222,7 @@ SetBorder(struct Page *page,BOOL block,long col,long point,long col1,long point1
 			{
 				for(i = page->pg_MarkRow;i <= page->pg_MarkRow+page->pg_MarkHeight;i++)
 				{
-					if (tf = AllocTableField(page,page->pg_MarkCol,i))
+					if ((tf = AllocTableField(page,page->pg_MarkCol,i)) != 0)
 					{
 						tf->tf_BorderColor[0] = col;
 						tf->tf_Border[0] = (point) > 255 ? 255 : point;
@@ -233,7 +233,7 @@ SetBorder(struct Page *page,BOOL block,long col,long point,long col1,long point1
 			{
 				for(i = page->pg_MarkRow;i <= page->pg_MarkRow+page->pg_MarkHeight;i++)
 				{
-					if (tf = AllocTableField(page,page->pg_MarkCol+page->pg_MarkWidth,i))
+					if ((tf = AllocTableField(page,page->pg_MarkCol+page->pg_MarkWidth,i)) != 0)
 					{
 						tf->tf_BorderColor[1] = col1;
 						tf->tf_Border[1] = (point1) > 255 ? 255 : point1;
@@ -244,7 +244,7 @@ SetBorder(struct Page *page,BOOL block,long col,long point,long col1,long point1
 	}
 	else
 	{
-		while (tf = GetMarkedFields(page, tf, TRUE))
+		while ((tf = GetMarkedFields(page, tf, TRUE)) != 0)
 		{
 			for(i = 0;i < 4;i++)
 			{
@@ -307,7 +307,7 @@ InReCells(struct Page *page, UBYTE mode, long col, long row, long width, long he
 	short  offset = 0;
 
 	if (!page || DocumentSecurity(page, NULL))
-		return NULL;
+		return 0;
 
 	if (mode == UNT_INSERT_VERT_CELLS || mode == UNT_REMOVE_VERT_CELLS)
 	{
@@ -349,7 +349,7 @@ InReCells(struct Page *page, UBYTE mode, long col, long row, long width, long he
 
 		if (mode == UNT_INSERT_VERT_CELLS && width == -1)
 		{
-			movmem(page->pg_tfHeight+comp,page->pg_tfHeight+comp+diff,(page->pg_Rows-comp-diff)*sizeof(struct tableSize));
+			memmove(page->pg_tfHeight+comp, page->pg_tfHeight + comp + diff, (page->pg_Rows-comp-diff) * sizeof(struct tableSize));
 			for(col = 0;col < diff;col++)
 			{
 				if (mm)
@@ -366,7 +366,7 @@ InReCells(struct Page *page, UBYTE mode, long col, long row, long width, long he
 		}
 		else if (mode == UNT_INSERT_HORIZ_CELLS && height == -1)
 		{
-			movmem(page->pg_tfWidth+comp,page->pg_tfWidth+comp+diff,(page->pg_Cols-comp-diff)*sizeof(struct tableSize));
+			memmove(page->pg_tfWidth + comp, page->pg_tfWidth+comp + diff, (page->pg_Cols-comp-diff) * sizeof(struct tableSize));
 			for (col = 0; col < diff; col++)
 			{
 				if (mm)
@@ -384,7 +384,7 @@ InReCells(struct Page *page, UBYTE mode, long col, long row, long width, long he
 	}
 	else if (mode == UNT_REMOVE_VERT_CELLS && width == -1)
 	{
-		movmem(page->pg_tfHeight+comp+diff-1,page->pg_tfHeight+comp-1,(page->pg_Rows-comp-diff)*sizeof(struct tableSize));
+		memmove(page->pg_tfHeight + comp + diff - 1, page->pg_tfHeight + comp - 1, (page->pg_Rows-comp-diff) * sizeof(struct tableSize));
 		for(col = 0;col < diff;col++)
 		{
 			(page->pg_tfHeight+page->pg_Rows-1-col)->ts_Pixel = page->pg_StdHeight;
@@ -393,7 +393,7 @@ InReCells(struct Page *page, UBYTE mode, long col, long row, long width, long he
 	}
 	else if (mode == UNT_REMOVE_HORIZ_CELLS && height == -1)
 	{
-		movmem(page->pg_tfWidth+comp+diff-1,page->pg_tfWidth+comp-1,(page->pg_Cols-comp-diff)*sizeof(struct tableSize));
+		memmove(page->pg_tfWidth+comp+diff-1,page->pg_tfWidth+comp-1,(page->pg_Cols-comp-diff)*sizeof(struct tableSize));
 		for(col = 0;col < diff;col++)
 		{
 			(page->pg_tfWidth+page->pg_Cols-1-col)->ts_Pixel = page->pg_StdWidth;
@@ -560,7 +560,7 @@ InReCells(struct Page *page, UBYTE mode, long col, long row, long width, long he
 
 	RecalcTableFields(page);
 	DrawTable(page->pg_Window);
-	return NULL;
+	return 0;
 }
 
 
@@ -572,13 +572,13 @@ MakeCellSizeUndo(struct UndoNode *un, UBYTE flags, ULONG mm, long pixel, long po
 	if (!un)
 		return;
 
-	if (ucs = AllocPooled(pool, sizeof(struct UndoCellSize)))
+	if ((ucs = AllocPooled(pool, sizeof(struct UndoCellSize))) != 0)
 	{
 		ucs->ucs_Flags = flags;
 		ucs->ucs_Position = pos;
 		ucs->ucs_mm = mm;
 		ucs->ucs_Pixel = pixel;
-		AddTail((struct List *)&un->un_UndoList, (struct Node *)ucs);
+		MyAddTail((struct List *)&un->un_UndoList, (struct Node *)ucs);
 	}
 }
 
@@ -602,9 +602,9 @@ ChangeCellSize(struct Page *page, STRPTR widthString, STRPTR heightString, UWORD
 
 	if (undo) {
 		// Undo changes
-		if (mmWidth = minWidth = undo->un_mmWidth)
+		if ((mmWidth = minWidth = undo->un_mmWidth) != 0)
 			widthString = (STRPTR)~0L;
-		if (mmHeight = minHeight = undo->un_mmHeight)
+		if ((mmHeight = minHeight = undo->un_mmHeight) != 0)
 			heightString = (STRPTR)~0L;
 
 		mode = undo->un_Mode;
@@ -759,7 +759,7 @@ ChangeCellSize(struct Page *page, STRPTR widthString, STRPTR heightString, UWORD
 
 
 long PUBLIC
-pixel(reg (a0) struct Page *page, reg (d0) long mm, reg (d1) BOOL width)
+pixel(REG(a0, struct Page *page), REG(d0, long mm), REG(d1, BOOL width))
 {
 	if (width)
 		return (long)(mm * page->pg_SizeFactorX + 0.5);
@@ -769,7 +769,7 @@ pixel(reg (a0) struct Page *page, reg (d0) long mm, reg (d1) BOOL width)
 
 
 long PUBLIC
-mm(reg (a0) struct Page *page, reg (d0) long pixel, reg (d1) BOOL width)
+mm(REG(a0, struct Page *page), REG(d0, long pixel), REG(d1, BOOL width))
 {
 	if (width)
 		return (long)(pixel/page->pg_SizeFactorX + 0.5);
@@ -810,7 +810,7 @@ DrawTFText(struct RastPort *rp, struct Page *page, struct Rectangle *bounds, str
 		}
 	}
 
-	if (layer = rp->Layer)
+	if ((layer = rp->Layer) != 0)
 	{
 		region = NewRegion();
 		if (bounds)
@@ -1239,7 +1239,9 @@ DrawTableRegion(struct Window *win,struct Page *page,struct Rectangle *refresh,B
 
 		if (prefs.pr_Table->pt_Flags & PTF_EDITFUNC && page->pg_Gad.cp.cp_W > 3 && page->pg_Gad.cp.cp_H > 3 && !(page->pg_Document->mp_Flags & MPF_SCRIPTS))
 		{
-			RectFill(rp,x += page->pg_Gad.cp.cp_W-3,y += page->pg_Gad.cp.cp_H-3,x+2,y+2);
+			x += page->pg_Gad.cp.cp_W - 3;
+			y += page->pg_Gad.cp.cp_H - 3;
+			RectFill(rp, x, y, x + 2, y + 2);
 			SetAPen(rp,0);
 			Move(rp,x-1,y+1);  Draw(rp,x-1,y+2);
 			Move(rp,x+1,y-1);  Draw(rp,x+2,y-1);
@@ -1406,7 +1408,7 @@ DrawTableField(struct Page *page, struct tableField *tf)
 	cp.cp_X += page->pg_wTabX;  cp.cp_Y += page->pg_wTabY;
 	if (tf->tf_Width < tf->tf_OldWidth)
 	{
-		if (i = tf->tf_OldWidth)
+		if ((i = tf->tf_OldWidth) != 0)
 		{
 			for(cp.cp_W = 0;i+1;i--)
 				cp.cp_W += GetTFWidth(page,tf->tf_Col+i);
@@ -1466,7 +1468,7 @@ RefreshMarkedTable(struct Page *page, long maxcol, BOOL end)
 	struct tableField *tf;
 	struct Rect32 rect;
 
-	if (tf = page->pg_Gad.tf)
+	if ((tf = page->pg_Gad.tf) != 0)
 	{
 		ULONG col = tf->tf_Col+tf->tf_Width;
 
@@ -1706,7 +1708,7 @@ getCoordPkt(struct Page *page, long mouseX, long mouseY)
 		cp.cp_Y = -page->pg_TabY;
 		cp.cp_H = GetTFHeight(page, 1);
 	}
-	if (tf = GetTableField(page, cp.cp_Col, cp.cp_Row))
+	if ((tf = GetTableField(page, cp.cp_Col, cp.cp_Row)) != 0)
 		cp.cp_W = GetTotalWidth(page, tf);
 
 	return cp;
@@ -1767,7 +1769,7 @@ ShowTable(struct Page *page,struct coordPkt *cp,long col,long row)
 
 
 void PUBLIC
-RecalcPageDPI(reg (a0) struct Page *page)
+RecalcPageDPI(REG(a0, struct Page *page))
 {
 	struct Mappe *mp = page->pg_Document;
 	long zoom = page->pg_Zoom;
@@ -1813,7 +1815,7 @@ SetZoom(struct Page *page, ULONG zoom, BOOL force, BOOL draw)
 		char   txt[64];
 
 		ProcentToString(zoom,txt);
-		if (gad = GadgetAddress(page->pg_Window,GID_ZOOM))
+		if ((gad = GadgetAddress(page->pg_Window,GID_ZOOM)) != 0)
 		{
 			gad->UserData = (APTR)zoom;
 			GT_SetGadgetAttrs(gad,page->pg_Window,NULL,GTST_String,txt,TAG_END);

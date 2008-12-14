@@ -45,7 +45,7 @@ AddGGadget(struct MinList *list, struct Gadget *gad, ULONG tag, ULONG type, ULON
         gg->gg_Kind = kind;
         gg->gg_Page = page;
 
-		AddTail(list, gg);
+		MyAddTail(list, gg);
     }
 }
 
@@ -57,7 +57,7 @@ AddObjectGadget(struct MinList *list, struct Gadget *gad, ULONG tag, ULONG type,
 }
 
 
-STRPTR
+CONST_STRPTR
 GetGLabel(struct gInterface *gi)
 {
     if (!gi)
@@ -109,8 +109,8 @@ GetGLabel(struct gInterface *gi)
 }
 
 
-void __asm
-CreateInfoGadgets(reg (a0) struct winData *wd)
+void ASM
+CreateInfoGadgets(REG(a0, struct winData *wd))
 {
 	gWidth = 296 + lborder + rborder;
 	gHeight = barheight + fontheight + 240 + bborder;
@@ -127,8 +127,8 @@ CreateInfoGadgets(reg (a0) struct winData *wd)
 }
 
 
-void __asm
-CreateBorderGadgets(reg (a0) struct winData *wd)
+void ASM
+CreateBorderGadgets(REG(a0, struct winData *wd))
 {
     struct gpDomain gpd;
 
@@ -173,7 +173,7 @@ CreateBorderGadgets(reg (a0) struct winData *wd)
     ngad.ng_LeftEdge += 2*boxwidth;
 	ngad.ng_TopEdge += fontheight + 7;
     ngad.ng_GadgetID++;                     /* 3 */
-	if (gad = CreatePopGadget(wd, gad, FALSE))
+	if ((gad = CreatePopGadget(wd, gad, FALSE)) != 0)
 		gad->UserData = (APTR)FindColorPen(0, 0, 0);
 
 	ngad.ng_LeftEdge += 14 + boxwidth + TLn(GetString(&gLocaleInfo, MSG_WEIGHT_LABEL));
@@ -240,7 +240,7 @@ CreateBorderGadgets(reg (a0) struct winData *wd)
 
 
 void PUBLIC
-RefreshCellPageGadgets(reg (a0) struct Window *win,reg (d0) long active)
+RefreshCellPageGadgets(REG(a0, struct Window *win), REG(d0, long active))
 {
     struct winData *wd = (struct winData *)win->UserData;
     struct RastPort *rp = win->RPort;
@@ -250,7 +250,7 @@ RefreshCellPageGadgets(reg (a0) struct Window *win,reg (d0) long active)
     switch(active)
     {
         case 0:  // Format
-            if (gad = GadgetAddress(win,3))
+            if ((gad = GadgetAddress(win, 3)) != 0)
             {
                 ULONG komma;
 
@@ -259,7 +259,7 @@ RefreshCellPageGadgets(reg (a0) struct Window *win,reg (d0) long active)
             }
             break;
         case 1:  // Farbe & Ausrichtung
-            if (gad = GadgetAddress(win,6))
+            if ((gad = GadgetAddress(win, 6)) != 0)
             {
                 ULONG apen = 0,bpen = 0;
 
@@ -271,27 +271,27 @@ RefreshCellPageGadgets(reg (a0) struct Window *win,reg (d0) long active)
                 DrawColorField(rp,gad,apen,TRUE);
                 DrawColorField(rp,GadgetAddress(win,7),bpen,TRUE);
             }
-            if (gad = GadgetAddress(win,23))
+            if ((gad = GadgetAddress(win, 23)) != 0)
             {
                 DrawGroupBorder(rp,GetString(&gLocaleInfo, MSG_PATTERN_BORDER),8+lborder,gad->TopEdge-fontheight-2,win->Width-w,2*fontheight+11);
                 DrawPatternField(rp,gad,(ULONG)wd->wd_ExtData[7],(BYTE)wd->wd_Data);
             }
-            if (gad = GadgetAddress(win,8))
+            if ((gad = GadgetAddress(win, 8)) != 0)
                 DrawGroupBorder(rp,GetString(&gLocaleInfo, MSG_ALIGNMENT_BORDER),8+lborder,gad->TopEdge-fontheight-2,win->Width-w,3*fontheight+18);
             break;
         case 2:  // Schrift
-            if (gad = GadgetAddress(win,10))
+            if ((gad = GadgetAddress(win, 10)) != 0)
                 DrawGroupBorder(rp,GetString(&gLocaleInfo, MSG_FONT_BORDER),8+lborder,gad->TopEdge-fontheight-2,win->Width-w,3*fontheight+18);
-            if (gad = GadgetAddress(win,14))
+            if ((gad = GadgetAddress(win,14)))
             {
                 DrawGroupBorder(rp,GetString(&gLocaleInfo, MSG_STYLE_BORDER),8+lborder,gad->TopEdge-fontheight-2,(i = boxwidth+24+TLn(GetString(&gLocaleInfo, MSG_DOUBLE_UNDERLINED_GAD))),6*fontheight+39);
                 DrawGroupBorder(rp,GetString(&gLocaleInfo, MSG_SPECIAL_BORDER),14+lborder+i,gad->TopEdge-fontheight-2,win->Width-i-6-w,6*fontheight+39);
             }
-            if (gad = GadgetAddress(win,20))
+            if ((gad = GadgetAddress(win, 20)) != 0)
                 DrawGroupBorder(rp,GetString(&gLocaleInfo, MSG_TYPOGRAPHY_BORDER),8+lborder,gad->TopEdge-fontheight-2,win->Width-w,3*fontheight+18);
             break;
         case 3:  // Diverses
-            if (gad = GadgetAddress(win,25))
+            if ((gad = GadgetAddress(win, 25)) != 0)
                 DrawGroupBorder(rp,GetString(&gLocaleInfo, MSG_CELL_SECURITY_BORDER),8+lborder,gad->TopEdge-fontheight-2,win->Width-w,2*fontheight+11);
             break;
     }
@@ -301,8 +301,8 @@ RefreshCellPageGadgets(reg (a0) struct Window *win,reg (d0) long active)
 struct Gadget *cellPages[5];
 
 
-void __asm
-CreateCellGadgets(reg (a0) struct winData *wd)
+void ASM
+CreateCellGadgets(REG(a0, struct winData *wd))
 {
     struct Gadget *pgad;
 	char buffer[64];
@@ -591,11 +591,11 @@ RemoveDiagramGadgets(struct winData *wd)
 	FreeGadgets(wd->wd_Pages[2]);		    // GadTools-Gadgets freigeben
 	wd->wd_Pages[2] = NULL;
 
-	for (gg = (APTR)wd->u.diagram.wd_Gadgets->mlh_Head; ngg = (APTR)gg->gg_Node.mln_Succ; gg = ngg)
+	for (gg = (APTR)wd->u.diagram.wd_Gadgets->mlh_Head; (ngg = (APTR)gg->gg_Node.mln_Succ) != 0; gg = ngg)
     {
         if (gg->gg_Page == 2)
         {
-            Remove((struct Node *)gg);
+            MyRemove(gg);
 			FreePooled(pool, gg, sizeof(struct gGadget));
         }
     }
@@ -770,7 +770,7 @@ AddDiagramGadgets(struct gDiagram *gd, struct Gadget *pgad, struct MinList *list
 
 
 void PUBLIC
-RefreshDiagramPageGadgets(reg (a0) struct Window *win, reg (d0) long active)
+RefreshDiagramPageGadgets(REG(a0, struct Window *win), REG(d0, long active))
 {
     struct winData *wd = (struct winData *)win->UserData;
     struct gDiagram *gd = NULL;
@@ -826,7 +826,7 @@ RefreshDiagramPageGadgets(reg (a0) struct Window *win, reg (d0) long active)
             break;
         }
         case 3:  // Werte
-            if (gad = GadgetAddress(win,10))
+            if ((gad = GadgetAddress(win, 10)) != 0)
             {
                 long x,y;
 
@@ -837,7 +837,7 @@ RefreshDiagramPageGadgets(reg (a0) struct Window *win, reg (d0) long active)
                 itext.IText = GetString(&gLocaleInfo, MSG_MARK_GAD);
                 PrintIText(rp,&itext,x+gad->Width-IntuiTextLength(&itext),y);
 
-                if (gad = GadgetAddress(win,11))
+                if ((gad = GadgetAddress(win, 11)) != 0)
                     DrawColorField(rp,gad,(ULONG)gad->UserData,TRUE);
                 //GT_SetGadgetAttrs(gad,win,NULL,GTLV_Labels,&gd->gd_Values,TAG_END);
             }
@@ -854,9 +854,9 @@ RefreshDiagramPageGadgets(reg (a0) struct Window *win, reg (d0) long active)
             }*/
             break;
         case 4:  // Achsen
-			if (gad = GadgetAddress(win, 14))
+			if ((gad = GadgetAddress(win, 14)) != 0)
 				DrawGroupBorder(rp,GetString(&gLocaleInfo, MSG_LABELS_BORDER),8+lborder,gad->TopEdge-fontheight-2,win->Width-16-lborder-rborder,3*fontheight+18);
-			if (gad = GadgetAddress(win, 15))
+			if ((gad = GadgetAddress(win, 15)) != 0)
             {
                 ULONG pen = 0x0;
 
@@ -865,10 +865,10 @@ RefreshDiagramPageGadgets(reg (a0) struct Window *win, reg (d0) long active)
                 itext.IText = GetString(&gLocaleInfo, MSG_COLOR_LABEL);
                 PrintIText(rp,&itext,gad->LeftEdge-2*boxwidth-8-IntuiTextLength(&itext),gad->TopEdge+2);
             }
-			if (gad = GadgetAddress(win, 20))
+			if ((gad = GadgetAddress(win, 20)) != 0)
 				DrawGroupBorder(rp, GetString(&gLocaleInfo, MSG_BACKGROUND_BORDER), 8 + lborder, gad->TopEdge - fontheight - 2, win->Width - 16 - lborder - rborder, 4*fontheight + 25);
              
-			if (gad = GadgetAddress(win, 21))
+			if ((gad = GadgetAddress(win, 21)) != 0)
             {
                 ULONG pen = 0x0;
 
@@ -885,8 +885,8 @@ RefreshDiagramPageGadgets(reg (a0) struct Window *win, reg (d0) long active)
 #define GD_MAXROTATION 45
 		
  
-void __asm
-CreateDiagramGadgets(reg (a0) struct winData *wd)
+void ASM
+CreateDiagramGadgets(REG(a0, struct winData *wd))
 {
 	struct gDiagram *gd = wd->u.diagram.wd_CurrentDiagram;
     struct Gadget *pgad;
@@ -928,7 +928,7 @@ CreateDiagramGadgets(reg (a0) struct winData *wd)
 
         if (gd)
 			zstrcpy(t, gd->gd_Range);
-		else if (page = wd->wd_Data) {
+		else if ((page = wd->wd_Data) != 0) {
             if (page->pg_MarkCol != -1)
 				TablePos2String(page, (struct tablePos *)&page->pg_MarkCol, t);
             else
@@ -1030,7 +1030,7 @@ CreateDiagramGadgets(reg (a0) struct winData *wd)
 	ngad.ng_TopEdge += ngad.ng_Height + 3;
 	ngad.ng_Height = fontheight + 4;
     ngad.ng_GadgetID++;                     // 11
-	if (pgad = CreatePopGadget(wd, pgad, !gd))
+	if ((pgad = CreatePopGadget(wd, pgad, !gd)) != 0)
         pgad->UserData = (APTR)0x0;
 
     ngad.ng_GadgetText = GetString(&gLocaleInfo, MSG_VALUES_LABEL);
@@ -1071,7 +1071,7 @@ CreateDiagramGadgets(reg (a0) struct winData *wd)
 
 		ngad.ng_LeftEdge = gWidth - 16 - rborder - boxwidth;
         ngad.ng_GadgetID++;                     // 15
-		if (pgad = CreatePopGadget(wd, pgad, disabled))
+		if ((pgad = CreatePopGadget(wd, pgad, disabled)))
             pgad->UserData = (APTR)(ga ? ga->ga_NumberPen : 0x0);
 		AddGGadget(wd->u.diagram.wd_Gadgets, pgad, GAA_NumberPen, GIT_PEN,POPUP_KIND, 4);
 
@@ -1120,7 +1120,7 @@ CreateDiagramGadgets(reg (a0) struct winData *wd)
 		ngad.ng_LeftEdge = 24 + lborder + TLn(GetString(&gLocaleInfo, MSG_BACKGROUND_COLOR_LABEL)) + 2*boxwidth;
 		ngad.ng_TopEdge += fontheight + 7;
         ngad.ng_GadgetID++;                     // 21
-		if (pgad = CreatePopGadget(wd, pgad, disabled))
+		if ((pgad = CreatePopGadget(wd, pgad, disabled)) != 0)
             pgad->UserData = (APTR)(ga ? ga->ga_BPen : 0xffffff);
 		AddGGadget(wd->u.diagram.wd_Gadgets, pgad, GAA_BPen, GIT_PEN, POPUP_KIND, 4);
 		
@@ -1189,8 +1189,8 @@ CreateDiagramGadgets(reg (a0) struct winData *wd)
 }
 
 
-void __asm
-CreateFormelGadgets(reg (a0) struct winData *wd)
+void ASM
+CreateFormelGadgets(REG(a0, struct winData *wd))
 {
     long i = 14;
 
@@ -1246,8 +1246,8 @@ const ULONG pageHeight[] = {432333, 304640, 216166, 286106, 364134};
 const ULONG pageSizes = 5;
 
 
-void __asm
-CreatePageSetupGadgets(reg (a0) struct winData *wd)
+void ASM
+CreatePageSetupGadgets(REG(a0, struct winData *wd))
 {
     struct Mappe *mp = (struct Mappe *)wd->wd_Data;
     char   t[16];
@@ -1342,8 +1342,8 @@ CreatePageSetupGadgets(reg (a0) struct winData *wd)
 }
 
 
-void __asm
-CreateDocInfoGadgets(reg (a0) struct winData *wd)
+void ASM
+CreateDocInfoGadgets(REG(a0, struct winData *wd))
 {
     struct Mappe *mp = (struct Mappe *)wd->wd_Data;
 
@@ -1398,8 +1398,8 @@ CreateDocInfoGadgets(reg (a0) struct winData *wd)
 }
 
 
-void __asm
-CreateDocumentGadgets(reg (a0) struct winData *wd)
+void ASM
+CreateDocumentGadgets(REG(a0, struct winData *wd))
 {
     struct Mappe *mp = (struct Mappe *)wd->wd_Data;
     long   i;
@@ -1449,7 +1449,7 @@ CreateDocumentGadgets(reg (a0) struct winData *wd)
     ngad.ng_Width = gWidth-ngad.ng_LeftEdge-8-rborder;
     ngad.ng_Flags = PLACETEXT_LEFT;
     ngad.ng_GadgetID = 8;                   // 8
-    if (gad = CreateGadget(STRING_KIND,gad,&ngad,GT_Underscore,'_',GTST_String,mp->mp_Password ? "··········" : NULL,GTST_EditHook,&passwordEditHook,GTST_MaxChars,32,TAG_END))
+    if ((gad = CreateGadget(STRING_KIND,gad,&ngad,GT_Underscore,'_',GTST_String,mp->mp_Password ? "··········" : NULL,GTST_EditHook,&passwordEditHook,GTST_MaxChars,32,TAG_END)) != 0)
     {
         if ((gad->UserData = AllocPooled(pool,32)) && mp->mp_Password)
             strcpy(gad->UserData,mp->mp_Password);
@@ -1458,7 +1458,7 @@ CreateDocumentGadgets(reg (a0) struct winData *wd)
     ngad.ng_GadgetText = GetString(&gLocaleInfo, MSG_RETYPE_PASSWORD_LABEL);
     ngad.ng_TopEdge += fontheight+7;
     ngad.ng_GadgetID++;                     // 9
-    if (gad = CreateGadget(STRING_KIND,gad,&ngad,GT_Underscore,'_',GTST_String,mp->mp_Password ? "··········" : NULL,GTST_EditHook,&passwordEditHook,GTST_MaxChars,32,TAG_END))
+    if ((gad = CreateGadget(STRING_KIND,gad,&ngad,GT_Underscore,'_',GTST_String,mp->mp_Password ? "··········" : NULL,GTST_EditHook,&passwordEditHook,GTST_MaxChars,32,TAG_END)) != 0)
     {
         if ((gad->UserData = AllocPooled(pool,32)) && mp->mp_Password)
             strcpy(gad->UserData,mp->mp_Password);
@@ -1469,7 +1469,7 @@ CreateDocumentGadgets(reg (a0) struct winData *wd)
     ngad.ng_TopEdge += fontheight+8;
     ngad.ng_Width = gWidth-ngad.ng_LeftEdge-8-rborder;
     ngad.ng_GadgetID++;                     // 10
-    if (gad = CreateGadget(STRING_KIND,gad,&ngad,GT_Underscore,'_',GTST_String,mp->mp_CellPassword ? "··········" : NULL,GTST_EditHook,&passwordEditHook,GTST_MaxChars,32,GA_Disabled,mp->mp_Flags & MPF_CELLSLOCKED ? TRUE : FALSE,TAG_END))
+    if ((gad = CreateGadget(STRING_KIND,gad,&ngad,GT_Underscore,'_',GTST_String,mp->mp_CellPassword ? "··········" : NULL,GTST_EditHook,&passwordEditHook,GTST_MaxChars,32,GA_Disabled,mp->mp_Flags & MPF_CELLSLOCKED ? TRUE : FALSE,TAG_END)) != 0)
     {
         if ((gad->UserData = AllocPooled(pool,32)) && mp->mp_CellPassword)
             strcpy(gad->UserData,mp->mp_CellPassword);
@@ -1477,7 +1477,7 @@ CreateDocumentGadgets(reg (a0) struct winData *wd)
     ngad.ng_GadgetText = GetString(&gLocaleInfo, MSG_RETYPE_PASSWORD_LABEL);
     ngad.ng_TopEdge += fontheight+7;
     ngad.ng_GadgetID++;                     // 11
-    if (gad = CreateGadget(STRING_KIND,gad,&ngad,GT_Underscore,'_',GTST_String,mp->mp_CellPassword ? "··········" : NULL,GTST_EditHook,&passwordEditHook,GTST_MaxChars,32,GA_Disabled,mp->mp_Flags & MPF_CELLSLOCKED ? TRUE : FALSE,TAG_END))
+    if ((gad = CreateGadget(STRING_KIND,gad,&ngad,GT_Underscore,'_',GTST_String,mp->mp_CellPassword ? "··········" : NULL,GTST_EditHook,&passwordEditHook,GTST_MaxChars,32,GA_Disabled,mp->mp_Flags & MPF_CELLSLOCKED ? TRUE : FALSE,TAG_END)) != 0)
     {
         if ((gad->UserData = AllocPooled(pool,32)) && mp->mp_CellPassword)
             strcpy(gad->UserData,mp->mp_CellPassword);
@@ -1532,8 +1532,8 @@ CreateDocumentGadgets(reg (a0) struct winData *wd)
 }
 
 
-void __asm
-CreatePageGadgets(reg (a0) struct winData *wd)
+void ASM
+CreatePageGadgets(REG(a0, struct winData *wd))
 {
     struct Page *page = wd->wd_Data;
 
@@ -1581,8 +1581,8 @@ CreatePageGadgets(reg (a0) struct winData *wd)
 }
 
 
-void __asm
-CreateCellSizeGadgets(reg (a0) struct winData *wd)
+void ASM
+CreateCellSizeGadgets(REG(a0, struct winData *wd))
 {
     char t[32];
 	int a, b;
@@ -1704,8 +1704,8 @@ CreateNotesGadgets(struct winData *wd, long wid, long hei)
 }
 
 
-void __asm
-CreateZoomGadgets(reg (a0) struct winData *wd)
+void ASM
+CreateZoomGadgets(REG(a0, struct winData *wd))
 {
     char t[32];
 
@@ -1751,8 +1751,8 @@ CreateGClassesGadgets(struct winData *wd, long wid, long hei)
 }
 
 
-void __asm
-CreateObjectGadgets(reg (a0) struct winData *wd)
+void ASM
+CreateObjectGadgets(REG(a0, struct winData *wd))
 {
     struct gObject *go = wd->wd_Data;
     BYTE   linemode = go->go_Flags & GOF_LINEMODE;
@@ -1988,8 +1988,8 @@ CreateObjectGadgets(reg (a0) struct winData *wd)
 }
 
 
-void __asm
-CreateCommandGadgets(reg (a0) struct winData *wd)
+void ASM
+CreateCommandGadgets(REG(a0, struct winData *wd))
 {
 	gWidth = TLn(GetString(&gLocaleInfo, MSG_COMMAND_LABEL))
 		+ 2 * TLn(GetString(&gLocaleInfo, MSG_CANCEL_GAD))
@@ -2031,8 +2031,8 @@ CreateCommandGadgets(reg (a0) struct winData *wd)
 }
 
 
-void __asm
-CreateFileTypeGadgets(reg (a0) struct winData *wd)
+void ASM
+CreateFileTypeGadgets(REG(a0, struct winData *wd))
 {
 	struct IOTypeLink *iol;
     struct IOType *io;
@@ -2079,8 +2079,8 @@ CreateFileTypeGadgets(reg (a0) struct winData *wd)
 }
 
 
-void __asm
-CreateSetNameGadgets(reg (a0) struct winData *wd)
+void ASM
+CreateSetNameGadgets(REG(a0, struct winData *wd))
 {
     gWidth = scr->Width >> 1;
     gHeight = barheight+fontheight+10+bborder;
@@ -2210,4 +2210,3 @@ InitGadgetLabels(void)
 	//MakeLocaleLabels(sEdgeLabels, "standard", "rund", "schräg", TAG_END);
 	//MakeLocaleLabels(sEndsLabels, "standard", "rund", "Pfeil", TAG_END);
 }
- 

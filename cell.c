@@ -149,7 +149,7 @@ NextCell(uint32 handle)
 	if (!tf || !tf->tf_Node.mln_Succ)  // already at the end of the list
 		return NULL;
 
-	if (page = ci->ci_Page) {
+	if ((page = ci->ci_Page) != 0) {
 		if (tf->tf_Col > ci->ci_MaxCol) {
 			ULONG row = tf->tf_Row;
 
@@ -179,7 +179,7 @@ GetCellIteratorHandle(void)
 		// Stack must be enlarged
 		struct CellIterator *ci;
 
-		if (ci = AllocPooled(pool, sizeof(struct CellIterator) * (ci_num + 1))) {
+		if ((ci = AllocPooled(pool, sizeof(struct CellIterator) * (ci_num + 1))) != 0) {
 			if (ci_stack) {
 				ULONG size = sizeof(struct CellIterator)*ci_num;
 
@@ -299,7 +299,7 @@ GetFirstCell(struct Page *page,struct tablePos *tp)
 	struct tableField *tf;
 	uint32 handle;
 
-	if (handle = GetCellIterator(page, tp, FALSE)) {
+	if ((handle = GetCellIterator(page, tp, FALSE)) != 0) {
 		tf = NextCell(handle);
 		FreeCellIterator(handle);
 	}
@@ -323,11 +323,11 @@ GetMarkedFields(struct Page *page, struct tableField *tf, BOOL alloc)
 		gci = GetCellIterator(page,(struct tablePos *)&page->pg_MarkCol,alloc);
 
 	if (gci) {
-		if (tf = NextCell(gci))
+		if ((tf = NextCell(gci)) != 0)
 			return tf;
 
 		FreeCellIterator(gci);
-		gci = NULL;
+		gci = 0;
 	}
 	return NULL;
 }
@@ -342,7 +342,7 @@ CopyCell(struct Page *page,struct tableField *tf)
 	if (!page || !tf)
 		return NULL;
 
-	if (ctf = AllocPooled(pool, sizeof(struct tableField))) {
+	if ((ctf = AllocPooled(pool, sizeof(struct tableField))) != 0) {
 		*ctf = *tf;
 		ctf->tf_Original = AllocString(tf->tf_Original);
 		ctf->tf_Text = AllocString(tf->tf_Text);
@@ -396,12 +396,12 @@ MakeTableField(struct Page *page,long col,long row)
 {
 	struct tableField *tf;
 	struct FontInfo *fi;
-
-	if (fi = NewFontInfo(NULL, page->pg_DPI,
+	
+	if ((fi = NewFontInfo(NULL, page->pg_DPI,
 			FA_Family, page->pg_Family,
 			FA_PointHeight, page->pg_PointHeight,
-			TAG_END)) {
-		if (tf = AllocPooled(pool, sizeof(struct tableField))) {
+			TAG_END)) != 0) {
+		if ((tf = AllocPooled(pool, sizeof(struct tableField))) != 0) {
 			tf->tf_Col = col;  tf->tf_Row = row;
 			tf->tf_APen = tf->tf_ReservedPen = page->pg_APen;
 			tf->tf_BPen = page->pg_BPen;
@@ -419,14 +419,14 @@ MakeTableField(struct Page *page,long col,long row)
 
 
 struct tableField * PUBLIC
-AllocTableField(reg (a0) struct Page *page,reg (d0) long x,reg (d1) long y)
+AllocTableField(REG(a0, struct Page *page), REG(d0, long x), REG(d1, long y))
 {
 	struct tableField *tf;
 
-	if (tf = GetTableField(page,x,y))
+	if ((tf = GetTableField(page,x,y)) != 0)
 		return tf;
 
-	if (tf = MakeTableField(page,x,y)) {
+	if ((tf = MakeTableField(page,x,y)) != 0) {
 		if (x > page->pg_Cols || y > page->pg_Rows)
 			AllocTableSize(page, x, y);
 
@@ -452,7 +452,7 @@ RemoveCell(struct Page *page,struct tableField *tf, bool recalc)
 		(page->pg_tfHeight + row - 1)->ts_Cell = ntf;
 	}
 
-	Remove((struct Node *)tf);
+	MyRemove(tf);
 
 	// FreeReference() berechnet die Zellen eventuell neu, also muß
 	// diese Zelle bereits aus der Tabelle entfernt worden sein
@@ -645,7 +645,7 @@ SetTFText(struct Page *page, struct tableField *tf, STRPTR t)
 
 
 struct tableField * PUBLIC
-GetTableField(reg (a0) struct Page *page,reg (d0) long x,reg (d1) long y)
+GetTableField(REG(a0, struct Page *page), REG(d0, long x), REG(d1, long y))
 {
 	struct tableField *tf;
 
@@ -722,11 +722,9 @@ GetTotalWidth(struct Page *page,struct tableField *tf)
 {
 	long width = 0,i;
 
-	if (i = tf->tf_Width) {
+	if ((i = tf->tf_Width) != 0) {
 		for(;i;i--)
 			width += GetTFWidth(page,tf->tf_Col+i);
 	}
 	return GetTFWidth(page,tf->tf_Col) + width;
 }
-
-

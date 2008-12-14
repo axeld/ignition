@@ -9,6 +9,7 @@
 #include <strings.h>
 #include <stdlib.h>
 
+#include <exec/types.h>
 
 #if !defined(__SASC)
 
@@ -68,6 +69,10 @@ void dqsort(double *x, int n)
 	qsort(x,n,sizeof(double),(void *)(*dcomp));
 }
 
+#endif
+
+
+#if !defined(HAVE_SAFECLIP)
 
 ULONG SafeInit (ULONG nvertmax)
 {

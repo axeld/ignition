@@ -19,7 +19,12 @@ long tf_col, tf_row, mp_flags, gTextBufferLength;
 STRPTR tf_format, gTextBuffer, itaPoint;
 UWORD calcerr, calcflags = CF_REQUESTER;
 long mday[] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
-struct FormatVorlage empty_fv = {NULL, NULL, FVT_NONE, 0, NULL, NULL, 0, 0, 0, 0};
+#if defined(__AROS__) && !(AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+#warning FIXME when V1 ABI is out
+struct FormatVorlage empty_fv = {{NULL, NULL, NULL, FVT_NONE, 0}, NULL, 0, 0, 0, 0};
+#else
+struct FormatVorlage empty_fv = {{NULL, NULL, FVT_NONE, 0, NULL}, NULL, 0, 0, 0, 0};
+#endif
 struct MinList flangs;
 APTR tree_stack;
 ULONG tree_size;
@@ -38,7 +43,7 @@ RemoveSpaces(STRPTR st)
     char   c,intext;
     long   i,l;
 
-    for (i = 0, intext = FALSE, l = 0; c = *(st + i); i++)
+    for (i = 0, intext = FALSE, l = 0; (c = *(st + i)) != 0; i++)
     {
         if (c == intext)
             intext = 0;
@@ -50,7 +55,7 @@ RemoveSpaces(STRPTR st)
     if (!(t = AllocPooled(pool, strlen(st) - l + 1)))
         return NULL;
 
-    for (i = 0,l = 0,intext = FALSE;c = *(st+i);*(t+l++) = *(st+i++))
+    for (i = 0, l = 0, intext = FALSE; (c = *(st+i)) != 0; *(t+l++) = *(st+i++))
     {
         if (c == intext)
             intext = 0;
@@ -79,7 +84,7 @@ EnlargeTextBuffer(int32 pos)
         // enlarge buffer
         STRPTR t;
 
-        if (t = AllocPooled(pool, gTextBufferLength + 256))
+        if ((t = AllocPooled(pool, gTextBufferLength + 256)) != 0)
         {
             strcpy(t, gTextBuffer);
             FreePooled(pool, gTextBuffer, gTextBufferLength);
@@ -141,7 +146,7 @@ TablePos2String(struct Page *page,struct tablePos *tp,STRPTR t)
  */
 
 STRPTR PUBLIC
-AbsCoord2String(reg (d0) BOOL abscol, reg (d1) long col, reg (d2) BOOL absrow, reg (d3) long row)
+AbsCoord2String(REG(d0, BOOL abscol), REG(d1, long col), REG(d2, BOOL absrow), REG(d3, long row))
 {
     static char t[16];
 
@@ -197,23 +202,25 @@ GetExtCalcPage(struct Term *t)
     /*if (!t->t_Mappe)*/
     {
         if (t->t_Page)
-            page = (struct Page *)FindName(&calcpage->pg_Mappe->mp_Pages,t->t_Page);
+            page = (struct Page *)MyFindName(&calcpage->pg_Mappe->mp_Pages, t->t_Page);
         if (!page)
             page = (struct Page *)FindListNumber(&calcpage->pg_Mappe->mp_Pages,t->t_NumPage-1);
     }
-    /*else
+#if 0
+    else
     {
         D(bug("not implemented\n"));
-        /*if (mp = (struct Mappe *)FindName(&calcpage->pg_Mappe->mp_Projects,t->t_Mappe))
+        /*if (mp = (struct Mappe *)MyFindName(&calcpage->pg_Mappe->mp_Projects,t->t_Mappe))
         {
             if (t->t_NumPage == -1)
-                page = (struct Page *)FindName(&mp->mp_Pages,t->t_Page);
+                page = (struct Page *)MyFindName(&mp->mp_Pages,t->t_Page);
             else
                 page = (struct Page *)FindListNumber(&mp->mp_Pages,t->t_NumPage);
         }*/
         /*if (mp = (struct Mappe *)FindListNumber(&calcpage->pg_Mappe->mp_Projects,t->t_Mappe-1))
             page = (struct Page *)FindListNumber(&mp->mp_Pages,t->t_Page-1);*/
-    }*/
+    }
+#endif
     return page;
 }
 
@@ -223,7 +230,7 @@ GetExtTableField(struct Term *t)
 {
     struct Page *page;
 
-    if (page = GetExtCalcPage(t))
+    if ((page = GetExtCalcPage(t)) != 0)
         return GetTableField(page,t->t_Col,t->t_Row);
 
     return NULL;
@@ -320,7 +327,7 @@ AllocRangeCellsData(struct Page *page, struct tablePos *tp)
     {
         APTR temp;
 
-        if (temp = AllocPooled(pool,(grc_count + 2) * sizeof(ULONG)))
+        if ((temp = AllocPooled(pool, (grc_count + 2) * sizeof(ULONG))) != 0)
         {
             if (grc_base)
             {
@@ -357,9 +364,9 @@ GetRangeCells(struct Term *t,struct tableField *tf)
             if (tl->t_Op == OP_EXTCELL && tr->t_Op == OP_EXTCELL && !stricmp(tl->t_Page,tr->t_Page))
             {
                 if (tl->t_Col > tr->t_Col)
-                    swmem(&tl->t_Col,&tr->t_Col,sizeof(LONG));
+                    swmem((UBYTE *)&tl->t_Col, (UBYTE *)&tr->t_Col, sizeof(LONG));
                 if (tl->t_Row > tr->t_Row)
-                    swmem(&tl->t_Row,&tr->t_Row,sizeof(LONG));
+                    swmem((UBYTE *)&tl->t_Row, (UBYTE *)&tr->t_Row, sizeof(LONG));
 
                 tp.tp_Col = tl->t_Col;
                 tp.tp_Row = tl->t_Row;
@@ -430,7 +437,7 @@ FillTablePos(struct tablePos *tp,struct Term *t)
     if (t->t_Op == OP_NAME)
     {
         calcpage = rxpage;
-        if (nm = GetName(t->t_Text))
+        if ((nm = GetName(t->t_Text)) != 0)
             t = nm->nm_Root;
     }
     if (t->t_Op == OP_CELL)
@@ -446,12 +453,12 @@ FillTablePos(struct tablePos *tp,struct Term *t)
     {
         if ((tl->t_AbsCol ? 0 : tf_col)+tl->t_Col > (tr->t_AbsCol ? 0 : tf_col)+tr->t_Col)
         {
-            swmem(&tl->t_Col,&tr->t_Col,sizeof(LONG));
-            swmem(&tl->t_AbsCol,&tr->t_AbsCol,sizeof(BOOL));
+            swmem((UBYTE *)&tl->t_Col, (UBYTE *)&tr->t_Col, sizeof(LONG));
+            swmem(&tl->t_AbsCol, &tr->t_AbsCol, sizeof(BOOL));
         }
         if ((tl->t_AbsRow ? 0 : tf_row)+tl->t_Row > (tr->t_AbsRow ? 0 : tf_row)+tr->t_Row)
         {
-            swmem(&tl->t_Row,&tr->t_Row,sizeof(LONG));
+            swmem((UBYTE *)&tl->t_Row,(UBYTE *)&tr->t_Row,sizeof(LONG));
             swmem(&tl->t_AbsRow,&tr->t_AbsRow,sizeof(BOOL));
         }
         tp->tp_Col = tl->t_Col+(tl->t_AbsCol ? 0 : tf_col);
@@ -640,7 +647,7 @@ GetNameDatabaseField(struct Mappe *mp, struct Database **db, STRPTR t, struct Fi
         {
             if (t[len] == '.' && fi->fi_Node.ln_Type == FIT_REFERENCE)
             {
-                *db = (APTR)FindName(&mp->mp_Databases,fi->fi_Special);
+                *db = (APTR)MyFindName(&mp->mp_Databases, fi->fi_Special);
                 return GetNameDatabaseField(mp, db, t + len + 1, sfi, pos);
             }
             else if (!t[len])
@@ -686,7 +693,7 @@ GetNameAndField(STRPTR t, struct Database **_db, struct Field **_fi, int32 *_fiP
         if (!fi || !fi->fi_Node.ln_Succ)
             return false;
     }
-    else if (t = strchr(t, '.')) /* Der Punkt markiert Felder in Datenbanken - bei normalen Namen ist er unzulässig */
+    else if ((t = strchr(t, '.')) != 0) /* Der Punkt markiert Felder in Datenbanken - bei normalen Namen ist er unzulässig */
     {
         if (db->db_Node.ln_Type != NMT_DATABASE)
             return false;
@@ -760,7 +767,7 @@ NameValue(struct Result *r, STRPTR t)
 void
 CalcError(long err)
 {
-    STRPTR t = NULL;
+    CONST_STRPTR t = NULL;
 
     if (!err || !(calcflags & CF_REQUESTER))
         return;
@@ -808,7 +815,7 @@ STRPTR CalcErrorString(int32 err)
 
 
 int32 PUBLIC
-CalcTree(reg (a0) struct Result *r,reg (a1) struct Term *t)
+CalcTree(REG(a0, struct Result *r), REG(a1, struct Term *t))
 {
     struct Result r1,r2;
     struct tableField *tf;
@@ -820,9 +827,9 @@ CalcTree(reg (a0) struct Result *r,reg (a1) struct Term *t)
     memset(&r1,0,sizeof(struct Result));  memset(&r2,0,sizeof(struct Result));
     if (t->t_Op != OP_RANGE)
     {
-        if (rc = CalcTree(&r1,t->t_Left))
+        if ((rc = CalcTree(&r1, t->t_Left)) != 0)
             return rc;
-        if (rc = CalcTree(&r2,t->t_Right))
+        if ((rc = CalcTree(&r2, t->t_Right)) != 0)
         {
             FreeString(r1.r_Text);
             return rc;
@@ -903,7 +910,7 @@ CalcTree(reg (a0) struct Result *r,reg (a1) struct Term *t)
             }
             if (r1.r_Type & RT_TEXT && r2.r_Type & RT_TEXT)
             {
-                if (r->r_Text = AllocPooled(pool,(r1.r_Text ? strlen(r1.r_Text) : 0)+(r2.r_Text ? strlen(r2.r_Text) : 0)+1))
+                if ((r->r_Text = AllocPooled(pool,(r1.r_Text ? strlen(r1.r_Text) : 0)+(r2.r_Text ? strlen(r2.r_Text) : 0)+1)) != 0)
                 {
                     if (r1.r_Text)
                         strcpy(r->r_Text,r1.r_Text);
@@ -975,7 +982,7 @@ CalcTree(reg (a0) struct Result *r,reg (a1) struct Term *t)
         case OP_RANGE:
             r1.r_Value = 0.0;
             calcerr = CT_OK;
-            for(tf = NULL;tf = GetRangeCells(t,tf);r1.r_Value += tf->tf_Value);
+            for (tf = NULL; (tf = GetRangeCells(t, tf)) != 0; r1.r_Value += tf->tf_Value);
             rc = calcerr;
             r->r_Value = r1.r_Value;
             r->r_Type = RT_VALUE;
@@ -1040,6 +1047,7 @@ CalcTree(reg (a0) struct Result *r,reg (a1) struct Term *t)
                     case OP_EQLESS: r->r_Value = r1.r_Value <= r2.r_Value;    break;
                     case OP_EQUAL: r->r_Value = r1.r_Value == r2.r_Value;     break;
                     case OP_NOTEQUAL: r->r_Value = r1.r_Value != r2.r_Value;  break;
+                    default: break;
                 }
             }
             else if (r1.r_Type & RT_TEXT && r2.r_Type & RT_TEXT)
@@ -1054,6 +1062,7 @@ CalcTree(reg (a0) struct Result *r,reg (a1) struct Term *t)
                     case OP_EQLESS: r->r_Value = diff <= 0;    break;
                     case OP_EQUAL: r->r_Value = diff == 0;     break;
                     case OP_NOTEQUAL: r->r_Value = diff != 0;  break;
+                    default: break;
                 }
             }
             else
@@ -1104,6 +1113,8 @@ CalcTree(reg (a0) struct Result *r,reg (a1) struct Term *t)
             else
                 rc = CTERR_TYPE;
             break;
+		default:
+			break;
     }
     FreeString(r1.r_Text);  FreeString(r2.r_Text);
     return rc;
@@ -1172,7 +1183,7 @@ CopyName(struct Name *nm)
 {
     struct Name *cnm;
 
-    if (cnm = AllocPooled(pool,sizeof(struct Name)))
+    if ((cnm = AllocPooled(pool, sizeof(struct Name))) != 0)
     {
         CopyMem(nm,cnm,sizeof(struct Name));
         cnm->nm_Node.ln_Name = AllocString(nm->nm_Node.ln_Name);
@@ -1266,11 +1277,11 @@ SetNameContent(struct Name *nm, STRPTR content)
 
 
 struct Name *
-AddName(struct MinList *list, STRPTR name, STRPTR content, BYTE type, struct Page *page)
+AddName(struct MinList *list, CONST_STRPTR name, STRPTR content, BYTE type, struct Page *page)
 {
     struct Name *nm;
 
-    if (nm = AllocPooled(pool,sizeof(struct Name)))
+    if ((nm = AllocPooled(pool, sizeof(struct Name))) != 0)
     {
         nm->nm_Node.ln_Name = AllocString(name);
         nm->nm_Node.ln_Type = type & (~NMT_UNDEFINED);
@@ -1289,7 +1300,7 @@ AddName(struct MinList *list, STRPTR name, STRPTR content, BYTE type, struct Pag
                 UpdateName(nm);
             }
         }
-        AddTail(list, nm);
+        MyAddTail(list, nm);
 
         if ((nm->nm_Node.ln_Type & NMT_DETACHED) == 0)
             AssignUnresolvedReferencesForName(page, nm);
@@ -1317,7 +1328,7 @@ CopyFormat(struct FormatVorlage *fv)
     if (!fv)
         return NULL;
 
-    if (cfv = AllocPooled(pool,sizeof(struct FormatVorlage)))
+    if ((cfv = AllocPooled(pool, sizeof(struct FormatVorlage))) != 0)
     {
         CopyMem(fv,cfv,sizeof(struct FormatVorlage));
         cfv->fv_Node.ln_Name = AllocString(fv->fv_Node.ln_Name);
@@ -1397,7 +1408,7 @@ AddFormat(struct MinList *list, STRPTR t, BYTE pri, BYTE komma, BYTE align, ULON
     struct FormatVorlage *fv;
     double value = 0.0;
 
-	if (fv = AllocPooled(pool, sizeof(struct FormatVorlage)))
+	if ((fv = AllocPooled(pool, sizeof(struct FormatVorlage))) != 0)
     {
         fv->fv_Node.ln_Name = AllocString(t);
         fv->fv_Node.ln_Pri = pri;
@@ -1419,7 +1430,7 @@ AddFormat(struct MinList *list, STRPTR t, BYTE pri, BYTE komma, BYTE align, ULON
 		fv->fv_Preview = AllocString(FitValueInFormat(value, fv, NULL, 0, 0));
         fv->fv_Alignment = align == -1 ? TFA_RIGHT : align;
         fv->fv_NegativePen = pen;
-		AddTail(list, fv);
+		MyAddTail(list, fv);
     }
     return fv;
 }
@@ -1945,7 +1956,7 @@ CheckFormat(struct Node *fv, STRPTR t, double *_value)
 
 	index = 0;  zahl = 0.0;  sec = 0.0;  hour = 0;  m = 1;  day = 1;  year = 1;
 
-	while (type = GetFVType(fv, &formatIndex))
+	while ((type = GetFVType(fv, &formatIndex)) != 0)
     {
 		// ignore spaces
 		while (t[index] == ' ')
@@ -1960,7 +1971,7 @@ CheckFormat(struct Node *fv, STRPTR t, double *_value)
 				if (length != 0 && !(length == 1 && (t[index] == '-' || t[index] == '+')))
                 {
 					index += length;
-					if (length = nachkommastellen(t + index, &zahl))
+					if ((length = nachkommastellen(t + index, &zahl)) != 0)
 						index += length;
                 }
                 else
@@ -1972,7 +1983,7 @@ CheckFormat(struct Node *fv, STRPTR t, double *_value)
 			{
 				bool found = false;
 				int32 length;
-				char *s;
+				const char *s;
 
 				// iterate over the current locale
 				for (m = 0; m < 12; m++)
@@ -2122,7 +2133,7 @@ CheckFormat(struct Node *fv, STRPTR t, double *_value)
                     case FVT_SSEC:
                     case FVT_SEC:
 						sec = longValue;
-						if (length = nachkommastellen(t + index, &sec))
+						if ((length = nachkommastellen(t + index, &sec)) != 0)
 							index += length;
                         break;
                     case FVT_SYEAR:
@@ -2176,6 +2187,7 @@ CheckFormat(struct Node *fv, STRPTR t, double *_value)
 			day += mday[m - 1];
             if (m > 2 && !(year % 4) && (year % 100 || !(year % 400)))
                 day++;
+			// FIXME: GCC warning: operation on 'year' may be undefined
 			m = (long)--year * 365 + year / 4 - year / 100 + year / 400;
 			*_value = (double)(day + m);
             break;
@@ -2265,7 +2277,7 @@ GetValue(struct Page *page, struct tableField *tf)
         tf->tf_Type = TFT_VALUE;
 		if (tf_format && (!tf->tf_Format || !FindLinkName(&mp->mp_CalcFormats, tf->tf_Format)))
         {
-			if (fv = (struct FormatVorlage *)FindLinkName(&mp->mp_CalcFormats, tf_format))
+			if ((fv = (struct FormatVorlage *)FindLinkName(&mp->mp_CalcFormats, tf_format)) != 0)
             {
                 FreeString(tf->tf_Format);
                 tf->tf_Format = AllocString(tf_format);
@@ -2282,7 +2294,7 @@ GetValue(struct Page *page, struct tableField *tf)
                     STRPTR t;
                     long   i;
 
-					if (t = AllocString(tf_format))
+					if ((t = AllocString(tf_format)) != 0)
                     {
                         for(i = 0;*(t+i) && !(*(t+i) == '#' && tolower(*(t+i+1)) == 'y');i++);
                         if (*(t+ ++i) == 'y')
@@ -2298,7 +2310,7 @@ GetValue(struct Page *page, struct tableField *tf)
 			tf->tf_Text = AllocString(FitValueInFormat(tf->tf_Value, NULL, tf->tf_Format, tf->tf_Komma,
 								tf->tf_Flags & (TFF_SEPARATE | TFF_NEGPARENTHESES)));
 
-			if (fv = (struct FormatVorlage *)FindLinkName(&mp->mp_CalcFormats, tf->tf_Format))
+			if ((fv = (struct FormatVorlage *)FindLinkName(&mp->mp_CalcFormats, tf->tf_Format)) != 0)
             {
                 if (tf->tf_Alignment & TFA_VIRGIN)
                     tf->tf_Alignment = (tf->tf_Alignment & TFA_VCENTER) | fv->fv_Alignment | TFA_VIRGIN;
@@ -2484,14 +2496,14 @@ neuerOperand(char **t)
     char   zahl[32];
     STRPTR s;
 
-    if (k = AllocPooled(pool,sizeof(struct Term)))
+    if ((k = AllocPooled(pool,sizeof(struct Term))) != 0)
     {
         s = *t;
         while(*++s == '.' || *s == ',' || IsAlNum(loc,*s))
             if (*s == ',') *s = '.';
         if (isdigit(**t))
         {
-            stccpy(zahl,*t,(long)(s-*t)+1);
+            stccpy(zahl, *t, (long)((char *)s - *t) + 1);
             k->t_Value = strtod(zahl,NULL);
             k->t_Op = OP_VALUE;
             k->t_Pri = PRI_TOP;
@@ -2530,7 +2542,7 @@ neuerName(STRPTR t)
 {
     struct Term *k;
 
-    if (k = AllocPooled(pool,sizeof(struct Term)))
+    if ((k = AllocPooled(pool, sizeof(struct Term))) != 0)
     {
         k->t_Op = OP_NAME;
         k->t_Pri = PRI_TOP;
@@ -2582,7 +2594,7 @@ neuesFeld(char *t)
     struct Term *k;
     long   abs;
 
-    if (k = AllocPooled(pool,sizeof(struct Term)))
+    if ((k = AllocPooled(pool, sizeof(struct Term))) != 0)
     {
         abs = String2Coord(t,&k->t_Col,&k->t_Row);
         k->t_Op = OP_CELL;
@@ -2610,14 +2622,14 @@ neueFunktion(char *name, char *t)
     STRPTR buff;
 	long   i, j, size;
 
-    if (buff = AllocPooled(pool,size = strlen(t)+1))
+    if ((buff = AllocPooled(pool,size = strlen(t)+1)) != 0)
     {
-        if (k = AllocPooled(pool,sizeof(struct Term)))
+        if ((k = AllocPooled(pool, sizeof(struct Term))) != 0)
         {
             k->t_Op = OP_FUNC;
             f = FindFunction(name,k);
 
-            NewList((struct List *)&k->t_Args);
+            MyNewList(&k->t_Args);
             strcpy(buff, t);
             for (i = 1,j = 0;i && *t;t++,j++)
             {
@@ -2636,14 +2648,14 @@ neueFunktion(char *name, char *t)
                 APTR stack;
                 ULONG size = 1024;
 
-                if (stack = AllocPooled(pool,size))
+                if ((stack = AllocPooled(pool, size)) != 0)
                 {
                     for(i = 0;i < j;i += strlen(buff+i)+1)
                     {
-                        if (fa = AllocPooled(pool,sizeof(struct FuncArg)))
+                        if ((fa = AllocPooled(pool, sizeof(struct FuncArg))) != 0)
                         {
                             fa->fa_Root = createTree(buff+i,&stack,&size);
-                            AddTail((struct List *)&k->t_Args,(struct Node *)fa);
+                            MyAddTail(&k->t_Args, fa);
                         }
                     }
                     if ((calcerr = CheckFuncArgs(f,&k->t_Args)) == CTERR_ARGS)
@@ -2664,7 +2676,7 @@ verwendeOperator(OPs op, struct Term **num_stack, long *sp_num)
 {
     struct Term *t;
 
-    if (t = AllocPooled(pool, sizeof(struct Term)))
+    if ((t = AllocPooled(pool, sizeof(struct Term))) != 0)
     {
         t->t_Right = num_stack[--(*sp_num)];
         t->t_Op = op;
@@ -2710,7 +2722,7 @@ CalcTableField(struct tableField *tf)
     memset(&r,0,sizeof(struct Result));
     tf->tf_Text = NULL;
 
-    if (rc = calcerr = CalcTree(&r,tf->tf_Root))  /* an error */
+    if ((rc = calcerr = CalcTree(&r, tf->tf_Root)) != 0)  /* an error */
     {
         tf->tf_Text = AllocString(CalcErrorString(rc));
         tf->tf_Value = 0;
@@ -2766,7 +2778,7 @@ CalcTableField(struct tableField *tf)
 
 
 struct Term * PUBLIC
-CopyTree(reg (a0) struct Term *t)
+CopyTree(REG(a0, struct Term *t))
 {
     struct Term *ckn;
     struct FuncArg *fa,*sfa;
@@ -2774,7 +2786,7 @@ CopyTree(reg (a0) struct Term *t)
     if (!t)
         return NULL;
 
-    if (ckn = AllocPooled(pool,sizeof(struct Term)))
+    if ((ckn = AllocPooled(pool, sizeof(struct Term))) != 0)
     {
         *ckn = *t;
         ckn->t_Left = CopyTree(t->t_Left);
@@ -2788,13 +2800,13 @@ CopyTree(reg (a0) struct Term *t)
                 ckn->t_Text = AllocString(t->t_Text);
                 break;
             case OP_FUNC:
-                NewList((struct List *)&ckn->t_Args);
+                MyNewList(&ckn->t_Args);
                 for(fa = (APTR)t->t_Args.mlh_Head;fa->fa_Node.mln_Succ;fa = (APTR)fa->fa_Node.mln_Succ)
                 {
-                    if (sfa = AllocPooled(pool,sizeof(struct FuncArg)))
+                    if ((sfa = AllocPooled(pool, sizeof(struct FuncArg))) != 0)
                     {
                         sfa->fa_Root = CopyTree(fa->fa_Root);
-                        AddTail((struct List *)&ckn->t_Args,(struct Node *)sfa);
+                        MyAddTail(&ckn->t_Args, sfa);
                     }
                 }
                 break;
@@ -2802,6 +2814,8 @@ CopyTree(reg (a0) struct Term *t)
                 ckn->t_Page = AllocString(t->t_Page);
                 /*ckn->t_Mappe = AllocString(t->t_Mappe);*/
                 break;
+			default:
+				break;
         }
     }
     return ckn;
@@ -2821,21 +2835,21 @@ Ops(OPs op)
 
 
 struct Term * PUBLIC
-CopyTerm(reg (a0) struct Term *term)
+CopyTerm(REG(a0, struct Term *term))
 {
     return CopyTree(term);
 }
 
 
 void PUBLIC
-DeleteTerm(reg (a0) struct Term *term)
+DeleteTerm(REG(a0, struct Term *term))
 {
     DeleteTree(term);
 }
 
 
 struct Term * PUBLIC
-CreateTerm(reg (a0) struct Page *page,reg (a1) STRPTR text)
+CreateTerm(REG(a0, struct Page *page), REG(a1, STRPTR text))
 {
     if (!text || *text != '=')
         return NULL;
@@ -2861,7 +2875,7 @@ CreateTerm(reg (a0) struct Page *page,reg (a1) STRPTR text)
  */
 
 STRPTR PUBLIC
-CalcTerm(reg (a0) struct Page *page, reg (a1) STRPTR text, reg (a2) struct Term *term, reg (a3) STRPTR format)
+CalcTerm(REG(a0, struct Page *page), REG(a1, STRPTR text), REG(a2, struct Term *term), REG(a3, STRPTR format))
 {
     if (!text)
         return NULL;
@@ -2980,7 +2994,7 @@ TermToText(struct Term *term, uint32 *_pos)
         {
             struct Function *f;
 
-            if (f = term->t_Function)
+            if ((f = term->t_Function) != 0)
             {
                 int32 nameLength;
                 char *name;
@@ -3119,7 +3133,7 @@ TreeTerm(struct Term *t, BOOL formula)
  */
 
 void PUBLIC
-DeleteTree(reg (a0) struct Term *t)
+DeleteTree(REG(a0, struct Term *t))
 {
     struct FuncArg *fa;
 
@@ -3139,12 +3153,14 @@ DeleteTree(reg (a0) struct Term *t)
             FreeString(t->t_Page);
             break;
         case OP_FUNC:
-            while(fa = (struct FuncArg *)RemHead((struct List *)&t->t_Args))
+            while ((fa = (struct FuncArg *)MyRemHead(&t->t_Args)) != 0)
             {
                 DeleteTree(fa->fa_Root);
                 FreePooled(pool,fa,sizeof(struct FuncArg));
             }
             break;
+		default:
+			break;
     }
     FreePooled(pool, t, sizeof(struct Term));
 }
@@ -3162,7 +3178,7 @@ CreateTreeFrom(struct Page *page, long col, long row, STRPTR t)
 
 
 struct Term * PUBLIC
-CreateTree(reg (a0) struct Page *page,reg (a1) STRPTR t)
+CreateTree(REG(a0, struct Page *page),REG(a1, STRPTR t))
 {
     calcpage = page;
     tf_col = 0;
@@ -3193,14 +3209,14 @@ createTree(STRPTR t, void **stack, uint32 *_size)
     }
     sp_num = 0;  sp_op = 0;
 
-    for (; c = *t; t++)
+    for (; (c = *t) != 0; t++)
     {
         // allocate or enlarge operator stack
         if (!*stack || sp_num > (size >> 1))
         {
             APTR temp;
 
-            if (temp = AllocPooled(pool, size + TREESIZE))
+            if ((temp = AllocPooled(pool, size + TREESIZE)) != 0)
             {
                 if (*stack)
                 {
@@ -3328,6 +3344,8 @@ createTree(STRPTR t, void **stack, uint32 *_size)
                 case OP_BITOR:
                     if (*t == '|') op = OP_OR;
                     break;
+				default:
+					break;
             }
             if (op == op2)
                 t--;
@@ -3337,7 +3355,7 @@ createTree(STRPTR t, void **stack, uint32 *_size)
                 op = OP_NEG;
                 pri = PRI_NEG;
             }
-operat: /******************************************************************************************/
+/******************************************************************************************/
             while (sp_op > 0)
             {
                 int32 p;
@@ -3374,7 +3392,7 @@ GetFormula(struct Page *page,struct tableField *tf)
 
     tf_col = tf->tf_Col;  tf_row = tf->tf_Row;
     calcpage = page;
-    if (tf->tf_Root = createTree(tf->tf_Text + 1, &tree_stack, &tree_size))
+    if ((tf->tf_Root = createTree(tf->tf_Text + 1, &tree_stack, &tree_size)) != 0)
     {
         FreeString(tf->tf_Text);  tf->tf_Text = NULL;
 
@@ -3406,7 +3424,7 @@ RecalcObject(struct Page *page, struct gObject *go)
 
         foreach(&go->go_ReferencedBy, l)
         {
-            if (rgo = l->l_Link)
+            if ((rgo = l->l_Link) != 0)
                 DrawSingleGObject(rgo->go_Page,rgo);
         }
     }

@@ -68,8 +68,8 @@ CreatePrefsGadgets(struct winData *wd, long wid, long hei)
 }
 
 
-void __asm
-CreatePrefChoiceGads(reg (a0) struct winData *wd)
+void ASM
+CreatePrefChoiceGads(REG(a0, struct winData *wd))
 {
 	gWidth = TLn(GetString(&gLocaleInfo, MSG_ADD_PREFERENCES_GAD))+84+lborder+rborder;
 	gHeight = barheight+itemheight*8+fontheight+17+bborder;
@@ -100,8 +100,8 @@ CreatePrefChoiceGads(reg (a0) struct winData *wd)
 }
 
  
-void __asm
-CreatePrefDispGads(reg (a0) struct winData *wd)
+void ASM
+CreatePrefDispGads(REG(a0, struct winData *wd))
 {
 	struct PrefDisp *pd = GetLocalPrefs(wd->wd_Data)->pr_Disp;
 	char   t[42];
@@ -193,8 +193,8 @@ CreatePrefDispGads(reg (a0) struct winData *wd)
 }
 
 
-void __asm
-CreatePrefScreenGads(reg (a0) struct winData *wd)
+void ASM
+CreatePrefScreenGads(REG(a0, struct winData *wd))
 {
 	char t[64];
 
@@ -288,7 +288,7 @@ CreatePrefScreenGads(reg (a0) struct winData *wd)
 }
 
 
-void __asm CreatePrefMenuGads(reg (a0) struct winData *wd)
+void ASM CreatePrefMenuGads(REG(a0, struct winData *wd))
 {
 	long i = 13,lvwidth;
 
@@ -419,8 +419,8 @@ void __asm CreatePrefMenuGads(reg (a0) struct winData *wd)
 }
 
  
-void __asm
-CreateFilePrefsGadgets(reg (a0) struct winData *wd)
+void ASM
+CreateFilePrefsGadgets(REG(a0, struct winData *wd))
 {
 	struct PrefFile *pf = wd->wd_Data;
 	char t[20];
@@ -528,8 +528,8 @@ CreateFilePrefsGadgets(reg (a0) struct winData *wd)
 }
 
  
-void __asm
-CreateTablePrefsGadgets(reg (a0) struct winData *wd)
+void ASM
+CreateTablePrefsGadgets(REG(a0, struct winData *wd))
 {
 	struct PrefTable *pt = wd->wd_ExtData[0];
 	struct Node *ln;
@@ -707,8 +707,8 @@ CreateKeyboardPrefsGadgets(struct winData *wd, long width, long height)
 }
 
 
-void __asm
-CreatePrefIconGads(reg (a0) struct winData *wd)
+void ASM
+CreatePrefIconGads(REG(a0, struct winData *wd))
 {
 	struct Prefs *pr = GetLocalPrefs(wd->wd_Data);
 	long i = 8;
@@ -766,8 +766,8 @@ CreatePrefIconGads(reg (a0) struct winData *wd)
 }
 
 
-void __asm
-CreatePrefCmdsGads(reg (a0) struct winData *wd)
+void ASM
+CreatePrefCmdsGads(REG(a0, struct winData *wd))
 {
 	struct Prefs *pr = GetLocalPrefs(wd->wd_Data);
 	long i = 10;
@@ -819,8 +819,8 @@ CreatePrefCmdsGads(reg (a0) struct winData *wd)
 }
 
 
-void __asm
-CreateDefineCmdGads(reg (a0) struct winData *wd)
+void ASM
+CreateDefineCmdGads(REG(a0, struct winData *wd))
 {
 	struct AppCmd *ac = wd->u.definecmd.wd_AppCmd;
 
@@ -939,8 +939,8 @@ CreateDefineCmdGads(reg (a0) struct winData *wd)
 }
 
 
-void __asm
-CreatePrefNamesGads(reg (a0) struct winData *wd)
+void ASM
+CreatePrefNamesGads(REG(a0, struct winData *wd))
 {
 	struct Mappe *mp = GetRealMap(wd->wd_Data);
 	long w, h;
@@ -1029,8 +1029,8 @@ CreatePrefNamesGads(reg (a0) struct winData *wd)
 }
 
 
-void __asm
-CreateFormatPrefsGadgets(reg (a0) struct winData *wd)
+void ASM
+CreateFormatPrefsGadgets(REG(a0, struct winData *wd))
 {
 	char buffer[64];
 	long i = 16, w, n;
@@ -1172,8 +1172,8 @@ CreateFormatPrefsGadgets(reg (a0) struct winData *wd)
 }
 
 
-void __asm
-CreatePrefColorsGads(reg (a0) struct winData *wd)
+void ASM
+CreatePrefColorsGads(REG(a0, struct winData *wd))
 {
 	struct ColorWheelRGB rgb;
 	struct ColorWheelHSB hsb;
@@ -1188,7 +1188,7 @@ CreatePrefColorsGads(reg (a0) struct winData *wd)
 		gHeight -= fontheight;
 	}
 
-	if (pens = wd->wd_ExtData[6]) {
+	if ((pens = wd->wd_ExtData[6]) != 0) {
 		pens[MAXGRADPENS+1] = ObtainPen(scr->ViewPort.ColorMap,-1,0,0,0,PEN_EXCLUSIVE | PEN_NO_SETCOLOR);
 
 		GetRGB32(scr->ViewPort.ColorMap,0,1,(ULONG *)&rgb);
@@ -1313,8 +1313,8 @@ CreatePrefColorsGads(reg (a0) struct winData *wd)
 }
 
 
-void __asm
-CreatePressKeyGads(reg (a0) struct winData *wd)
+void ASM
+CreatePressKeyGads(REG(a0, struct winData *wd))
 {
 	gWidth = TLn(GetString(&gLocaleInfo, MSG_PRESS_A_KEY_REQ))+30+lborder+rborder;
 	gHeight = barheight+3*fontheight+13+bborder;
@@ -1331,8 +1331,8 @@ CreatePressKeyGads(reg (a0) struct winData *wd)
 struct Gadget *psysPages[3];
 
 
-void __asm
-CreateSystemPrefsGadgets(reg (a0) struct winData *wd)
+void ASM
+CreateSystemPrefsGadgets(REG(a0, struct winData *wd))
 {
 	struct Gadget *pgad;
 	long h;
@@ -1456,8 +1456,8 @@ CreateSystemPrefsGadgets(reg (a0) struct winData *wd)
 }
 
 
-void __asm
-CreatePrefContextGads(reg (a0) struct winData *wd)
+void ASM
+CreatePrefContextGads(REG(a0, struct winData *wd))
 {
 	gWidth = 2 * TLn(sContextMenuLabels[1]) + 70 + lborder + rborder;
 	gHeight	= barheight+16*fontheight+46+bborder;

@@ -19,7 +19,7 @@
 
 
 void wbstart(struct List *list, struct WBArg *wbarg, LONG first, LONG numargs);
-long LoadFiles(struct List *list);
+int32 LoadFiles(struct List *list);
 
 extern void InitGadgetLabels(void);
 
@@ -85,7 +85,7 @@ struct LocaleInfo gLocaleInfo;
 
 
 struct InputEvent PUBLIC *
-ghelpFunc(reg (a0) struct InputEvent *ie)
+ghelpFunc(REG(a0, struct InputEvent *ie))
 {
     if (ie->ie_Class == IECLASS_RAWMOUSE)
         ghelpcnt = 0;
@@ -112,7 +112,7 @@ EraseGadgetBox(struct RastPort *rp,struct Gadget *gad)
 void
 RemoveToolObj(struct ToolObj *to)
 {
-    Remove((APTR)to);
+    MyRemove(to);
     FreePooled(pool, to, sizeof(struct ToolObj));
 }
 
@@ -122,10 +122,10 @@ AddToolObj(int32 type, STRPTR name, STRPTR help)
 {
     struct ToolObj *to;
 
-    if (to = AllocPooled(pool, sizeof(struct ToolObj))) {
+    if ((to = AllocPooled(pool, sizeof(struct ToolObj))) != 0) {
         to->to_Type = type;
         /* strcpy(to->to_Name,name); */
-        AddTail(&toolobjs, (struct Node *)to);
+        MyAddTail(&toolobjs, to);
     }
 }
 
@@ -145,7 +145,7 @@ FreeIconObjs(struct MinList *l)
 {
     struct IconObj *io;
 
-    while (io = (APTR)RemHead(l)) {
+    while ((io = (APTR)MyRemHead(l)) != 0) {
         FreeString(io->io_AppCmd);
         FreePooled(pool, io, sizeof(struct IconObj));
     }
@@ -157,7 +157,7 @@ CopyIconObj(struct IconObj *io)
 {
     struct IconObj *sio;
 
-    if (sio = AllocPooled(pool,sizeof(struct IconObj))) {
+    if ((sio = AllocPooled(pool, sizeof(struct IconObj))) != 0) {
         sio->io_AppCmd = AllocString(io->io_AppCmd);
         sio->io_Node.in_Name = sio->io_AppCmd;
         sio->io_Node.in_Image = io->io_Node.in_Image;
@@ -198,7 +198,7 @@ MakeMarkText(struct Page *page, STRPTR t)
         strcpy(s, "mittelwert(");
     strcat(s, t);  strcat(s, ")");
 
-    if (k = CreateTree(page, s)) {
+    if ((k = CreateTree(page, s)) != 0) {
         strcat(t, " (");
         if ((prefs.pr_Table->pt_Flags & PTF_MARKAVERAGE) != 0)
             strcat(t, "ø ");
@@ -259,7 +259,7 @@ DisplayTablePos(struct Page *page)
         STRPTR s = NULL;
         BOOL disabled = FALSE;
 
-        if (tf = GetTableField(page, page->pg_Gad.cp.cp_Col, page->pg_Gad.cp.cp_Row)) {
+        if ((tf = GetTableField(page, page->pg_Gad.cp.cp_Col, page->pg_Gad.cp.cp_Row)) != 0) {
             if ((tf->tf_Flags & TFF_SECURITY) > TFF_STATIC)
                 disabled = TRUE;
             else
@@ -298,8 +298,7 @@ DrawIconBar(struct Prefs *pr, struct Window *win, struct winData *wd)
 static void
 frameToolGadgets(struct Window *win,long idA,long idB)
 {
-    if (gad = GadgetAddress(win,idA))
-    {
+    if ((gad = GadgetAddress(win, idA)) != 0) {
         Move(win->RPort,gad->LeftEdge-1,gad->TopEdge+gad->Height-1);
         Draw(win->RPort,gad->LeftEdge-1,gad->TopEdge-1);
         for(;(idA <= idB) && GadgetAddress(win,idA);gad = GadgetAddress(win,idA++));
@@ -375,7 +374,7 @@ DrawStatusFlags(struct Mappe *mp,struct Window *win)
 
 
 void
-DrawStatusText(struct Page *page,STRPTR t)
+DrawStatusText(struct Page *page, CONST_STRPTR t)
 {
     if (page && page->pg_Window && page->pg_Mappe->mp_Prefs.pr_Disp->pd_HelpBar && t)
         DrawHelpText(page->pg_Window,NULL,t);
@@ -383,7 +382,7 @@ DrawStatusText(struct Page *page,STRPTR t)
 
 
 void
-DrawHelpText(struct Window *win,struct Gadget *gad,STRPTR t)
+DrawHelpText(struct Window *win, struct Gadget *gad, CONST_STRPTR t)
 {
     struct winData *wd;
     struct Page *page;
@@ -640,8 +639,7 @@ RefreshToolBar(struct Page *page)
         }
         align = tf->tf_Alignment;
     }
-    if (gad = GadgetAddress(win,GID_FONT))
-    {
+    if ((gad = GadgetAddress(win,GID_FONT)) != 0) {
         if (gad->UserData != ff)
         {
             GT_SetGadgetAttrs(gad,win,NULL,GTTX_Text,ff->ff_Node.ln_Name,TAG_END);
@@ -774,7 +772,7 @@ MakeToolGadgets(struct winData *wd,struct Gadget *gad,long w)
     if (ngad.ng_LeftEdge+boxwidth > w)
         return pgad;
     ngad.ng_GadgetID = GID_APEN;
-    if (gad = CreatePopGadget(wd,pgad,FALSE))
+    if ((gad = CreatePopGadget(wd,pgad,FALSE)) != 0)
         gad->UserData = pgad;
 
     ngad.ng_LeftEdge += 8+boxwidth;
@@ -794,7 +792,7 @@ MakeToolGadgets(struct winData *wd,struct Gadget *gad,long w)
     if (ngad.ng_LeftEdge + boxwidth > w)
         return pgad;
     ngad.ng_GadgetID = GID_BPEN;
-    if (gad = CreatePopGadget(wd,pgad,FALSE))
+    if ((gad = CreatePopGadget(wd,pgad,FALSE)) != 0)
         gad->UserData = pgad;
 
     ngad.ng_TopEdge++;
@@ -915,7 +913,7 @@ FreeWinIconObjs(struct Window *win,struct winData *wd)
         swo = (struct winObj *)wo->wo_Node.mln_Succ;
         if (wo->wo_Type == WOT_GADGET || wo->wo_Type == WOT_ICONIMG)
         {
-            Remove((struct Node *)wo);
+            MyRemove(wo);
             DisposeObject(wo->wo_Obj);
             FreePooled(pool,wo,sizeof(struct winObj));
         }
@@ -1172,17 +1170,16 @@ OpenProjWindow(struct Page *page,ULONG tag1,...)
 
     NormalizeWindowBox(&box);
 
-	if (wd = AllocPooled(pool, sizeof(struct winData)))
-    {
+	if ((wd = AllocPooled(pool, sizeof(struct winData))) != 0) {
         wd->wd_Type = WDT_PROJECT;
         wd->wd_Data = page;
-        NewList(&wd->wd_Objs);
+        MyNewList(&wd->wd_Objs);
         wd->wd_BorGads = MakeBorderScroller(wd);
         wd->wd_Server = handleProjIDCMP;
 
 		if (MakeProjectGadgets(wd, box.Width, box.Height))
         {
-			if (win = OpenWindowTags(NULL, WA_Flags,        WFLG_CLOSEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_ACTIVATE |WFLG_SIZEGADGET |WFLG_SIZEBBOTTOM | WFLG_SIZEBRIGHT | WFLG_REPORTMOUSE,
+			if ((win = OpenWindowTags(NULL, WA_Flags,        WFLG_CLOSEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_ACTIVATE |WFLG_SIZEGADGET |WFLG_SIZEBBOTTOM | WFLG_SIZEBRIGHT | WFLG_REPORTMOUSE,
                                            WA_Title,        GetPageTitle(page),
                                            WA_Left,         box.Left,
                                            WA_Top,          box.Top,
@@ -1197,7 +1194,7 @@ OpenProjWindow(struct Page *page,ULONG tag1,...)
                                            WA_MinHeight,    scr->WBorTop+4*fontheight+prefs.pr_Icon->pi_Height+34+leftImg->Height,
                                            WA_MaxWidth,     -1,
                                            WA_MaxHeight,    -1,
-                                           TAG_END))
+                                           TAG_END)) != 0)
             {
                 win->UserPort = iport;  win->UserData = (APTR)wd;
                 ModifyIDCMP(win, APPIDCMP | IDCMP_GADGETUP | IDCMP_GADGETDOWN | IDCMP_NEWSIZE | IDCMP_IDCMPUPDATE | IDCMP_SIZEVERIFY | IDCMP_ACTIVEWINDOW | IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_MENUVERIFY | (prefs.pr_Flags & PRF_SIMPLEPROJS ? IDCMP_REFRESHWINDOW : 0));
@@ -1232,17 +1229,16 @@ MakeFewFuncs(void)
 {
     struct Node *ln,*f;
 
-	while (ln = RemHead(&fewfuncs))
+	while ((ln = MyRemHead(&fewfuncs)) != 0)
 		FreePooled(pool, ln, sizeof(struct Node));
 
     if (fewftype == FT_RECENT)
     {
         foreach(&usedfuncs,f)
         {
-            if (ln = AllocPooled(pool,sizeof(struct Node)))
-            {
+            if ((ln = AllocPooled(pool, sizeof(struct Node))) != 0) {
                 ln->ln_Name = ((struct Node *)f->ln_Name)->ln_Name;
-                AddTail(&fewfuncs,ln);
+                MyAddTail(&fewfuncs, ln);
             }
         }
     }
@@ -1260,7 +1256,7 @@ MakeFewFuncs(void)
             if (in && (ln = AllocPooled(pool,sizeof(struct Node))))
             {
                 ln->ln_Name = f->ln_Name;
-                AddTail(&fewfuncs,ln);
+                MyAddTail(&fewfuncs, ln);
             }
         }
     }
@@ -1275,10 +1271,10 @@ RemInputHandler(void)
     {
         ghelpio->io_Data = ghelpintr;
         ghelpio->io_Command = IND_REMHANDLER;
-        DoIO(ghelpio);
+        DoIO((struct IORequest *)ghelpio);
 
-        CloseDevice(ghelpio);
-        DeleteExtIO(ghelpio);
+        CloseDevice((struct IORequest *)ghelpio);
+        DeleteExtIO((struct IORequest *)ghelpio);
     }
     FreePooled(pool,ghelpintr,sizeof(struct Interrupt));
 }
@@ -1287,18 +1283,15 @@ RemInputHandler(void)
 void
 AddInputHandler(void)
 {
-    if (ghelpintr = AllocPooled(pool,sizeof(struct Interrupt)))
-    {
+    if ((ghelpintr = AllocPooled(pool, sizeof(struct Interrupt))) != 0) {
         ghelpintr->is_Code = (void(*)())ghelpFunc;
         ghelpintr->is_Node.ln_Name = "ignition-GadgetHelp";
         ghelpintr->is_Node.ln_Pri = 100;
-        if (ghelpio = (struct IOStdReq *)CreateExtIO(iport,sizeof(struct IOStdReq)))
-        {
-            if (!OpenDevice("input.device",NULL,(struct IORequest *)ghelpio,NULL))
-            {
+        if ((ghelpio = (struct IOStdReq *)CreateExtIO(iport, sizeof(struct IOStdReq))) != 0) {
+            if (!OpenDevice("input.device", 0, (struct IORequest *)ghelpio, 0)) {
                 ghelpio->io_Data = ghelpintr;
                 ghelpio->io_Command = IND_ADDHANDLER;
-                DoIO(ghelpio);
+                DoIO((struct IORequest *)ghelpio);
             }
         }
     }
@@ -1389,12 +1382,11 @@ AddToSession(struct Mappe *mp)
     strcpy(filename,mp->mp_Path);
     AddPart(filename,mp->mp_Node.ln_Name,512);
 
-    if (s = FindSession(filename))
-    {
-        if (sessions.mlh_Head == s)
+    if ((s = FindSession(filename)) != 0) {
+        if ((struct Session *)sessions.mlh_Head == s)
             return;
 
-        Remove(s);
+        MyRemove(s);
     }
     else
     {
@@ -1406,7 +1398,7 @@ AddToSession(struct Mappe *mp)
         s->s_Filename = AllocString(filename);
     }
     gSessionChanged = true;
-    AddHead(&sessions,s);
+    MyAddHead(&sessions, s);
 
     RefreshSession();
 }
@@ -1422,8 +1414,7 @@ SaveSession(STRPTR name)
         DeleteFile(name);
         return;
     }*/
-	if (file = Open(name, MODE_NEWFILE))
-    {
+	if ((file = Open(name, MODE_NEWFILE)) != 0) {
         struct Session *s;
         struct Node *ln;
         long count = 0;
@@ -1490,11 +1481,10 @@ LoadSession(STRPTR name)
     struct Session *s;
     BPTR   file;
 
-    while(s = (APTR)RemHead(&sessions))
+    while ((s = (APTR)MyRemHead(&sessions)) != 0)
         FreeSession(s);
 
-	if (file = Open(name, MODE_OLDFILE))
-    {
+	if ((file = Open(name, MODE_OLDFILE)) != 0) {
 		char t[512], mode = 0;
         BPTR lock;
         int  i;
@@ -1537,18 +1527,16 @@ LoadSession(STRPTR name)
                     }
                     UnLock(lock);
 
-					if (s = AllocPooled(pool, sizeof(struct Session)))
-                    {
+					if ((s = AllocPooled(pool, sizeof(struct Session))) != 0) {
                         STRPTR u;
 
                         s->s_Filename = AllocString(t);
                         s->s_Node.ln_Name = AllocString(FilePart(t));
-                        if (u = PathPart(t))
-                        {
+                        if ((u = PathPart(t)) != 0) {
                             *u = 0;
                             s->s_Path = AllocString(t);
                         }
-                        AddTail(&sessions,s);
+                        MyAddTail(&sessions, s);
                     }
                     break;
                 case 2:  // recent functions
@@ -1559,7 +1547,7 @@ LoadSession(STRPTR name)
                     if ((f = FindFunctionWithLanguage((APTR)flangs.mlh_TailPred,t)) && (ln = AllocPooled(pool,sizeof(struct Node))))
                     {
                         ln->ln_Name = (STRPTR)f;
-                        AddTail(&usedfuncs,ln);
+                        MyAddTail(&usedfuncs, ln);
                     }
                     break;
                 }
@@ -1570,15 +1558,14 @@ LoadSession(STRPTR name)
                     double size = atol(t)/100.0;
                     struct Node *ln;
 
-                    if (ln = AllocPooled(pool,sizeof(struct Node)))
-                    {
+                    if ((ln = AllocPooled(pool,sizeof(struct Node))) != 0) {
                         char t[20];
 
                         strcpy(t,ita(size,-3,ITA_NONE));
                         strcat(t," pt");
 
                         ln->ln_Name = AllocString(t);
-                        AddTail(&sizes,ln);
+                        MyAddTail(&sizes, ln);
                     }
                     break;
                 }
@@ -1608,7 +1595,7 @@ FreeAppIcon(void)
             appdo = NULL;
         }
 
-        while (msg = GetMsg(wbport))
+        while ((msg = GetMsg(wbport)) != 0)
             ReplyMsg(msg);
         DeleteMsgPort(wbport);
         sigwait = (1L << SIGBREAKB_CTRL_C) | (1L << iport->mp_SigBit) | (1L << rxport->mp_SigBit);
@@ -1629,11 +1616,11 @@ InitAppIcon(void)
 		return;
 
 	olddir = CurrentDir(dir);
-	if (wbport = CreateMsgPort()) {
+	if ((wbport = CreateMsgPort()) != 0) {
 		sigwait = (1L << SIGBREAKB_CTRL_C) | (1L << iport->mp_SigBit) | (1L << rxport->mp_SigBit) | (1L << wbport->mp_SigBit);
-		if (appdo = GetDiskObject("def_app")) {
-			appdo->do_Type = NULL;
-			appicon = AddAppIconA(NULL, NULL, "ignition", wbport, NULL, appdo, NULL);
+		if ((appdo = GetDiskObject("def_app")) != 0) {
+			appdo->do_Type = 0;
+			appicon = AddAppIconA(0, 0, "ignition", wbport, NULL, appdo, NULL);
 		}
 	}
 	CurrentDir(olddir);
@@ -1685,7 +1672,7 @@ EmptyMsgPort(struct MsgPort *port)
 {
     struct Message *msg;
 
-    while (msg = GetMsg(port))
+    while ((msg = GetMsg(port)) != 0)
         ReplyMsg(msg);
 }
 
@@ -1710,16 +1697,16 @@ CloseApp(void)
     if ((prefs.pr_Flags & PRF_USESESSION) && gSessionChanged)
 		SaveSession(CONFIG_PATH "/ignition.session");
 
-    while (win = GetAppWindow(WDT_ANY))
+    while ((win = GetAppWindow(WDT_ANY)) != 0)
         CloseAppWindow(win, TRUE);
 
 	while (!IsListEmpty((struct List *)&gProjects))
 		DisposeProject((struct Mappe *)gProjects.mlh_Head);
 
-    while (n = RemHead(&prefs.pr_AppCmds))
+    while ((n = MyRemHead(&prefs.pr_AppCmds)) != 0)
         FreeAppCmd((struct AppCmd *)n);
 
-    while (n = RemHead(&images))
+    while ((n = MyRemHead(&images)) != 0)
         FreeImageObj((struct ImageObj *)n);
 
     FreePointers();
@@ -1761,8 +1748,7 @@ CloseApp(void)
     CloseLibrary(GradientSliderBase);
     CloseLibrary(CyberGfxBase);
 
-    while (n = RemHead(&sizes))
-    {
+    while ((n = MyRemHead(&sizes)) != 0) {
         FreeString(n->ln_Name);
         FreePooled(pool, n, sizeof(struct Node));
     }
@@ -1800,7 +1786,7 @@ InitAsl(void)
 }
 
 
-const ULONG sizepts[] = {8, 9, 10, 12, 14, 16, 18, 24, 36, 72, NULL};
+const ULONG sizepts[] = {8, 9, 10, 12, 14, 16, 18, 24, 36, 72, 0};
 
 
 void
@@ -1815,18 +1801,18 @@ InitApp(void)
 
     iconpath = AllocString("icons/");  projpath = AllocString("sheets/");  graphicpath = AllocString("graphic/");
 
-	NewList(&gProjects);  NewList(&locks);
-    NewList(&toolobjs);  NewList(&usedfuncs);
-    NewList(&fonts);  NewList(&errors);
-    NewList(&intcmds);  NewList(&fontpaths);
-    NewList(&outputs);  NewList(&sessions);
-    NewList(&families);  NewList(&colors);  NewList(&infos);
-    NewList(&clips);  NewList(&images);  NewList(&sizes);
+	MyNewList(&gProjects);  MyNewList(&locks);
+    MyNewList(&toolobjs);  MyNewList(&usedfuncs);
+    MyNewList(&fonts);  MyNewList(&errors);
+    MyNewList(&intcmds);  MyNewList(&fontpaths);
+    MyNewList(&outputs);  MyNewList(&sessions);
+    MyNewList(&families);  MyNewList(&colors);  MyNewList(&infos);
+    MyNewList(&clips);  MyNewList(&images);  MyNewList(&sizes);
 
 	if (sm && sm->sm_NumArgs) {
 		i = sm->sm_NumArgs - 1;
         olddir = CurrentDir(sm->sm_ArgList[i].wa_Lock);
-		if (dio = GetDiskObject(sm->sm_ArgList[i].wa_Name)) {
+		if ((dio = GetDiskObject(sm->sm_ArgList[i].wa_Name)) != 0) {
 			STRPTR value;
 
 			if (dio->do_ToolTypes) {
@@ -1836,13 +1822,13 @@ InitApp(void)
                         AddFontPath(dio->do_ToolTypes[i]+6);
             }
 
-			if (prefname = FindToolType(dio->do_ToolTypes, "WITH"))
+			if ((prefname = FindToolType(dio->do_ToolTypes, "WITH")) != 0)
                 prefname = AllocString(prefname);
 			if (FindToolType(dio->do_ToolTypes, "NOABOUT"))
                 noabout = TRUE;
 			if (FindToolType(dio->do_ToolTypes, "BEGINNER"))
 				gIsBeginner = TRUE;
-			if (value = FindToolType(dio->do_ToolTypes, "EDITOR"))
+			if ((value = FindToolType(dio->do_ToolTypes, "EDITOR")) != 0)
 				gEditor = AllocString(value);
 
             FreeDiskObject(dio);
@@ -1865,17 +1851,17 @@ InitApp(void)
 
     /** create logo-images from PictureImage-Class **/
 
-	if (pincImage = NewObject(pictureiclass, NULL,
+	if ((pincImage = NewObject(pictureiclass, NULL,
 			PIA_FromImage,	&pincOriginalImage,
 			PIA_WithColors,	standardPalette + 1,
 			PDTA_Screen,	iscr,
-			TAG_END))
+			TAG_END)) != 0)
         AddImageObj(NULL,pincImage);
 
-    if (logoImage = NewObject(pictureiclass,NULL,PIA_FromImage, &logoOriginalImage,
+    if ((logoImage = NewObject(pictureiclass,NULL,PIA_FromImage, &logoOriginalImage,
                                                                                              PIA_WithColors,standardPalette+1,
                                                                                              PDTA_Screen,   iscr,
-                                                                                             TAG_END))
+                                                                                             TAG_END)) != 0)
         AddImageObj(NULL,logoImage);
 
     if (iscr)
@@ -1889,7 +1875,7 @@ InitApp(void)
         UpdateProgressBar(pb,GetString(&gLocaleInfo, MSG_OPEN_CLASSES_PROGRESS),(float)0.04);
     }
 
-    passwordEditHook.h_Entry = (ULONG (*)())PasswordEditHook;
+    SETHOOK(passwordEditHook, PasswordEditHook);
     fewftype = 1;
     CurrentTime(&lastsecs,(ULONG *)&i);
 
@@ -1931,7 +1917,7 @@ InitApp(void)
 
 	UpdateProgressBar(pb, GetString(&gLocaleInfo, MSG_SEARCH_FONTS_PROGRESS), (float)0.15);
     SearchFonts();
-    if (!(stdfamily = FindName(&families,"CG Triumvirate")) && !IsListEmpty((struct List *)&families))
+    if (!(stdfamily = MyFindName(&families, "CG Triumvirate")) && !IsListEmpty((struct List *)&families))
         stdfamily = (struct Node *)families.mlh_Head;
     stdpointheight = 18 << 16;
 
@@ -1960,14 +1946,13 @@ InitApp(void)
         {
             struct Node *ln;
 
-            if (ln = AllocPooled(pool,sizeof(struct Node)))
-            {
+            if ((ln = AllocPooled(pool,sizeof(struct Node))) != 0) {
                 char t[20];
 
                 sprintf(t,"%ld pt",sizepts[i]);
                 ln->ln_Name = AllocString(t);
 
-                AddTail(&sizes,ln);
+                MyAddTail(&sizes, ln);
             }
         }
     }
@@ -2062,8 +2047,7 @@ handleGadgetHelp(void)
     struct tableField *tf;
     long   x,y,i;
 
-    if (layer = WhichLayer(&scr->LayerInfo,x = win->LeftEdge+imsg.MouseX,y = win->TopEdge+imsg.MouseY))
-    {
+    if ((layer = WhichLayer(&scr->LayerInfo, x = win->LeftEdge+imsg.MouseX, y = win->TopEdge+imsg.MouseY)) != 0) {
 		for (swin = scr->FirstWindow;swin;swin = swin->NextWindow)
         {
             if (layer == swin->WLayer && swin->UserPort == iport)
@@ -2100,8 +2084,7 @@ handleGadgetHelp(void)
                     if (ghelpcnt != GHELP_GADGET)
                         return;
 
-					if (i = IsOverProjSpecial(swin, x, y))
-                    {
+					if ((i = IsOverProjSpecial(swin, x, y)) != 0) {
 						switch (i)
                         {
                             case GID_APEN:
@@ -2157,15 +2140,14 @@ HandleApp(void)
     {
 		if (sTimeRequest != NULL && CheckIO((struct IORequest *)sTimeRequest))
         {
-			WaitIO(sTimeRequest);                  /* the message may still be in the queue */
+			WaitIO((struct IORequest *)sTimeRequest);                  /* the message may still be in the queue */
 			sTimeRequest->tr_time.tv_secs = ++sTimeInSeconds;
 
 			SendIO((struct IORequest *)sTimeRequest);
         }
         sigrcvd = Wait(sigwait);
 
-		while (msg = (struct IntuiMessage *)GTD_GetIMsg(iport))
-        {
+		while ((msg = (struct IntuiMessage *)GTD_GetIMsg(iport)) != 0) {
             imsg = *msg;
             win = imsg.IDCMPWindow;  tags = NULL;
             wd = (struct winData *)win->UserData;
@@ -2176,7 +2158,7 @@ HandleApp(void)
                     tags = CloneTagItems(imsg.IAddress);
                     break;
                 case IDCMP_OBJECTDROP:
-                    if (imsg.IAddress = AllocPooled(pool,sizeof(struct DropMessage)))
+                    if ((imsg.IAddress = AllocPooled(pool,sizeof(struct DropMessage))) != 0)
                         CopyMem(msg->IAddress,imsg.IAddress,sizeof(struct DropMessage));
                     break;
                 case IDCMP_MENUVERIFY:
@@ -2273,15 +2255,14 @@ HandleApp(void)
 
 		/* Handle ARexx messages */
 
-		while (rxmsg = (struct RexxMsg *)GetMsg(rxport))
-        {
+		while ((rxmsg = (struct RexxMsg *)GetMsg(rxport)) != 0) {
 			if (rxmsg == (struct RexxMsg *)sTimeRequest)
                 handleTimer();
             else
             {
                 if (IsRexxMsg(rxmsg))
                     handleRexx(rxmsg);
-                ReplyMsg(rxmsg);
+                ReplyMsg((struct Message *)rxmsg);
             }
         }
 
@@ -2295,17 +2276,16 @@ HandleApp(void)
             {
                 nrxp = (struct RexxPort *)rxp->rxp_Node.ln_Succ;
 
-                if (rxmsg = (struct RexxMsg *)GetMsg(&rxp->rxp_Port))
-                {
+                if ((rxmsg = (struct RexxMsg *)GetMsg(&rxp->rxp_Port)) != 0) {
                     if (rxmsg != rxp->rxp_Message)
                     {
                         if (IsRexxMsg(rxmsg))
                         {
-							swmem(&rxpage, &rxp->rxp_Page, sizeof(APTR));   // Skript-Kontext setzen
+							swmem((UBYTE *)&rxpage, (UBYTE *)&rxp->rxp_Page, sizeof(APTR));   // Skript-Kontext setzen
                             handleRexx(rxmsg);
-							swmem(&rxpage, &rxp->rxp_Page, sizeof(APTR));   // vorherigen Kontext wiederherstellen
+							swmem((UBYTE *)&rxpage, (UBYTE *)&rxp->rxp_Page, sizeof(APTR));   // vorherigen Kontext wiederherstellen
                         }
-                        ReplyMsg(rxmsg);
+                        ReplyMsg((struct Message *)rxmsg);
                     }
                     else
                         RemoveRexxPort(rxp);
@@ -2320,10 +2300,9 @@ HandleApp(void)
             struct NotifyMessage *nm;
             struct RexxScript *rxs;
 
-            while(nm = (struct NotifyMessage *)GetMsg(notifyport))
-            {
+            while ((nm = (struct NotifyMessage *)GetMsg(notifyport)) != 0) {
                 rxs = (struct RexxScript *)nm->nm_NReq->nr_UserData;
-                ReplyMsg(nm);
+                ReplyMsg((struct Message *)nm);
                 NotifyRexxScript(rxs);
             }
         }
@@ -2334,12 +2313,11 @@ HandleApp(void)
         {
             struct AppMessage *am;
 
-			while (am = (struct AppMessage *)GetMsg(wbport))
-            {
+			while ((am = (struct AppMessage *)GetMsg(wbport)) != 0) {
                 if (am->am_NumArgs > 0)  /* icon drop */
 					wbstart((struct List *)&files, am->am_ArgList, 0, am->am_NumArgs);
                 ScreenToFront(scr);
-                ReplyMsg(am);
+                ReplyMsg((struct Message *)am);
             }
             if (!IsListEmpty((struct List *)&files))
             {
@@ -2355,8 +2333,7 @@ HandleApp(void)
         {
             struct AmigaGuideMsg *agm;
 
-			while (agm = GetAmigaGuideMsg(gAmigaGuide))
-            {
+			while ((agm = GetAmigaGuideMsg(gAmigaGuide)) != 0) {
                 /* error handling to be implemented */
                 ReplyAmigaGuideMsg(agm);
             }
@@ -2411,9 +2388,9 @@ LoadFiles(struct List *list)
     struct Mappe *mp;
     char   t[256];
 
-	while(fa = (struct FileArg *)RemHead(list)) {
+	while ((fa = (struct FileArg *)MyRemHead(list)) != 0) {
 		if (NameFromLock(fa->fa_Lock, t, 256)) {
-			if (mp = NewProject()) {
+			if ((mp = NewProject()) != 0) {
                 FreeString(mp->mp_Path);
                 mp->mp_Path = AllocString(t);
 				SetMapName(mp, fa->fa_Node.ln_Name);
@@ -2439,15 +2416,14 @@ LoadFiles(struct List *list)
 long
 dosstart(struct List *list)
 {
-    struct AnchorPath __aligned ap;
+    struct AnchorPath ALIGNED ap;
     struct FileArg *fa;
     long   rc = RETURN_OK,temprc;
     long   opts[NUM_OPTS];
     char   **args,*arg;
 
     memset((char *)opts,0,sizeof(opts));
-    if (ra = ReadArgs(TEMPLATE,opts,NULL))
-    {
+    if ((ra = ReadArgs(TEMPLATE,opts,NULL)) != 0) {
         if (opts[OPT_WITH])
             prefname = AllocString((STRPTR)opts[OPT_WITH]);
         if (opts[OPT_FILE])
@@ -2458,19 +2434,18 @@ dosstart(struct List *list)
                 memset(&ap,0,sizeof(struct AnchorPath));
 
                 MatchFirst(arg,&ap);
-                if (temprc = IoErr())
+                if ((temprc = IoErr()) != 0)
 					PrintFault(temprc, NULL);
 
                 while(!temprc)
                 {
                     if (ap.ap_Info.fib_DirEntryType <= 0) // file
                     {
-                        if (fa = AllocPooled(pool,sizeof(struct FileArg)))
-                        {
+                        if ((fa = AllocPooled(pool, sizeof(struct FileArg))) != 0) {
                             fa->fa_Lock = DupLock(ap.ap_Current->an_Lock);
                             fa->fa_Node.ln_Name = AllocString(ap.ap_Info.fib_FileName);
                             fa->fa_Node.ln_Type = FAT_FROMDOS;
-                            AddTail(list,fa);
+                            MyAddTail(list, fa);
                         }
                     }
                     temprc = MatchNext(&ap);
@@ -2503,8 +2478,7 @@ wbstart(struct List *list, struct WBArg *wbarg, LONG first, LONG numargs)
 
     for (i = first;i < numargs;i++)
     {
-        if (fa = AllocPooled(pool,sizeof(struct FileArg)))
-        {
+        if ((fa = AllocPooled(pool,sizeof(struct FileArg))) != 0) {
             if (first) /* wb-start */
             {
                 fa->fa_Lock = wbarg[i].wa_Lock;
@@ -2516,7 +2490,7 @@ wbstart(struct List *list, struct WBArg *wbarg, LONG first, LONG numargs)
                 fa->fa_Node.ln_Type = FAT_FROMDOS;
             }
             fa->fa_Node.ln_Name = AllocString(wbarg[i].wa_Name);
-            AddTail(list, fa);
+            MyAddTail(list, fa);
         }
     }
 }
@@ -2530,27 +2504,27 @@ main(int argc, char **argv)
     if (!(pool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC, 16384, 16384)))
         return RETURN_FAIL;
 
-    NewList(&files);
+    MyNewList(&files);
 	if (argc) {
-		if (rc = dosstart((struct List *)&files)) {
+		if ((rc = dosstart((struct List *)&files)) != 0) {
             DeletePool(pool);
             return rc;
         }
     }
-    else if (sm = (struct WBStartup *)argv)
+    else if ((sm = (struct WBStartup *)argv) != 0)
         wbstart((struct List *)&files, sm->sm_ArgList, 1, sm->sm_NumArgs);
 
     shelldir = CurrentDir(GetProgramDir());
 
-	if (GTDragBase = OpenLibrary("gtdrag.library", 3)) {
+	if ((GTDragBase = OpenLibrary("gtdrag.library", 3)) != 0) {
         InitAppClasses();
 
 		if (GTD_AddApp("ignition", GTDA_NewStyle, TRUE, TAG_END)) {
-			if (iport = CreateMsgPort()) {
+			if ((iport = CreateMsgPort()) != 0) {
                 InitApp();
 
-				if (rxport = CreatePort(pubname, 0)) {
-					if (sTimeRequest = (struct timerequest *)CreateExtIO(rxport, sizeof(struct timerequest))) {
+				if ((rxport = CreatePort(pubname, 0)) != 0) {
+					if ((sTimeRequest = (struct timerequest *)CreateExtIO(rxport, sizeof(struct timerequest))) != 0) {
 						sTimeRequest->tr_node.io_Command = TR_ADDREQUEST;
 						if (!OpenDevice(TIMERNAME, UNIT_WAITUNTIL, (struct IORequest *)sTimeRequest, 0L)) {
 							TimerBase = (struct Library *)sTimeRequest->tr_node.io_Device;

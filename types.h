@@ -9,6 +9,7 @@
 
 #define INTUI_V36_NAMES_ONLY
 #define __USE_SYSBASE
+#define __TIMER_STDLIBBASE__
 
 #include <exec/types.h>
 #include <exec/libraries.h>
@@ -24,6 +25,7 @@
 #include <intuition/gadgetclass.h>
 #include <intuition/imageclass.h>
 #include <intuition/sghooks.h>
+#include <intuition/cghooks.h>
 #include <gadgets/colorwheel.h>
 #include <gadgets/gradientslider.h>
 #include <gadgets/TextEdit.h>
@@ -39,22 +41,14 @@
 #include <libraries/gadtools.h>
 #include <libraries/gtdrag.h>
 #include <libraries/asl.h>
-#include <cybergraphics/cybergraphics.h>
 #include <dos/dos.h>
 #include <proto/exec.h>
-#include <clib/gtdrag_protos.h>
-#include <clib/TextEdit_protos.h>
-#include <clib/console_protos.h>
-#include <clib/bullet_protos.h>
+#include <proto/gtdrag.h>
+#include <proto/console.h>
+#include <proto/bullet.h>
 //#include <clib/amigaguide_protos.h>
-#include <clib/colorwheel_protos.h>
-#include <clib/cybergraphics_protos.h>
-#include <pragmas/cybergraphics_pragmas.h>
-#include <pragmas/console_pragmas.h>
-#include <pragmas/bullet_pragmas.h>
-//#include <pragmas/amigaguide_pragmas.h>
-#include <pragmas/TextEdit_pragmas.h>
-#include <pragmas/gtdrag_pragmas.h>
+#include <proto/colorwheel.h>
+#include <proto/cybergraphics.h>
 #include <proto/dos.h>
 #include <proto/gadtools.h>
 #include <proto/intuition.h>
@@ -73,12 +67,28 @@
 #include <clib/alib_protos.h>
 /*#include <clib/alib_stdio_protos.h>*/
 
+#if defined(__AROS__)
+#	include <cybergraphx/cybergraphics.h>
+#	include <proto/pTextEdit.h>
+#	include <proto/mathieeedoubbas.h>
+#	include <proto/mathieeedoubtrans.h>
+#else
+#	include <cybergraphics/cybergraphics.h>
+#	include <pragmas/cybergraphics_pragmas.h>
+#	include <pragmas/console_pragmas.h>
+#	include <pragmas/bullet_pragmas.h>
+	//#include <pragmas/amigaguide_pragmas.h>
+#	include <pragmas/TextEdit_pragmas.h>
+#	include <pragmas/gtdrag_pragmas.h>
+#	include <clib/TextEdit_protos.h>
+#	include <mieeedoub.h>
+#endif
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
 #include <math.h>
-#include <mieeedoub.h>
 #include <float.h>
 
 #define TLn(t) TextLength(&scr->RastPort, (const STRPTR)t, strlen(t))
@@ -86,11 +96,14 @@
 #define PointInGadget(gad,x,y) (x >= gad->LeftEdge && x <= gad->LeftEdge+gad->Width && y >= gad->TopEdge && y <= gad->TopEdge+gad->Height)
 #define RGB32(b) (b << 24L | b << 16L | b << 8L | b)
 
-#define NewList(l) NewList((struct List *)(l))
-#define RemHead(l) RemHead((struct List *)(l))
-#define AddTail(l,n) AddTail((struct List *)(l),(struct Node *)(n))
-#define AddHead(l,n) AddHead((struct List *)(l),(struct Node *)(n))
-#define FindName(l,s) (APTR)FindName((struct List *)(l),(s))
+#define MyNewList(l) NewList((struct List *)(l))
+#define MyRemTail(l) RemTail((struct List *)(l))
+#define MyRemHead(l) RemHead((struct List *)(l))
+#define MyAddTail(l,n) AddTail((struct List *)(l),(struct Node *)(n))
+#define MyAddHead(l,n) AddHead((struct List *)(l),(struct Node *)(n))
+#define MyEnqueue(l,n) Enqueue((struct List *)(l),(struct Node *)(n))
+#define MyFindName(l,s) (APTR)FindName((struct List *)(l),(s))
+#define MyRemove(n) Remove((struct Node *)(n))
 
 typedef BYTE int8;
 typedef UBYTE uint8;
@@ -105,12 +118,8 @@ typedef ULONG uint32;
 #   define false FALSE
 #endif
 
-//#define reg register
-#ifdef __SASC
-#   define PUBLIC __saveds __asm
-#else
-#   error "You have to port some defines, before compiling it with any other compiler than SAS/C"
-#endif
+#include "SDI_compiler.h"
+#include "SDI_endian.h"
 
 #include "debug.h"
 
@@ -175,13 +184,19 @@ struct NewContextMenu {
 #include "graphic.h"
 #include "font.h"
 #include "io.h"
+#include "compatibility.h"
 																
 /*************************** Locale stuff ***************************/
 
 #define CATCOMP_NUMBERS
+
+#if defined(__AROS__)
+#	define CATCOMP_ARRAY
+#endif
+
 #include "ignition_strings.h"
 
-STRPTR __asm GetString(reg (a0) struct LocaleInfo *li, reg (d0) LONG stringNum);
+CONST_STRPTR ASM GetString(REG(a0, struct LocaleInfo *li), REG(d0, LONG stringNum));
  
 /*************************** Printer ***************************/
 
@@ -213,14 +228,12 @@ struct wdtPrintStatus {
 /*************************** Locks ***************************/
 
 struct LockNode {
-    struct MinNode ln_Node;
-    UBYTE  ln_Type;
-    BYTE   ln_Pri;             // byte compatible with "struct Node"
+    struct Node ln_Node;
     struct MinList *ln_List;
     struct MinNode *ln_Object;
     ULONG  ln_Length;
     APTR   *ln_Data;
-    ULONG  __asm (*ln_Function)(reg (a0) struct LockNode *,reg (a1) struct MinNode *,reg (d0) UBYTE);
+    ULONG  ASM (*ln_Function)(REG(a0, struct LockNode *), REG(a1, struct MinNode *), REG(d0, UBYTE));
     LONG   ln_Locked;
 };
 
@@ -637,7 +650,9 @@ extern struct RastPort scrRp,*grp;
 extern struct Hook fillHook,renderHook,popUpHook,formelHook,formatHook;
 extern struct Hook treeHook,colorHook,selectHook,fileHook,glinkHook,linkHook;
 extern struct Hook passwordEditHook;
-extern long   dithPtrn, gDPI, gXDPI, gYDPI, gWidth, gHeight, tf_col, tf_row;
+extern LONG   dithPtrn,gDPI;
+extern int32  gWidth, gHeight;
+extern long   gXDPI, gYDPI, tf_col, tf_row;
 extern ULONG  lvsec,lvmsec,lastsecs,wd_StatusWidth,wd_PosWidth,clipunit;
 extern WORD   lventry,fewftype;
 extern STRPTR pubname, tf_format, gEditor;
@@ -648,7 +663,8 @@ extern Class  *pictureiclass,*bitmapiclass,*popupiclass,*buttonclass,*colorgclas
 extern bool   ende, gScreenHasChanged;
 extern UWORD  searchMode,calcflags;
 extern bool   gIsBeginner, rxquiet, gLockStop;
-extern ULONG  standardPalette[],pageWidth[],pageHeight[],pageSizes,rxmask,ghostPtrn;
+extern const ULONG pageWidth[],pageHeight[],pageSizes;
+extern ULONG  standardPalette[],rxmask,ghostPtrn;
 extern struct Locale *loc;
 extern struct Library *GTDragBase,*TextEditBase,*CyberGfxBase;
 extern struct Library *ColorWheelBase,*GradientSliderBase;

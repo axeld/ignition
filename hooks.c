@@ -22,14 +22,13 @@ ULONG  ghostPtrn = 0x44441111;
 
 
 void PUBLIC
-fillHookFunc(reg (a0) struct Hook *h, reg (a2) struct RastPort *rastp, reg (a1) struct Rectangle *rect)
+fillHookFunc(REG(a0, struct Hook *h), REG(a2, struct RastPort *rastp), REG(a1, struct Rectangle *rect))
 {
 	if (prefs.pr_Screen->ps_BackFill) {
 		rect = (struct Rectangle *)((ULONG *)rect + 1);
 		RectFill(&scrRp,rect->MinX,rect->MinY,rect->MaxX,rect->MaxY);
 	}
 }
-
 
 
 /********************************** ListView-Hooks **********************************/
@@ -84,7 +83,7 @@ WriteHookText(struct RastPort *rp, struct Rectangle *bounds, STRPTR name, ULONG 
 
 
 ULONG
-PUBLIC RenderHook(reg (a1) struct LVDrawMsg *msg,reg (a2) struct ImageNode *in)
+PUBLIC RenderHook(REG(a0, struct Hook *h), REG(a2, struct ImageNode *in), REG(a1, struct LVDrawMsg *msg))
 {
 	struct RastPort *rp;
 	struct Rectangle bounds;
@@ -192,7 +191,7 @@ void DrawColoredBox(struct RastPort *rp,struct Rectangle bounds,UWORD hpen,UWORD
 
 
 ULONG PUBLIC
-ColorHook(reg (a1) struct LVDrawMsg *msg,reg (a2) struct colorPen *cp)
+ColorHook(REG(a0, struct Hook *h), REG(a2, struct colorPen *cp), REG(a1, struct LVDrawMsg *msg))
 {
 	struct RastPort *rp;
 	struct Rectangle bounds;
@@ -251,7 +250,7 @@ ColorHook(reg (a1) struct LVDrawMsg *msg,reg (a2) struct colorPen *cp)
 
 
 ULONG PUBLIC
-PopUpHook(reg (a1) struct LVDrawMsg *msg, reg (a2) struct Node *n)
+PopUpHook(REG(a0, struct Hook *h), REG(a2, struct Node *n), REG(a1, struct LVDrawMsg *msg))
 {
 	struct RastPort *rp;
 	struct Rectangle bounds;
@@ -321,7 +320,7 @@ DrawSelectHook(struct RastPort *rp,long x,long miny,long maxy)
 
 
 ULONG PUBLIC
-SelectHook(reg (a1) struct LVDrawMsg *msg,reg (a2) struct Node *n)
+SelectHook(REG(a0, struct Hook *h), REG(a2, struct Node *n), REG(a1, struct LVDrawMsg *msg))
 {
 	struct RastPort *rp;
 	struct Rectangle bounds;
@@ -360,7 +359,7 @@ SelectHook(reg (a1) struct LVDrawMsg *msg,reg (a2) struct Node *n)
 }
 
 
-ULONG PUBLIC FormelHook(reg (a1) struct LVDrawMsg *msg,reg (a2) struct Node *n)
+ULONG PUBLIC FormelHook(REG(a0, struct Hook *h), REG(a2, struct Node *n), REG(a1, struct LVDrawMsg *msg))
 {
 	struct RastPort *rp;
 	struct TextExtent extent;
@@ -434,7 +433,7 @@ ULONG PUBLIC FormelHook(reg (a1) struct LVDrawMsg *msg,reg (a2) struct Node *n)
 }
 
 
-ULONG PUBLIC FormatHook(reg (a1) struct LVDrawMsg *msg,reg (a2) struct FormatVorlage *fv)
+ULONG PUBLIC FormatHook(REG(a0, struct Hook *h), REG(a2, struct FormatVorlage *fv), REG(a1, struct LVDrawMsg *msg))
 {
 	struct RastPort *rp;
 	struct Rectangle bounds;
@@ -490,7 +489,7 @@ ULONG PUBLIC FormatHook(reg (a1) struct LVDrawMsg *msg,reg (a2) struct FormatVor
 }
 
 
-ULONG PUBLIC gLinkHook(reg (a1) struct LVDrawMsg *msg,reg (a2) struct gLink *gl)
+ULONG PUBLIC gLinkHook(REG(a0, struct Hook *h), REG(a2, struct gLink *gl), REG(a1, struct LVDrawMsg *msg))
 {
 	struct RastPort *rp;
 	struct Rectangle bounds;
@@ -603,7 +602,7 @@ ULONG PUBLIC gLinkHook(reg (a1) struct LVDrawMsg *msg,reg (a2) struct gLink *gl)
 
 /********************************** Link-Hook **********************************/
 
-ULONG PUBLIC LinkHook(reg (a1) struct LVDrawMsg *msg,reg (a2) struct Link *l)
+ULONG PUBLIC LinkHook(REG(a0, struct Hook *h), REG(a2, struct Link *l), REG(a1, struct LVDrawMsg *msg))
 {
 	if (l->l_HookFunction)
 		return(l->l_HookFunction(msg,l->l_Link));
@@ -617,7 +616,7 @@ FreeLinks(struct MinList *links)
 {
 	struct Link *l;
 
-	while (l = (struct Link *)RemHead(links))
+	while ((l = (struct Link *)MyRemHead(links)) != 0)
 		FreePooled(pool, l, sizeof(struct Link));
 }
 
@@ -630,11 +629,11 @@ AddLinkNode(struct MinList *links, struct MinNode *ln, APTR func)
 	if (!links || !ln || !func)
 		return NULL;
 
-	if (l = AllocPooled(pool, sizeof(struct Link)))
+	if ((l = AllocPooled(pool, sizeof(struct Link))) != 0)
 	{
 		l->l_Link = ln;
 		l->l_HookFunction = func;
-		AddTail(links,l);
+		MyAddTail(links,l);
 	}
 	return l;
 }
@@ -684,4 +683,3 @@ void printTree(struct MinList *tree)
 	}
 }
 #endif // DEBUG
-

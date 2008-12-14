@@ -26,12 +26,12 @@ struct IOType {
 	STRPTR io_OriginalBytes;
 	UBYTE  io_Flags;
 	BPTR   io_Segment;
-	long   __asm (*io_Load)(reg (d0) BPTR,reg (a0) struct Mappe *);
-	long   __asm (*io_Save)(reg (d0) BPTR,reg (a0) struct Mappe *);
-	long   __asm (*io_SetPrefs)(reg (a0) STRPTR);
-	STRPTR __asm (*io_GetPrefs)(void);
-	void   __asm (*io_OpenPrefsGUI)(reg (a0) struct Screen *);
-	void   __asm (*io_ClosePrefsGUI)(void);
+	long   ASM (*io_Load)(REG(d0, BPTR), REG(a0, struct Mappe *));
+	long   ASM (*io_Save)(REG(d0, BPTR), REG(a0, struct Mappe *));
+	long   ASM (*io_SetPrefs)(REG(a0, STRPTR));
+	STRPTR ASM (*io_GetPrefs)(void);
+	void   ASM (*io_OpenPrefsGUI)(REG(a0, struct Screen *));
+	void   ASM (*io_ClosePrefsGUI)(void);
 	STRPTR io_Short;
 	STRPTR io_Prefs;
 	STRPTR io_Suffix;
@@ -150,15 +150,15 @@ struct NumberLink {
 
 /*************************** Prototypes ***************************/
 
-extern STRPTR IFFErrorText(long err);
+extern CONST_STRPTR IFFErrorText(long err);
 extern STRPTR ReadChunkString(struct IFFHandle *iff, STRPTR buffer, ULONG len);
-extern long SaveCells(struct IFFHandle *iff, struct Page *pg, ULONG handle, int32 mode);
+extern int32 SaveCells(struct IFFHandle *iff, struct Page *pg, ULONG handle, int32 mode);
 extern long SaveFormat(struct IFFHandle *iff, struct Mappe *mp, struct MinList *list);
 extern long SaveNames(struct IFFHandle *iff, struct Mappe *mp, struct MinList *list);
-extern long LoadCells(struct IFFHandle *iff, long context, struct Page *page, struct MinList *list);
+extern long LoadCells(struct IFFHandle *iff, LONG context, struct Page *page, struct MinList *list);
 extern void LoadFormat(struct IFFHandle *iff, ULONG context, struct Mappe *mp, struct Prefs *pr, struct MinList *list);
-extern long LoadProject(struct Mappe *mp, struct IOType *io);
-extern long SaveProject(struct Mappe *mp, struct IOType *io, bool confirmOverwrite);
+extern int32 LoadProject(struct Mappe *mp, struct IOType *io);
+extern int32 SaveProject(struct Mappe *mp, struct IOType *io, bool confirmOverwrite);
 extern void InitIOType(struct IOType *io);
 extern void initIO(void);
 extern void closeIO(void);

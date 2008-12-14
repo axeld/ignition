@@ -52,7 +52,7 @@ gDoClassMethod(struct gClass *gc, APTR go, ULONG id, ...)
 
 
 ULONG PUBLIC
-gDoMethodA(reg (a0) APTR go, reg (a1) Msg msg)
+gDoMethodA(REG(a0, APTR go), REG(a1, Msg msg))
 {
 	G2(bug("doMethodA: object: %lx - method: %ld\n", go, *(ULONG *)msg));
     if (go)
@@ -74,10 +74,10 @@ gDoMethod(APTR go, ULONG id, ...)
 
 
 ULONG PUBLIC
-gDoSuperMethodA(reg (a0) struct gClass *gc, reg (a1) APTR go, reg (a2) Msg msg)
+gDoSuperMethodA(REG(a0, struct gClass *gc), REG(a1, APTR go), REG(a2, Msg msg))
 {
 	G3(bug("doSuperMethodA: %lx - object: %lx - method: %ld\n", gc, go, *(ULONG *)msg));
-    if (gc = gc->gc_Super)
+    if ((gc = gc->gc_Super) != 0)
 		return gc->gc_Dispatch(gc, go, msg);
 
     return 0L;
@@ -85,7 +85,7 @@ gDoSuperMethodA(reg (a0) struct gClass *gc, reg (a1) APTR go, reg (a2) Msg msg)
 
 
 BOOL PUBLIC
-gIsSubclassFrom(reg (a0) struct gClass *gc, reg (a1) struct gClass *supergc)
+gIsSubclassFrom(REG(a0, struct gClass *gc), REG(a1, struct gClass *supergc))
 {
     if (!supergc)
         return false;
@@ -101,8 +101,8 @@ gIsSubclassFrom(reg (a0) struct gClass *gc, reg (a1) struct gClass *supergc)
 
 
 void PUBLIC
-gSuperDraw(reg (d0) struct Page *page, reg (d1) ULONG dpi, reg (a0) struct RastPort *rp, reg (a1) struct gClass *gc,
-	reg (a2) struct gObject *go, reg (a3) struct gBounds *gb)
+gSuperDraw(REG(d0, struct Page *page), REG(d1, ULONG dpi), REG(a0, struct RastPort *rp), REG(a1, struct gClass *gc),
+	REG(a2, struct gObject *go), REG(a3, struct gBounds *gb))
 {
     if (gc->gc_Super->gc_Draw)
 		gc->gc_Super->gc_Draw(page, dpi, rp, gc->gc_Super, go, gb);
@@ -125,7 +125,7 @@ SetGRastPort(struct RastPort *rp)
 
 
 void PUBLIC
-gInsertRemoveCellsTerm(reg (a0) struct gcpInReCells *gcpc,reg (a1) struct Page *page,reg (a2) STRPTR *term,reg (a3) struct Term *t)
+gInsertRemoveCellsTerm(REG(a0, struct gcpInReCells *gcpc), REG(a1, struct Page *page), REG(a2, STRPTR *term), REG(a3, struct Term *t))
 {
     if (page != gcpc->gcpc_Page)
         return;
@@ -142,7 +142,7 @@ gInsertRemoveCellsTerm(reg (a0) struct gcpInReCells *gcpc,reg (a1) struct Page *
 
 
 void PUBLIC
-gInsertRemoveCellsTablePos(reg (a0) struct gcpInReCells *gcpc,reg (a1) struct Page *page,reg (a2) STRPTR *term,reg (a3) struct TablePos *tp)
+gInsertRemoveCellsTablePos(REG(a0, struct gcpInReCells *gcpc), REG(a1, struct Page *page), REG(a2, STRPTR *term), REG(a3, struct tablePos *tp))
 {
     if (page != gcpc->gcpc_Page)
         return;
@@ -251,7 +251,7 @@ CheckGObjectKnobs(struct Page *page,struct gObject *go,long x,long y)
         if (abs(kx) <= GOKNOB_SIZE && abs(ky) <= GOKNOB_SIZE)
             return i + 1;
     }
-    return NULL;
+    return 0;
 }
 
 
@@ -273,13 +273,13 @@ CheckGGroup(struct Page *page,struct gGroup *gg,long x,long y)
         struct gObject *go = GROUPOBJECT(gg);
         long   i;
 
-        if (i = CheckGObjectKnobs(page,go,x,y))
+        if ((i = CheckGObjectKnobs(page,go,x,y)) != 0)
         {
             G2(bug("checkGGroup: change knob %d\n",i));
             page->pg_ChangeObject = go;
             page->pg_NumPoints = go->go_NumKnobs;
             page->pg_CurrentPoint = i-1;
-            if (page->pg_Points = AllocPooled(pool,sizeof(struct coord)*go->go_NumKnobs))
+            if ((page->pg_Points = AllocPooled(pool, sizeof(struct coord)*go->go_NumKnobs)) != 0)
             {
                 for (i = 0; i < go->go_NumKnobs; i++)
                 {
@@ -295,20 +295,25 @@ CheckGGroup(struct Page *page,struct gGroup *gg,long x,long y)
     {
         struct gGroup *realgg = gg;
 
-    /*if (prefs.pr_Disp->pd_Flags & PDF_SHOWGROUPS)  /* Rahmen um Gruppen */
+#if 0
+	if (prefs.pr_Disp->pd_Flags & PDF_SHOWGROUPS)  /* Rahmen um Gruppen */
         {
-        }*/
+        }
+#endif
         for(gg = (APTR)realgg->gg_Objects.mlh_TailPred;gg->gg_Node.mln_Pred;gg = (APTR)gg->gg_Node.mln_Pred)
         {
             if (CheckGObjectKnobs(page,GROUPOBJECT(gg),x,y))
                 return PGA_CHANGE | PGA_KNOBS;
         }
-    /*for(gg = (APTR)realgg->gg_Objects.mlh_TailPred;gg->gg_Node.mln_Pred;gg = (APTR)gg->gg_Node.mln_Pred)
+#if 0
+        for(gg = (APTR)realgg->gg_Objects.mlh_TailPred;gg->gg_Node.mln_Pred;gg = (APTR)gg->gg_Node.mln_Pred)
         {
             if (CheckGObject(page,GROUPOBJECT(gg),x,y))
                 return(PGA_CHANGE);
-        }*/
+        }
+#endif
     }
+	return 0; /* suppress compiler warning */
 }
 
 
@@ -516,21 +521,21 @@ BOOL UngroupGFrames(struct Page *page,STRPTR name)
                     un->un_Type = UNT_OBJECTS;
             }
             if (un && (cgf = CopyGFrame(gf,TRUE)))
-                AddTail(&un->un_UndoList,cgf);
-            while(go = (APTR)RemHead((struct List *)&gf->gf_Objects))
+                MyAddTail(&un->un_UndoList,cgf);
+            while(go = (APTR)MyRemHead((struct List *)&gf->gf_Objects))
             {
                 go->go_Frame = go->go_OriginalFrame;
-                AddTail((struct List *)&go->go_Frame->gf_Objects,(struct Node *)go);
+                MyAddTail((struct List *)&go->go_Frame->gf_Objects,(struct Node *)go);
                 Insert((struct List *)&page->pg_gFrames,go->go_Frame,gf);
                 if (un && (cgf = CopyGFrame(gf,TRUE)))
                 {
                     go->go_Frame->gf_Undo = un;
-                    AddTail(&un->un_UndoList,cgf);
+                    MyAddTail(&un->un_UndoList,cgf);
                 }
                 go->go_Frame->gf_Pos = i++;
                 UpdateGFrameSize(page,go->go_Frame);
             }
-            Remove(gf);  count++;  i--;
+            MyRemove(gf);  count++;  i--;
             DrawTableCoord(page,x = gf->gf_Left-page->pg_TabX+page->pg_wTabX,y = gf->gf_Top-page->pg_TabY+page->pg_wTabY,x+gf->gf_Width,y+gf->gf_Height);
             FreeGFrame(gf);
         }
@@ -572,13 +577,13 @@ struct gFrame *GroupGFrames(struct Page *page,STRPTR name)
             ngf = (APTR)sgf->gf_Node.ln_Succ;
             if (sgf->gf_Flags & GFF_SELECTED)
             {
-                Remove(sgf);
+                MyRemove(sgf);
                 sgf->gf_Flags &= ~GFF_SELECTED;
                 foreach(&sgf->gf_Objects,go)
                 {
                     go->go_Frame = gf;
-                    Remove((struct Node *)go);
-                    AddTail((struct List *)&gf->gf_Objects,(struct Node *)go);
+                    MyRemove((struct Node *)go);
+                    MyAddTail((struct List *)&gf->gf_Objects,(struct Node *)go);
                 }
             }
             sgf = ngf;
@@ -590,7 +595,7 @@ struct gFrame *GroupGFrames(struct Page *page,STRPTR name)
             struct gFrame *cgf;
 
             if (cgf = CopyGFrame(gf,TRUE))
-                AddTail(&un->un_RedoList,cgf);
+                MyAddTail(&un->un_RedoList,cgf);
         }
         DrawTableCoord(page,x = gf->gf_Left-page->pg_TabX+page->pg_wTabX,y = gf->gf_Top-page->pg_TabY+page->pg_wTabY,x+gf->gf_Width,y+gf->gf_Height);
     }
@@ -615,9 +620,9 @@ SizeGObject(struct Page *page,struct gObject *go,LONG w,LONG h)
         return;
     }
 
-	if (p = AllocPooled(pool, sizeof(struct point2d) * go->go_NumKnobs))
+	if ((p = AllocPooled(pool, sizeof(struct point2d) * go->go_NumKnobs)) != 0)
     {
-		if (un = CreateUndo(page, UNDO_PRIVATE, GetString(&gLocaleInfo, MSG_RESIZE_OBJECT_UNDO)))
+		if ((un = CreateUndo(page, UNDO_PRIVATE, GetString(&gLocaleInfo, MSG_RESIZE_OBJECT_UNDO))) != 0)
         {
 			double xf = (double)w / abs(go->go_mmRight - go->go_mmLeft);
 			double yf = (double)h / abs(go->go_mmBottom - go->go_mmTop);
@@ -643,7 +648,7 @@ SizeGObject(struct Page *page,struct gObject *go,LONG w,LONG h)
 struct gObject *
 gMakeRefObject(struct Page *page, struct gClass *gc, struct gObject *go, const STRPTR undoText)
 {
-	LONG tags[3] = {GEA_References, NULL, TAG_END};
+	LONG tags[3] = {GEA_References, 0, TAG_END};
     struct UndoNode *un;
     struct gObject *rgo;
 
@@ -658,7 +663,7 @@ gMakeRefObject(struct Page *page, struct gClass *gc, struct gObject *go, const S
 
     tags[1] = (ULONG)go;
 
-	if (rgo = (struct gObject *)gDoClassMethod(gc, gc, GCM_NEW, tags, page))
+	if ((rgo = (struct gObject *)gDoClassMethod(gc, gc, GCM_NEW, tags, page)) != 0)
     {
         if (!rgo->go_Node.ln_Name)
         {
@@ -682,12 +687,13 @@ gMakeRefObject(struct Page *page, struct gClass *gc, struct gObject *go, const S
 		RefreshGObjectBounds(page, rgo);
 		AddGObject(page, NULL, rgo, ADDREM_DRAW);
 
-		if (un = CreateUndo(page, UNDO_PRIVATE, undoText != NULL ? undoText : GetString(&gLocaleInfo, MSG_CREATE_REFERENCE_OBJECT_UNDO)))
+		if ((un = CreateUndo(page, UNDO_PRIVATE, undoText != NULL ? undoText : GetString(&gLocaleInfo, MSG_CREATE_REFERENCE_OBJECT_UNDO))) != 0)
         {
 			un->un_Type = UNT_ADD_OBJECTS;
 			un->un_Object = rgo;
         }
     }
+	return 0; /* suppress compiler warning */
 }
 
 
@@ -700,7 +706,7 @@ GetGInterfaceTag(struct gClass *gc, ULONG tag)
 	if (!gc)
 		return NULL;
 
-	if (gi = gc->gc_Interface)
+	if ((gi = gc->gc_Interface) != 0)
     {
 		while (gi->gi_Tag && gi->gi_Tag != tag)
             gi++;
@@ -764,7 +770,7 @@ gSetObjectAttrsA(struct Page *page, struct gObject *go, struct TagItem *tags)
 {
     long rc;
 
-	if (rc = gDoMethod(go, GCM_SET, tags))
+	if ((rc = gDoMethod(go, GCM_SET, tags)) != 0)
     {
         if (rc == GCPR_REDRAW)
         {
@@ -811,7 +817,7 @@ SetGObjectAttrsA(struct Page *page, struct gObject *go, struct TagItem *tags)
     if (!page || !go)
         return;
 
-	if (un = CreateUndo(page, UNDO_PRIVATE, GetString(&gLocaleInfo, MSG_OBJECT_ATTRIBUTES_UNDO)))
+	if ((un = CreateUndo(page, UNDO_PRIVATE, GetString(&gLocaleInfo, MSG_OBJECT_ATTRIBUTES_UNDO))) != 0)
     {
 		struct TagItem *ti, *fromTags, *toTags, *tstate = tags;
         long   i;
@@ -825,10 +831,10 @@ SetGObjectAttrsA(struct Page *page, struct gObject *go, struct TagItem *tags)
         {
             struct gInterface *gi;
 
-			for (i = 0; ti = NextTagItem(&tstate); i++)
+			for (i = 0; (ti = NextTagItem(&tstate)) != 0; i++)
             {
 				G3(bug("tag = 0x%08lx\n", ti->ti_Tag));
-				if (gi = GetGInterfaceTag(go->go_Class, ti->ti_Tag))
+				if ((gi = GetGInterfaceTag(go->go_Class, ti->ti_Tag)) != 0)
                 {
 					G3(bug("    -> interface found, type = %ld\n", gi->gi_Type));
 					if (gDoMethod(go, GCM_GET, fromTags[i].ti_Tag, &fromTags[i].ti_Data))
@@ -1107,11 +1113,11 @@ RemoveGObject(struct Page *page, struct gObject *go, BYTE flags)
     }
     page->pg_NumObjects--;
 
-    Remove(go);
+    MyRemove(go);
     go->go_Page = NULL;
 
     if (!(flags & ADDREM_NOGROUP))
-        Remove((struct Node *)OBJECTGROUP(go));
+        MyRemove(OBJECTGROUP(go));
 
     if (flags & ADDREM_DRAW)
         DrawTableCoord(page,go->go_Left-page->pg_TabX+page->pg_wTabX,go->go_Top-page->pg_TabY+page->pg_wTabY,go->go_Right-page->pg_TabX+page->pg_wTabX,go->go_Bottom-page->pg_TabY+page->pg_wTabY);
@@ -1125,18 +1131,19 @@ RemoveGObject(struct Page *page, struct gObject *go, BYTE flags)
         struct gObject *rgo;
         struct MinList list;
 
-        NewList(&list);
+        MyNewList(&list);
 
         for(l = (APTR)go->go_ReferencedBy.mlh_Head;l->l_Node.mln_Succ;l = nl)
         {
             nl = (struct Link *)l->l_Node.mln_Succ;
 
-			if (cl = AllocPooled(pool, sizeof(struct Link)))
+			if ((cl = AllocPooled(pool, sizeof(struct Link))) != 0)
             {
                 cl->l_Link = l->l_Link;
-                AddTail(&list,cl);
+                MyAddTail(&list, cl);
             }
-			gSetObjectAttrs((rgo = l->l_Link)->go_Page, rgo, GEA_References, NULL, TAG_END);
+            rgo = l->l_Link;
+			gSetObjectAttrs(rgo->go_Page, rgo, GEA_References, NULL, TAG_END);
         }
         moveList(&list,&go->go_ReferencedBy);
         go->go_Flags |= GOF_INVALIDREFS;
@@ -1162,7 +1169,7 @@ AddGObject(struct Page *page,struct gGroup *gg,struct gObject *go,BYTE flags)
 
     if (num+1 > (oldsize = page->pg_OrderSize))  /* neues ObjectOrder-Array erstellen */
     {
-        if (gos = AllocPooled(pool,sizeof(APTR)*(num+10)))
+        if ((gos = AllocPooled(pool, sizeof(APTR) * (num + 10))) != 0)
             page->pg_OrderSize = num+10;
     }
     else
@@ -1202,15 +1209,15 @@ AddGObject(struct Page *page,struct gGroup *gg,struct gObject *go,BYTE flags)
     gos[go->go_Pos = pos] = go;
     page->pg_NumObjects++;
 
-    AddTail(&page->pg_gObjects,go);
+    MyAddTail(&page->pg_gObjects, go);
     go->go_Page = page;   /* MERKER: ist das so okay?? (oder muß "go" das wissen?) */
 
     if (!(flags & ADDREM_NOGROUP))
     {
         if (gg)
-            AddTail(&gg->gg_Objects,OBJECTGROUP(go));
+            MyAddTail(&gg->gg_Objects, OBJECTGROUP(go));
         else
-            AddTail(&page->pg_gGroups,OBJECTGROUP(go));
+            MyAddTail(&page->pg_gGroups, OBJECTGROUP(go));
     }
     if (flags & ADDREM_DRAW)
     {
@@ -1228,9 +1235,10 @@ AddGObject(struct Page *page,struct gGroup *gg,struct gObject *go,BYTE flags)
 
         moveList(&go->go_ReferencedBy,&list);
 
-        while(l = (struct Link *)RemHead(&list))
+        while((l = (struct Link *)MyRemHead(&list)))
         {
-            gSetObjectAttrs((rgo = l->l_Link)->go_Page,rgo,GEA_References,go,TAG_END);
+            rgo = l->l_Link;
+            gSetObjectAttrs(rgo->go_Page, rgo, GEA_References, go, TAG_END);
             FreePooled(pool,l,sizeof(struct Link));
         }
         go->go_Flags &= ~GOF_INVALIDREFS;
@@ -1267,7 +1275,7 @@ ChangeGObjectOrder(struct Page *page, struct gObject *go, UBYTE type)
     if (go->go_Pos == 0 && (type == GO_BACKMOST || type == GO_TOBACK))
         return true;
 
-	if (un = CreateUndo(page, UNDO_PRIVATE, GetString(&gLocaleInfo, MSG_OBJECT_DEPTH_UNDO)))
+	if ((un = CreateUndo(page, UNDO_PRIVATE, GetString(&gLocaleInfo, MSG_OBJECT_DEPTH_UNDO))) != 0)
     {
 		un->un_Type = UNT_OBJECT_DEPTH;
 		un->un_Object = go;
@@ -1328,7 +1336,7 @@ RemoveGGroup(struct Page *page, struct gGroup *gg, BYTE draw, LONG level)
 		foreach (&gg->gg_Objects, igg)
 			RemoveGGroup(page, igg, FALSE, level + 1);
 
-        Remove((struct Node *)gg);
+        MyRemove(gg);
 
         if (draw)
 			DrawTableCoord(page, gg->gg_Left - page->pg_TabX + page->pg_wTabX, gg->gg_Top - page->pg_TabY + page->pg_wTabY,
@@ -1351,7 +1359,7 @@ AddGGroup(struct Page *page, struct gGroup *gg, BYTE draw, LONG level)
 		foreach (&gg->gg_Objects, igg)
 			AddGGroup(page, igg, FALSE, level + 1);
 
-		AddTail(&page->pg_gGroups, gg);
+		MyAddTail(&page->pg_gGroups, gg);
 
 		UpdateGGroup(page, gg);
         if (draw)
@@ -1370,14 +1378,14 @@ FreeGGroup(struct gGroup *gg)
     {
         struct gObject *go;
 
-        Remove(go = GROUPOBJECT(gg));
+        MyRemove(go = GROUPOBJECT(gg));
         FreeGObject(go);
     }
     else
     {
         struct gGroup *igg;
 
-		while (igg = (APTR)RemHead(&gg->gg_Objects))
+		while ((igg = (APTR)MyRemHead(&gg->gg_Objects)) != 0)
             FreeGGroup(igg);
 		FreePooled(pool, gg, sizeof(struct gGroup));
     }
@@ -1413,7 +1421,7 @@ NewGObjectA(struct Page *page, struct gClass *gc, struct point2d *points, ULONG 
 	RefreshGObjectBounds(page, go);
 	AddGObject(page, NULL, go, ADDREM_NONE);
 
-	if (un = CreateUndo(page, UNDO_PRIVATE, GetString(&gLocaleInfo, MSG_CREATE_OBJECT_UNDO)))
+	if ((un = CreateUndo(page, UNDO_PRIVATE, GetString(&gLocaleInfo, MSG_CREATE_OBJECT_UNDO))) != 0)
     {
 		un->un_Type = UNT_ADD_OBJECTS;
 		un->un_Object = go;
@@ -1455,7 +1463,7 @@ PrepareCreateObject(struct Page *page, struct gClass *gc, BOOL more)
 		UpdateInteractive(page->pg_Mappe, TRUE);
         DrawStatusText(page,GetString(&gLocaleInfo, MSG_SWITCH_TO_NORMAL_MODE_STATUS));
     }
-	if (page->pg_NumPoints = gDoClassMethod(gc, NULL, GCM_BEGINPOINTS, more ? GCPBM_MORE : GCPBM_ONE))
+	if ((page->pg_NumPoints = gDoClassMethod(gc, NULL, GCM_BEGINPOINTS, more ? GCPBM_MORE : GCPBM_ONE)) != 0)
     {
         struct winData *wd = (struct winData *)page->pg_Window->UserData;
 
@@ -1488,13 +1496,13 @@ DoCreateObject(struct Page *page)
 
     G(bug("doCreateObject: page: %lx\n",page));
 
-    if (cwin = GetAppWindow(WDT_GCLASSES))   // WDT_CLASSES zurücksetzen
+    if ((cwin = GetAppWindow(WDT_GCLASSES)) != 0)   // WDT_CLASSES zurücksetzen
     {
         GT_SetGadgetAttrs(GadgetAddress(cwin,1),cwin,NULL,GTLV_Selected,~0L,TAG_END);
         SetWindowPointer(cwin,TAG_END);
     }
 
-    if (p = AllocPooled(pool,page->pg_CurrentPoint*sizeof(struct point2d)))
+    if ((p = AllocPooled(pool, page->pg_CurrentPoint * sizeof(struct point2d))) != 0)
     {
         struct winData *wd = NULL;
 
@@ -1509,7 +1517,7 @@ DoCreateObject(struct Page *page)
         {
             if (sp != p)
                 FreePooled(pool,p,i*sizeof(struct point2d));
-            if (go = NewGObjectA(page,page->pg_CreateFromClass,sp,num,NULL))
+            if ((go = NewGObjectA(page, page->pg_CreateFromClass, sp, num, NULL)) != 0)
                 DrawTableCoord(page,go->go_Left-page->pg_TabX+page->pg_wTabX,go->go_Top-page->pg_TabY+page->pg_wTabY,go->go_Right-page->pg_TabX+page->pg_wTabX,go->go_Bottom-page->pg_TabY+page->pg_wTabY);
         }
 
@@ -1587,7 +1595,7 @@ AddCreateObjectPoint(struct Page *page,LONG x,LONG y,LONG ox,LONG oy)
 
         DoCreateObject(page);
     }
-    else if (newp = AllocPooled(pool,(i+1)*sizeof(struct coord)))      // new point
+    else if ((newp = AllocPooled(pool, (i + 1) * sizeof(struct coord))) != 0)      // new point
     {
         if (oldp)
         {
@@ -1779,9 +1787,9 @@ HandleGObjects(struct Page *page)
                         BYTE   changed = FALSE;
 
                         if (fw < fx)
-                            swmem(&fx,&fw,sizeof(fw));
+                            swmem((UBYTE *)&fx, (UBYTE *)&fw, sizeof(fw));
                         if (fh < fy)
-                            swmem(&fy,&fh,sizeof(fh));
+                            swmem((UBYTE *)&fy, (UBYTE *)&fh, sizeof(fh));
                         for(gg = (APTR)page->pg_gGroups.mlh_Head;gg->gg_Node.mln_Succ;gg = (APTR)gg->gg_Node.mln_Succ)
                         {
                             if (fx <= gg->gg_Right && fy <= gg->gg_Bottom && fw >= gg->gg_Left && fh >= gg->gg_Top)
@@ -1846,7 +1854,7 @@ HandleGObjects(struct Page *page)
 
                     if (page->pg_Action & PGA_MOVE)
                     {
-						if (un = CreateUndo(page, UNDO_PRIVATE, GetString(&gLocaleInfo, MSG_MOVE_OBJECTS_UNDO)))
+						if ((un = CreateUndo(page, UNDO_PRIVATE, GetString(&gLocaleInfo, MSG_MOVE_OBJECTS_UNDO))) != 0)
                         {
 							un->un_Type = UNT_OBJECTS_MOVE;
 							un->un_MoveDeltaX = x;
@@ -1869,7 +1877,7 @@ HandleGObjects(struct Page *page)
 
                         if (x != go->go_Knobs[i].x || y != go->go_Knobs[i].y)
                         {
-							if (un = CreateUndo(page, UNDO_PRIVATE, GetString(&gLocaleInfo, MSG_OBJECT_SIZE_UNDO)))
+							if ((un = CreateUndo(page, UNDO_PRIVATE, GetString(&gLocaleInfo, MSG_OBJECT_SIZE_UNDO))) != 0)
                             {
 								un->un_Type = UNT_OBJECT_KNOB;
 								un->un_Object = go;
@@ -1944,7 +1952,7 @@ HandleGObjects(struct Page *page)
                     long   pos;
 
                     page->pg_Action = PGA_NONE;
-					if (gg = MouseGGroup(page, &pos))
+					if ((gg = MouseGGroup(page, &pos)) != 0)
                     {
                         struct gObject *go = GROUPOBJECT(gg);
 

@@ -128,7 +128,7 @@ SetRexxResult(STRPTR var, STRPTR s)
 	if (!s)
 		s = "";
 
-	if (var = AllocString(var))
+	if ((var = AllocString(var)) != 0)
 	{
 		StringToUpper(var);
 		SetRexxVar(rxmsg,var,s,strlen(s));
@@ -148,14 +148,14 @@ NotifyRexxScript(struct RexxScript *rxs)
 
 	D(bug("notified: %s\n",rxs->rxs_Node.ln_Name));
 
-	if (file = Open(rxs->rxs_NotifyRequest.nr_Name,MODE_OLDFILE))
+	if ((file = Open(rxs->rxs_NotifyRequest.nr_Name, MODE_OLDFILE)) != 0)
 	{
-		struct FileInfoBlock __aligned fib;
+		struct FileInfoBlock ALIGNED fib;
 
 		if (ExamineFH(file,&fib))
 		{
 			FreeRexxScriptData(rxs);
-			if (rxs->rxs_Data = AllocPooled(pool,rxs->rxs_DataLength = fib.fib_Size+1))
+			if ((rxs->rxs_Data = AllocPooled(pool, rxs->rxs_DataLength = fib.fib_Size+1)) != 0)
 				Read(file,rxs->rxs_Data,fib.fib_Size);
 
 			RefreshLockList(&rxs->rxs_Map->mp_RexxScripts);
@@ -210,7 +210,7 @@ EditRexxScript(struct Mappe *mp, struct RexxScript *rxs)
 		rxs->rxs_NotifyRequest.nr_stuff.nr_Msg.nr_Port = notifyport;
 		rxs->rxs_NotifyRequest.nr_UserData = (ULONG)rxs;
 
-		if (file = Open(t, MODE_NEWFILE)) {
+		if ((file = Open(t, MODE_NEWFILE)) != 0) {
 			if (!rxs->rxs_Data)
 				CreateRexxScriptHeader(rxs);
 
@@ -279,7 +279,7 @@ struct RexxScript *NewRexxScript(struct Mappe *mp,STRPTR name,BYTE header)
 	if (FindTag(&mp->mp_RexxScripts,name))
 		return(NULL);
 
-	if (rxs = AllocPooled(pool,sizeof(struct RexxScript)))
+	if ((rxs = AllocPooled(pool, sizeof(struct RexxScript))) != 0)
 	{
 		rxs->rxs_Node.ln_Name = AllocString(name);
 		rxs->rxs_Map = mp;
@@ -317,7 +317,7 @@ long changeFormat(struct tableField *tf,long *opts,ULONG pen,UBYTE align)
 {
 	long maxcol;
 
-	setKomma(tf,NULL,NULL,opts[3]);
+	setKomma(tf, 0, 0, opts[3]);
 
 	if (opts[1])
 	{
@@ -368,9 +368,9 @@ LoadBlock(struct Page *page, STRPTR name, long mode)
 		return;
 
 	InitIFFasDOS(iff);
-	NewList(&list);
+	MyNewList(&list);
 
-	if (iff->iff_Stream = (ULONG)Open(name, MODE_OLDFILE))
+	if ((iff->iff_Stream = (IPTR)Open(name, MODE_OLDFILE)) != 0)
 	{
 		if (!(error = OpenIFF(iff, IFFF_READ)))
 		{
@@ -384,7 +384,7 @@ LoadBlock(struct Page *page, STRPTR name, long mode)
 				ErrorRequest(GetString(&gLocaleInfo, MSG_LOAD_BLOCK_ERR), IFFErrorText(error));
 			CloseIFF(iff);
 		}
-		Close(iff->iff_Stream);
+		Close((void*)iff->iff_Stream);
 	}
 	FreeIFF(iff);
 
@@ -396,7 +396,7 @@ LoadBlock(struct Page *page, STRPTR name, long mode)
 	{
 		struct tableField *tf;
 
-		while (tf = (struct tableField *)RemHead(&list))
+		while ((tf = (struct tableField *)MyRemHead(&list)) != 0)
 			FreeTableField(tf);
 	}
 }
@@ -413,14 +413,14 @@ SaveBlock(struct Page *page, STRPTR name)
 
 	InitIFFasDOS(iff);
 
-	if (iff->iff_Stream = (ULONG)Open(name, MODE_NEWFILE))
+	if ((iff->iff_Stream = (IPTR)Open(name, MODE_NEWFILE)) != 0)
 	{
 		if (!(error = OpenIFF(iff, IFFF_WRITE)))
 		{
 			if (!error && !(error = PushChunk(iff, ID_TABL, ID_FORM, IFFSIZE_UNKNOWN)))
 			{
 				ULONG handle;
-				if (handle = GetCellIterator(page, (struct tablePos *)&page->pg_MarkCol, FALSE)) {
+				if ((handle = GetCellIterator(page, (struct tablePos *)&page->pg_MarkCol, FALSE)) != 0) {
 					error = SaveCells(iff, page, handle, IO_IGNORE_PROTECTED_CELLS | IO_SAVE_FULL_NAMES);
 					FreeCellIterator(handle);
 				}
@@ -431,7 +431,7 @@ SaveBlock(struct Page *page, STRPTR name)
 				ErrorRequest(GetString(&gLocaleInfo, MSG_SAVE_BLOCK_ERR), IFFErrorText(error));
 			CloseIFF(iff);
 		}
-		Close(iff->iff_Stream);
+		Close((void*)iff->iff_Stream);
 	}
 	FreeIFF(iff);
 }
@@ -583,7 +583,7 @@ ULONG rxBorder(long *opts)
 	{
 		for(i = 0;i < 4;i++)
 		{
-			if (t = (STRPTR)opts[i+1])
+			if ((t = (STRPTR)opts[i + 1]) != 0)
 			{
 				for(j = 0;*(t+j) && *(t+j) != '/';j++);
 				if (*(t+j) && *(t+j+1))
@@ -625,7 +625,7 @@ ULONG rxFormat(long *opts)
 	if (opts[8])
 	{
 		OpenAppWindow(WDT_CELL,WA_Page,0,TAG_END);
-		return(NULL);
+		return 0;
 	}
 	cp = GetRxPen(opts[6]);
 
@@ -652,7 +652,7 @@ ULONG rxFormat(long *opts)
 		BeginRxPos(RXPOS_BLOCK,(STRPTR)opts[0]);
 		BeginUndo(rxpage,UNDO_BLOCK,GetString(&gLocaleInfo, MSG_SET_FORMAT_UNDO));
 
-		while(tf = GetMarkedFields(rxpage,tf,TRUE))
+		while ((tf = GetMarkedFields(rxpage, tf, TRUE)) != 0)
 		{
 			if ((col = changeFormat(tf,opts,cp ? cp->cp_ID : 0,align)) > maxcol)
 				maxcol = col;
@@ -661,7 +661,7 @@ ULONG rxFormat(long *opts)
 		RefreshMarkedTable(rxpage,maxcol,TRUE);
 		EndRxPos((STRPTR)opts[0]);
 	}
-	return(NULL);
+	return 0;
 }
 
 // FRACTION POS,NUM,INC/S,DEC/S
@@ -677,7 +677,7 @@ ULONG rxFraction(long *opts)
 		BeginRxPos(RXPOS_BLOCK,(STRPTR)opts[0]);
 		BeginUndo(rxpage,UNDO_BLOCK,GetString(&gLocaleInfo, MSG_DECIMAL_PLACES_UNDO));
 
-		while(tf = GetMarkedFields(rxpage,tf,TRUE))
+		while ((tf = GetMarkedFields(rxpage, tf, TRUE)) != 0)
 		{
 			setKomma(tf,opts[2],opts[3],opts[1]);
 
@@ -695,7 +695,7 @@ ULONG rxFraction(long *opts)
 		RefreshMarkedTable(rxpage,maxcol,TRUE);
 		EndRxPos((STRPTR)opts[0]);
 	}
-	return(NULL);
+	return 0;
 }
 
 // ZOOM PERCENT/N,PAGE/S,REQ/S
@@ -728,7 +728,7 @@ ULONG rxCalc(long *opts)
 	struct Result r;
 	STRPTR s;
 
-	if (k = CreateTree(rxpage,(STRPTR)opts[0]))
+	if ((k = CreateTree(rxpage, (STRPTR)opts[0])) != 0)
 	{
 		tf_col = 0;  tf_row = 0;  tf_format = 0;
 		memset(&r,0,sizeof(struct Result));
@@ -774,7 +774,7 @@ ULONG rxQuiet(long *opts)
 			foreach(&errors,ln)		  // vorerst
 				ErrorRequest(ln->ln_Name);
 		}
-		while(ln = RemHead(&errors))
+		while((ln = MyRemHead(&errors)) != 0)
 		{
 			FreeString(ln->ln_Name);
 			FreePooled(pool,ln,sizeof(struct Node));
@@ -840,7 +840,7 @@ ULONG rxQuit(long *opts)
 ULONG rxAbout(long *opts)
 {
 	OpenAppWindow(WDT_INFO,WA_Data,NULL,TAG_END);
-	return(NULL);
+	return 0;
 }
 
 // NEW
@@ -848,7 +848,7 @@ ULONG rxAbout(long *opts)
 ULONG rxNew(long *opts)
 {
 	OpenProjWindow(NULL,TAG_END);
-	return(NULL);
+	return 0;
 }
 
 // NEWPAGE NAME/K,QUIET/S
@@ -868,7 +868,7 @@ ULONG rxNewPage(long *opts)
 		if (!opts[1])
 			UpdateProjPage(page->pg_Window,rxpage);
 	}
-	return(NULL);
+	return 0;
 }
 
 // CURRENT MAP=WINDOW/K,PAGE,NEXT/S,PREV/S,SHOW/S,NUM/N/K
@@ -945,8 +945,8 @@ ULONG rxPage(long *opts)
 			ln = (struct Node *)page->pg_Mappe->mp_Pages.mlh_TailPred;
 		if (ln)
 		{
-			Remove(page);
-			Insert((struct List *)&page->pg_Mappe->mp_Pages,page,ln);
+			MyRemove(page);
+			Insert((struct List *)&page->pg_Mappe->mp_Pages,(struct Node *)page,ln);
 		}
 		if (opts[5])
 			OpenAppWindow(WDT_PAGE,WA_Data,page,TAG_END);
@@ -967,12 +967,12 @@ ULONG rxDeletePage(long *opts)
 		page = (struct Page *)FindListNumber(&mp->mp_Pages,atol((STRPTR)opts[0]));
 	if (page)
 	{
-		Remove(page);
+		MyRemove(page);
 		if (IsListEmpty((struct List *)&mp->mp_Pages))
 			rxpage = NewPage(mp);
 		else if (rxpage == page)
 			rxpage = (struct Page *)mp->mp_Pages.mlh_Head;
-		AddTail(&mp->mp_Pages,page);
+		MyAddTail(&mp->mp_Pages, page);
 		if (page->pg_Window)
 			UpdateProjPage(page->pg_Window,rxpage);
 		DisposePage(page);
@@ -988,7 +988,7 @@ rxHide(long *opts)
 	struct Mappe *mp;
 	struct Window *win;
 
-	if (win = (mp = rxpage->pg_Mappe)->mp_Window)
+	if ((win = (mp = rxpage->pg_Mappe)->mp_Window) != 0)
 	{
 		((struct Page *)((struct winData *)win->UserData)->wd_Data)->pg_Window = NULL;
 		mp->mp_Window = NULL;
@@ -1228,7 +1228,7 @@ rxCellColumns(long *opts)
 
 	for (;tp.tp_Height >= 0;tp.tp_Height--)
 	{
-		if (tf = GetTableField(rxpage,tp.tp_Col,tp.tp_Row+tp.tp_Height))
+		if ((tf = GetTableField(rxpage, tp.tp_Col, tp.tp_Row + tp.tp_Height)) != 0)
 		{
 			if (opts[1] || opts[2] && tf->tf_WidthSet == 0xffff)
 				tf->tf_WidthSet = tp.tp_Width;
@@ -1299,7 +1299,7 @@ rxCell(long *opts)
 		else
 			strcat(s,GetString(&gLocaleInfo, MSG_REMOVE_CELLS_UNDO));
 
-		if (un = CreateUndo(rxpage, UNDO_PRIVATE, s))
+		if ((un = CreateUndo(rxpage, UNDO_PRIVATE, s)) != 0)
 		{
 			un->un_Type = mode;
 			un->un_TablePos.tp_Col = tp.tp_Col;   un->un_TablePos.tp_Row = tp.tp_Row;
@@ -1316,13 +1316,13 @@ rxCell(long *opts)
 						&& (tp.tp_Height == -1 || tf->tf_Row <= tp.tp_Row+tp.tp_Height)
 						&& (ctf = CopyCell(rxpage, tf)))
 					{
-						AddTail((struct List *)&un->un_UndoList,(struct Node *)ctf);
+						MyAddTail(&un->un_UndoList, ctf);
 					}
 				}
 				if (mode == UNT_REMOVE_VERT_CELLS)
 				{
 					diff = tp.tp_Height + 1;
-					if (mms = AllocPooled(pool, diff * sizeof(LONG)))
+					if ((mms = AllocPooled(pool, diff * sizeof(LONG))) != 0)
 					{
 						for(i = 0; i < diff; i++)
 						{
@@ -1337,7 +1337,7 @@ rxCell(long *opts)
 				else
 				{
 					diff = tp.tp_Width + 1;
-					if (mms = AllocPooled(pool, diff * sizeof(LONG)))
+					if ((mms = AllocPooled(pool, diff * sizeof(LONG))) != 0)
 					{
 						for(i = 0; i < diff; i++)
 						{
@@ -1355,7 +1355,7 @@ rxCell(long *opts)
 	}
 	EndRxPos((STRPTR)opts[0]);
 
-	return NULL;
+	return 0;
 }
 
 // TEXT POS,SET/K,DELETE/S
@@ -1375,7 +1375,7 @@ rxText(long *opts)
 
 	un = BeginUndo(rxpage,UNDO_BLOCK,GetString(&gLocaleInfo, MSG_CELL_TEXT_UNDO));
 
-	while (tf = GetMarkedFields(rxpage,tf,opts[2] ? FALSE : TRUE))
+	while ((tf = GetMarkedFields(rxpage, tf, opts[2] ? FALSE : TRUE)) != 0)
 	{
 		FreeString(tf->tf_Original);
 		tf->tf_Original = NULL;
@@ -1457,7 +1457,7 @@ ULONG rxNegParentheses(long *opts)
 	BeginRxPos(RXPOS_BLOCK,(STRPTR)opts[0]);
 
 	BeginUndo(rxpage,UNDO_BLOCK,GetString(&gLocaleInfo, MSG_NEG_VALUES_UNDO));
-	while(tf = GetMarkedFields(rxpage,tf,FALSE))
+	while((tf = GetMarkedFields(rxpage,tf,FALSE)))
 	{
 		if (opts[1] || opts[2] && !(tf->tf_Flags & TFF_NEGPARENTHESES))
 			tf->tf_Flags |= TFF_NEGPARENTHESES;
@@ -1488,7 +1488,7 @@ ULONG rxSeparator(long *opts)
 	BeginRxPos(RXPOS_BLOCK,(STRPTR)opts[0]);
 
 	BeginUndo(rxpage,UNDO_BLOCK,GetString(&gLocaleInfo, MSG_NUM_SEPARATOR_UNDO));
-	while(tf = GetMarkedFields(rxpage,tf,FALSE))
+	while ((tf = GetMarkedFields(rxpage, tf, FALSE)) != 0)
 	{
 		if (opts[1] || opts[2] && !(tf->tf_Flags & TFF_SEPARATE))
 			tf->tf_Flags |= TFF_SEPARATE;
@@ -1582,8 +1582,8 @@ rxDbNew(long *opts)
 		}
 		if (!db)
 		{
-			if (ma = GuessMask(rxpage))
-				db = (APTR)FindName(&rxpage->pg_Mappe->mp_Databases,ma->ma_Node.ln_Name);
+			if ((ma = GuessMask(rxpage)) != 0)
+				db = (APTR)MyFindName(&rxpage->pg_Mappe->mp_Databases,ma->ma_Node.ln_Name);
 		}
 	}
 
@@ -1608,7 +1608,7 @@ rxDbNew(long *opts)
 		}
 		ma = NULL;
 		if (rxpage->pg_Mappe->mp_Flags & MPF_SCRIPTS)
-			ma = (APTR)FindName(&rxpage->pg_Mappe->mp_Masks,db->db_Node.ln_Name);
+			ma = (APTR)MyFindName(&rxpage->pg_Mappe->mp_Masks, db->db_Node.ln_Name);
 		if (!(ma && ma->ma_Page == db->db_Page))
 		{
 			setCoordPkt(rxpage,&cp,col,row+(s ? 1 : 0));
@@ -1627,7 +1627,7 @@ rxDbNew(long *opts)
 			db->db_Current = hei+1;
 			for(i = 0,fi = (APTR)db->db_Fields.mlh_Head;fi->fi_Node.ln_Succ;fi = (APTR)fi->fi_Node.ln_Succ,i++)
 			{
-				if (tf = GetTableField(db->db_Page,col+i,row+1))
+				if ((tf = GetTableField(db->db_Page, col+i, row + 1)) != 0)
 				{
 					if (fi->fi_Node.ln_Type == FIT_COUNTER)
 					{
@@ -1657,10 +1657,10 @@ rxDbNew(long *opts)
 			{
 				if (fi->fi_Node.ln_Type == FIT_REFERENCE && !strcmp(fi->fi_Special,db->db_Node.ln_Name))
 				{
-					if (tf = GetTableField(sdb->db_Page,sdb->db_TablePos.tp_Col+i,sdb->db_TablePos.tp_Row+sdb->db_Current))
+					if ((tf = GetTableField(sdb->db_Page, sdb->db_TablePos.tp_Col + i, sdb->db_TablePos.tp_Row + sdb->db_Current)) != 0)
 					{
 						sprintf(t,"%lu",hei+2);
-						if (s = AllocPooled(pool,(tf->tf_Text ? strlen(tf->tf_Text)+2 : 0)+strlen(t)+2))
+						if ((s = AllocPooled(pool, (tf->tf_Text ? strlen(tf->tf_Text) + 2 : 0) + strlen(t) + 2)) != 0)
 						{
 							strcpy(s,"#");
 							if (tf->tf_Text)
@@ -1694,14 +1694,14 @@ ULONG rxDbCurrent(long *opts)
 	struct Database *db,*pdb;
 	long   *refs,i,j,cur;
 
-	if (db = (APTR)FindTag(&rxpage->pg_Mappe->mp_Databases,(STRPTR)opts[0]))
+	if ((db = (APTR)FindTag(&rxpage->pg_Mappe->mp_Databases, (STRPTR)opts[0])) != 0)
 	{
 		if (opts[6])
 			j = *(long *)opts[6];
 		cur = db->db_Current;
 		if (opts[5] && (pdb = (APTR)FindTag(&rxpage->pg_Mappe->mp_Databases,(STRPTR)opts[5])))
 		{
-			if (refs = GetDBReferences(db,pdb))
+			if ((refs = GetDBReferences(db, pdb)) != 0)
 			{
 				for(i = 1;i <= *refs;i++)		   // aktuellen Eintrag aus Referenzen heraussuchen
 					if (*(refs+i) == cur)
@@ -1769,13 +1769,13 @@ rxDbSearch(long *opts)
 		return RC_WARN;
 
 	if (ma)
-		db = (struct Database *)FindName(&rxpage->pg_Mappe->mp_Databases, ma->ma_Node.ln_Name);
+		db = (struct Database *)MyFindName(&rxpage->pg_Mappe->mp_Databases, ma->ma_Node.ln_Name);
 
 	if (opts[1])
 	{
 		if (!(fi = (struct Filter *)FindTag(&db->db_Filters,(STRPTR)opts[1])))
 		{
-			if (fi = AllocPooled(pool,sizeof(struct Filter)))
+			if ((fi = AllocPooled(pool, sizeof(struct Filter))) != 0)
 			{
 				fi->fi_Filter = AllocString((STRPTR)opts[1]);
 				fi->fi_Type = FIT_SEARCH;
@@ -1806,7 +1806,7 @@ rxDbSearch(long *opts)
 			ma->ma_Node.ln_Type = 1;	   /* Maske in Suchmodus setzen */
 			foreach(&ma->ma_Fields,mf)	 /* Felder löschen */
 			{
-				if (tf = AllocTableField(ma->ma_Page,mf->mf_Col,mf->mf_Row))
+				if ((tf = AllocTableField(ma->ma_Page, mf->mf_Col, mf->mf_Row)) != 0)
 				{
 					if (tf->tf_Text)
 					{
@@ -1830,7 +1830,7 @@ rxDbSearch(long *opts)
 			SetFilter(db,NULL);
 			foreach(&db->db_Fields,fi)
 			{
-				if (fi->fi_Node.ln_Type == FIT_REFERENCE && (db = (APTR)FindName(&rxpage->pg_Mappe->mp_Databases,fi->fi_Special)))
+				if (fi->fi_Node.ln_Type == FIT_REFERENCE && (db = (APTR)MyFindName(&rxpage->pg_Mappe->mp_Databases, fi->fi_Special)))
 				{
 					if (db->db_Filter && db->db_Filter->fi_Type == FIT_SEARCH)
 						SetFilter(db,NULL);
@@ -1952,7 +1952,7 @@ rxName(long *opts)
 	}
 	else if (opts[3] && nm)
 	{
-		Remove(nm);
+		MyRemove(nm);
 		FreeName(nm);
 		RefreshPrefsModule(GetLocalPrefs(mp),NULL,WDT_PREFNAMES);
 	}
@@ -2070,7 +2070,7 @@ STRPTR RexxRequest(STRPTR prompt,STRPTR deftext,UBYTE mode)
 	BYTE   done = FALSE;
 
 	width = scr->Width >> 1;
-	NewList(&list);
+	MyNewList(&list);
 	cols = WordWrapText((struct List *)&list,prompt,width-lborder-rborder);
 	height = barheight+bborder+fontheight*(2+cols)+20;
 
@@ -2244,7 +2244,7 @@ rxObjectInfo(long *opts)
 
 	if (opts[0])
 	{
-		if (go = (struct gObject *)FindCommand((struct List *)&rxpage->pg_gObjects,(STRPTR)opts[0]))
+		if ((go = (struct gObject *)FindCommand((struct List *)&rxpage->pg_gObjects, (STRPTR)opts[0])) != 0)
 			OpenGObjectWindow(go);
 		else
 			return RC_WARN;
@@ -2462,7 +2462,7 @@ ULONG rxLoad(long *opts)
 
 	/*D(bug("LOAD name: %s, req: %ld, new: %ld\n",opts[0],opts[1],opts[2]));*/
 	page = rxpage;
-	if (mp = NewProject()) {
+	if ((mp = NewProject()) != 0) {
 		if (opts[5] && page) {
 			FreeString(mp->mp_Path);
 			mp->mp_Path = AllocString(page->pg_Mappe->mp_Path);
@@ -2470,7 +2470,7 @@ ULONG rxLoad(long *opts)
 		if (opts[0]) {
 			strcpy(dest, (STRPTR)opts[0]);
 			SetMapName(mp, FilePart(dest));
-			dest[(ULONG)(PathPart(dest) - dest)] = 0;
+			dest[(ULONG)((char *)PathPart(dest) - dest)] = 0;
 			if (!opts[5] || *dest)
 				FreeString(mp->mp_Path);
 			if (*dest)
@@ -2520,7 +2520,7 @@ ULONG rxLoad(long *opts)
 			} else {
 				DisposeProject(mp);
 				SetMainPage(page);
-				return NULL;
+				return 0;
 			}
 		}
 
@@ -2532,7 +2532,7 @@ ULONG rxLoad(long *opts)
 		if (!opts[2] && page) {
 			struct Window *win;
 
-			if (win = page->pg_Window) {
+			if ((win = page->pg_Window) != 0) {
 				if (rxpage->pg_Mappe->mp_Flags & MPF_SAVEWINPOS) {
 					struct IBox box;
 
@@ -2591,7 +2591,7 @@ rxSave(long *opts)
 		strcpy(dest, (STRPTR)opts[0]);
 		SetMapName(mp, FilePart(dest));
 		if (PathPart(dest) != (STRPTR)dest) {
-			dest[(ULONG)(PathPart(dest)-dest)] = 0;
+			dest[(ULONG)((char *)PathPart(dest)-dest)] = 0;
 			mp->mp_Path = AllocString(dest);
 		} else
 			mp->mp_Path = AllocString(projpath);
@@ -2627,7 +2627,7 @@ rxSave(long *opts)
 			mp->mp_Path = AllocString(fileReq->fr_Drawer);
 			SetMapName(mp, fileReq->fr_File);
 		} else
-			return NULL;
+			return 0;
 	}
 
 	if (!opts[0] && !opts[1] && !opts[2]) {
@@ -2640,13 +2640,13 @@ rxSave(long *opts)
 			int rc = DoRequest(GetString(&gLocaleInfo, MSG_IOTYPE_NO_DEFAULT_REQ),
 						GetString(&gLocaleInfo, MSG_YES_NO_REQ), type->io_Node.ln_Name);
 			if (rc == 0)
-				return NULL;
+				return 0;
 			else
 				mp->mp_Flags |= MPF_WARNED_IOTYPE;
 		}
 	}
 
-	if (rc = SaveProject(mp, type, confirmOverwrite)) {
+	if ((rc = SaveProject(mp, type, confirmOverwrite)) != 0) {
 		if (!confirmOverwrite || rc > 0)
 			ErrorRequest(GetString(&gLocaleInfo, MSG_SAVE_PROJECT_ERR));
 	} else {
@@ -2663,7 +2663,7 @@ rxSave(long *opts)
 	if (mp->mp_Window)
 		SetWindowTitles(mp->mp_Window,mp->mp_Title+(mp->mp_Window->Flags & WFLG_WINDOWACTIVE ? 0 : 3),(STRPTR)~0L);
 
-	return NULL;
+	return 0;
 }
 
 // PREFS DISPLAY/S,FILE/S,SCREEN/S,KEYS/S,FORMAT/S,PRINTER/S,COLORS/S,TABLE/S,ICON/S,CMDS/S,MENU/S,SYSTEM/S,NAMES/S,CONTEXTMENU/S,REQ/S,LOAD/S,SAVE/S,NAME/K,ADD/S,KEEPOLD/S,GLOBAL/S
@@ -2755,7 +2755,7 @@ rxPrefs(long *opts)
 				SavePrefs(&prefs,dest,flags);
 		}
 	}
-	return NULL;
+	return 0;
 }
 
 // REDO
@@ -2918,7 +2918,7 @@ rxHelp(long *opts)
 				strcpy(t, "proj_table");
 			else if (x > wd->wd_TabX-pd->pd_AntiWidth && x < wd->wd_TabX+wd->wd_TabW && y > wd->wd_TabY-pd->pd_AntiHeight && y < wd->wd_TabY+wd->wd_TabH)
 				strcpy(t, "proj_anti");
-			else if (i = IsOverProjSpecial(helpwin, x, y))
+			else if ((i = IsOverProjSpecial(helpwin, x, y)))
 			{
 				switch (i)
 				{
@@ -2956,7 +2956,7 @@ rxHelp(long *opts)
 
 			if (wd->wd_PageHandlingGadget && PointInGadget(wd->wd_PageHandlingGadget, x, y))
 			{
-				GetAttr(PAGEGA_Active, wd->wd_PageHandlingGadget, (ULONG *)&i);
+				GetAttr(PAGEGA_Active, (Object *)wd->wd_PageHandlingGadget, (IPTR *)&i);
 				sprintf(t + strlen(t), "_page%ld", i);
 			}
 		}
@@ -3044,14 +3044,14 @@ ULONG rxPos2Coord(long *opts)
 	else
 		return(RC_WARN);
 	if (opts[1])
-		sprintf(t,"%s.COL",opts[1]);
+		sprintf(t, "%s.COL", (char *)opts[1]);
 	else
 		strcpy(t,(STRPTR)opts[2]);
 	sprintf(s,"%lu",col);
 	StringToUpper(t);
 	SetRexxVar(rxmsg,t,s,strlen(s));
 	if (opts[1])
-		sprintf(t,"%s.ROW",opts[1]);
+		sprintf(t, "%s.ROW", (char *)opts[1]);
 	else
 		strcpy(t,(STRPTR)opts[3]);
 	sprintf(s,"%lu",row);
@@ -3072,11 +3072,11 @@ ULONG rxCoord2Pos(long *opts)
 		return(RC_WARN);
 	if (opts[0])
 	{
-		sprintf(t,"%s.COL",opts[0]);
+		sprintf(t, "%s.COL", (char *)opts[0]);
 		StringToUpper(t);
 		if (!GetRexxVar(rxmsg,t,&s))
 			col = atol(s);
-		sprintf(t,"%s.ROW",opts[0]);
+		sprintf(t, "%s.ROW", (char *)opts[0]);
 		StringToUpper(t);
 		if (!GetRexxVar(rxmsg,t,&s))
 			row = atol(s);
@@ -3172,7 +3172,7 @@ rxSort(long *opts)
 			slen = hei+1;
 			cmp = tp.tp_Col;
 		}
-		if (sn = AllocPooled(pool,sizeof(struct sortNode)*slen))
+		if ((sn = AllocPooled(pool, sizeof(struct sortNode) * slen)) != 0)
 		{
 			col = opts[2] ? rxpage->pg_MarkCol : cmp;
 			row = !opts[2] ? rxpage->pg_MarkRow : cmp;
@@ -3209,10 +3209,10 @@ rxSort(long *opts)
 						row++;
 				}
 				qsort(sn,slen,sizeof(struct sortNode),(APTR)/*(int *)(void const *,void const *)*/SortCompare);
-				NewList((struct List *)&list);  tf = NULL;  wid = 0;
+				MyNewList(&list);  tf = NULL;  wid = 0;
 				BeginUndo(rxpage,UNDO_BLOCK,GetString(&gLocaleInfo, MSG_SORT_UNDO));
 
-				while (tf = GetMarkedFields(rxpage, tf, FALSE))
+				while ((tf = GetMarkedFields(rxpage, tf, FALSE)) != 0)
 				{
 					RemoveCell(rxpage, tf, false);
 						// we don't need to recalculate here because all cells will be inserted again
@@ -3220,7 +3220,7 @@ rxSort(long *opts)
 					if (tf->tf_Col+tf->tf_Width > wid)
 						wid = tf->tf_Col+tf->tf_Width;
 
-					AddTail((struct List *)&list,(struct Node *)tf);
+					MyAddTail(&list, tf);
 				}
 				for(tf = (APTR)list.mlh_Head;tf->tf_Node.mln_Succ;tf = (APTR)tf->tf_Node.mln_Succ)
 				{
@@ -3238,7 +3238,7 @@ rxSort(long *opts)
 						}
 					}
 				}
-				while (tf = (struct tableField *)RemHead((struct List *)&list))
+				while ((tf = (struct tableField *)MyRemHead(&list)) != 0)
 					InsertCell(rxpage, tf, false);
 
 				EndUndo(rxpage);
@@ -3266,7 +3266,7 @@ void GetBorderData(struct tableField *tf,long side,STRPTR s)
 		return;
 	}
 	*s = 0;
-	if (cp = GetColorPen(tf->tf_BorderColor[side]))
+	if ((cp = GetColorPen(tf->tf_BorderColor[side])) != 0)
 		strcpy(s,cp->cp_Node.ln_Name);
 	strcat(s,"/");
 	strcat(s,ita((double)tf->tf_Border[side]/32,-3,ITA_NONE));
@@ -3288,7 +3288,7 @@ ULONG rxGetBorder(long *opts)
 	if (opts[5] || opts[1])			   // LEFT
 	{
 		if (opts[5])
-			sprintf(t,"%s.LEFT",opts[5]);
+			sprintf(t, "%s.LEFT", (char *)opts[5]);
 		else
 			strcpy(t,(STRPTR)opts[1]);
 		StringToUpper(t);
@@ -3298,7 +3298,7 @@ ULONG rxGetBorder(long *opts)
 	if (opts[5] || opts[2])			   // RIGHT
 	{
 		if (opts[5])
-			sprintf(t,"%s.RIGHT",opts[5]);
+			sprintf(t, "%s.RIGHT", (char *)opts[5]);
 		else
 			strcpy(t,(STRPTR)opts[2]);
 		StringToUpper(t);
@@ -3308,7 +3308,7 @@ ULONG rxGetBorder(long *opts)
 	if (opts[5] || opts[3])			   // BELOW
 	{
 		if (opts[5])
-			sprintf(t,"%s.BELOW",opts[5]);
+			sprintf(t, "%s.BELOW", (char *)opts[5]);
 		else
 			strcpy(t,(STRPTR)opts[3]);
 		StringToUpper(t);
@@ -3318,7 +3318,7 @@ ULONG rxGetBorder(long *opts)
 	if (opts[5] || opts[4])			   // ABOVE
 	{
 		if (opts[5])
-			sprintf(t,"%s.ABOVE",opts[5]);
+			sprintf(t,"%s.ABOVE", (char *)opts[5]);
 		else
 			strcpy(t,(STRPTR)opts[4]);
 		StringToUpper(t);
@@ -3366,7 +3366,7 @@ ULONG rxGetCell(long *opts)
 	{
 		sprintf(s,"%lu",tf ? tf->tf_APen : rxpage->pg_APen);
 		if (stem)
-			sprintf(t,"%s.APEN",opts[12]);
+			sprintf(t, "%s.APEN", (char *)opts[12]);
 		StringToUpper(t);
 		SetRexxVar(rxmsg,t,s,strlen(s));
 	}
@@ -3374,7 +3374,7 @@ ULONG rxGetCell(long *opts)
 	{
 		sprintf(s,"%lu",tf ? tf->tf_BPen : rxpage->pg_BPen);
 		if (stem)
-			sprintf(t,"%s.BPEN",opts[12]);
+			sprintf(t, "%s.BPEN", (char *)opts[12]);
 		StringToUpper(t);
 		SetRexxVar(rxmsg,t,s,strlen(s));
 	}
@@ -3382,7 +3382,7 @@ ULONG rxGetCell(long *opts)
 	{
 		sprintf(s,"%s",tf ? tf->tf_FontInfo->fi_Family->ln_Name : rxpage->pg_Family->ln_Name);
 		if (stem)
-			sprintf(t,"%s.FONT",opts[12]);
+			sprintf(t, "%s.FONT", (char *)opts[12]);
 		StringToUpper(t);
 		SetRexxVar(rxmsg,t,s,strlen(s));
 	}
@@ -3390,7 +3390,7 @@ ULONG rxGetCell(long *opts)
 	{
 		sprintf(s,"%s",ita((tf ? tf->tf_FontInfo->fi_FontSize->fs_PointHeight : rxpage->pg_PointHeight)/65536.0,-1,FALSE));
 		if (stem)
-			sprintf(t,"%s.FONTSIZE",opts[12]);
+			sprintf(t, "%s.FONTSIZE", (char *)opts[12]);
 		StringToUpper(t);
 		SetRexxVar(rxmsg,t,s,strlen(s));
 	}
@@ -3398,7 +3398,7 @@ ULONG rxGetCell(long *opts)
 	{
 		sprintf(s,"%lu",tf ? tf->tf_FontInfo->fi_Style : FS_PLAIN);
 		if (stem)
-			sprintf(t,"%s.STYLE",opts[12]);
+			sprintf(t, "%s.STYLE", (char *)opts[12]);
 		StringToUpper(t);
 		SetRexxVar(rxmsg,t,s,strlen(s));
 	}
@@ -3406,7 +3406,7 @@ ULONG rxGetCell(long *opts)
 	{
 		sprintf(s,"%s",tf && tf->tf_Original ? tf->tf_Original : (STRPTR)"");
 		if (stem)
-			sprintf(t,"%s.TEXT",opts[12]);
+			sprintf(t, "%s.TEXT", (char *)opts[12]);
 		StringToUpper(t);
 		SetRexxVar(rxmsg,t,s,strlen(s));
 	}
@@ -3414,7 +3414,7 @@ ULONG rxGetCell(long *opts)
 	{
 		sprintf(s,"%s",tf && tf->tf_Text ? tf->tf_Text : (STRPTR)"");
 		if (stem)
-			sprintf(t,"%s.VISIBLE",opts[12]);
+			sprintf(t, "%s.VISIBLE", (char *)opts[12]);
 		StringToUpper(t);
 		SetRexxVar(rxmsg,t,s,strlen(s));
 	}
@@ -3422,7 +3422,7 @@ ULONG rxGetCell(long *opts)
 	{
 		sprintf(s,"%s",tf && tf->tf_Format ? tf->tf_Format : (STRPTR)"");
 		if (stem)
-			sprintf(t,"%s.FORMAT",opts[12]);
+			sprintf(t, "%s.FORMAT", (char *)opts[12]);
 		StringToUpper(t);
 		SetRexxVar(rxmsg,t,s,strlen(s));
 	}
@@ -3430,7 +3430,7 @@ ULONG rxGetCell(long *opts)
 	{
 		sprintf(s,"%ld",tf ? tf->tf_Alignment : TFA_BOTTOM | TFA_LEFT);
 		if (stem)
-			sprintf(t,"%s.ALIGNMENT",opts[12]);
+			sprintf(t, "%s.ALIGNMENT", (char *)opts[12]);
 		StringToUpper(t);
 		SetRexxVar(rxmsg,t,s,strlen(s));
 	}
@@ -3438,7 +3438,7 @@ ULONG rxGetCell(long *opts)
 	{
 		sprintf(s,"%s",tf && tf->tf_Note ? tf->tf_Note : (STRPTR)"");
 		if (stem)
-			sprintf(t,"%s.NOTE",opts[12]);
+			sprintf(t, "%s.NOTE", (char *)opts[12]);
 		StringToUpper(t);
 		SetRexxVar(rxmsg,t,s,strlen(s));
 	}
@@ -3470,11 +3470,11 @@ ULONG rxGetPos(long *opts)
 	}
 	if (opts[2])			   /* Both */
 	{
-		sprintf(t,"%s.COL",opts[2]);
+		sprintf(t, "%s.COL", (char *)opts[2]);
 		sprintf(s,"%lu",rxpage->pg_Gad.cp.cp_Col);
 		StringToUpper(t);
 		SetRexxVar(rxmsg,t,s,strlen(s));
-		sprintf(t,"%s.ROW",opts[2]);
+		sprintf(t, "%s.ROW", (char *)opts[2]);
 		sprintf(s,"%lu",rxpage->pg_Gad.cp.cp_Row);
 		StringToUpper(t);
 		SetRexxVar(rxmsg,t,s,strlen(s));
@@ -3525,12 +3525,12 @@ AddIntCmd(ULONG (*func)(long *),UBYTE flags,STRPTR template)
 {
 	struct IntCmd *ic;
 
-	if (ic = AllocPooled(pool, sizeof(struct IntCmd)))
+	if ((ic = AllocPooled(pool, sizeof(struct IntCmd))) != 0)
 	{
 		ic->ic_Node.ln_Name = template;
 		ic->ic_Node.ln_Type = flags;
 		ic->ic_Function = func;
-		AddTail(&intcmds, ic);
+		MyAddTail(&intcmds, ic);
 	}
 }
 
@@ -3551,9 +3551,9 @@ CloseRexx(void)
 void
 initRexx(void)
 {
-	NewList(&rexxports);
+	MyNewList(&rexxports);
 
-	if (notifyport = CreateMsgPort())
+	if ((notifyport = CreateMsgPort()) != 0)
 	{
 		notifysig = 1L << notifyport->mp_SigBit;
 		//rxmask = notifysig;
@@ -3678,7 +3678,7 @@ RemoveRexxPort(struct RexxPort *rxp)
 	if (!rxp)
 		return;
 
-	Remove(rxp);
+	MyRemove(rxp);
 	RemPort(&rxp->rxp_Port);
 	FreeString(rxp->rxp_Node.ln_Name);
 	if (rxp->rxp_Message)
@@ -3700,7 +3700,7 @@ MakeRexxPort(void)
 	if (rxsigbit == -1)
 		return(NULL);
 
-	if (t = AllocPooled(pool,(len = strlen(pubname))+2))
+	if ((t = AllocPooled(pool, (len = strlen(pubname)) + 2)) != 0)
 	{
 		strcpy(t,pubname);
 		strcpy(t+len,"A");
@@ -3713,15 +3713,15 @@ MakeRexxPort(void)
 
 	if (i != 26)
 	{
-		if (rxp = AllocPooled(pool,sizeof(struct RexxPort)))
+		if ((rxp = AllocPooled(pool, sizeof(struct RexxPort))) != 0)
 		{
-			if (rxp->rxp_Message = CreateRexxMsg(&rxp->rxp_Port,"ign",t))
+			if ((rxp->rxp_Message = CreateRexxMsg(&rxp->rxp_Port, "ign", t)) != 0)
 			{
 				rxp->rxp_Message->rm_Stdout = rxout;
 				rxp->rxp_Message->rm_Stdin = rxout;
-				AddTail(&rexxports,rxp);
+				MyAddTail(&rexxports, rxp);
 
-				NewList(&rxp->rxp_Port.mp_MsgList);
+				MyNewList(&rxp->rxp_Port.mp_MsgList);
 				rxp->rxp_Port.mp_Node.ln_Name = rxp->rxp_Node.ln_Name = t;
 				rxp->rxp_Port.mp_SigBit = rxsigbit;
 				rxp->rxp_Port.mp_Flags = PA_SIGNAL;
@@ -3796,7 +3796,7 @@ RunRexxScript(UBYTE type, STRPTR name)
 		hostPort = FindPort("REXX");
 	}
 	if (hostPort)
-		PutMsg(hostPort, sendmsg);
+		PutMsg(hostPort, (struct Message *)sendmsg);
 	Permit();
 
 	if (!hostPort)
@@ -3818,7 +3818,7 @@ handleEvent(struct Page *page,BYTE type,long col,long row)
 
 	ignoreEvent = FALSE;
 	if (!page || !((mp = page->pg_Mappe)->mp_Flags & MPF_SCRIPTS) || !mp->mp_Events[type].ev_Command || !(mp->mp_Events[type].ev_Flags & EVF_ACTIVE))
-		return NULL;
+		return 0;
 
 	if (type == EVT_LBUTTON || type == EVT_RBUTTON)
 	{

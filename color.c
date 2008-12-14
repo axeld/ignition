@@ -176,10 +176,12 @@ ObtainAppColors(struct Screen *screen, BOOL all)
 	foreach (&colors, cp) {
 		if (all || cp->cp_Pen == -1) {
 			ULONG r, g, b;
-
-            r = (r = cp->cp_Red) | (r << 8) | (r << 16) | (r << 24);
-            g = (g = cp->cp_Green) | (g << 8) | (g << 16) | (g << 24);
-            b = (b = cp->cp_Blue) | (b << 8) | (b << 16) | (b << 24);
+			r = cp->cp_Red;
+			g = cp->cp_Green;
+			b = cp->cp_Blue;
+            r = r | (r << 8) | (r << 16) | (r << 24);
+            g = g | (g << 8) | (g << 16) | (g << 24);
+            b = b | (b << 8) | (b << 16) | (b << 24);
 
 			cp->cp_Pen = ObtainBestPen(screen->ViewPort.ColorMap, r, g, b, TAG_END);
         }
@@ -194,7 +196,7 @@ FreeAppColors(void)
 
 	ReleaseAppColors(scr);
 
-	while (cp = (struct colorPen *)RemHead(&colors)) {
+	while ((cp = (struct colorPen *)MyRemHead(&colors)) != 0) {
         FreeString(cp->cp_Node.ln_Name);
 		FreePooled(pool, cp, sizeof(struct colorPen));
     }
@@ -284,19 +286,19 @@ GetBestPen(UBYTE red, UBYTE green, UBYTE blue)
 
 
 ULONG PUBLIC
-FindColorPen(reg (d0) UBYTE red, reg (d1) UBYTE green, reg (d2) UBYTE blue)
+FindColorPen(REG(d0, UBYTE red), REG(d1, UBYTE green), REG(d2, UBYTE blue))
 {
     struct colorPen *cp;
 
-	if (cp = GetBestPen(red, green, blue))
+	if ((cp = GetBestPen(red, green, blue)) != 0)
         return cp->cp_ID;
 
-    return NULL;
+    return 0;
 }
 
 
 ULONG PUBLIC
-TintColor(reg (d0) ULONG id, reg (d1) float tint)
+TintColor(REG(d0, ULONG id), REG(d1, float tint))
 {
     ULONG red = ((id >> 16) & 0xff) * tint;
     ULONG green = ((id >> 8) & 0xff) * tint;
@@ -329,7 +331,7 @@ GetColorPen(ULONG id)
 
 
 void PUBLIC
-SetOutlineColor(reg (a0) struct RastPort *rp, reg (d0) ULONG color)
+SetOutlineColor(REG(a0, struct RastPort *rp), REG(d0, ULONG color))
 {
 	struct ColorContext *context = GetColorContext(rp);
 
@@ -338,7 +340,7 @@ SetOutlineColor(reg (a0) struct RastPort *rp, reg (d0) ULONG color)
 
 
 void PUBLIC
-SetHighColor(reg (a0) struct RastPort *rp, reg (d0) ULONG color)
+SetHighColor(REG(a0, struct RastPort *rp), REG(d0, ULONG color))
 {
 	struct ColorContext *context = GetColorContext(rp);
 
@@ -347,7 +349,7 @@ SetHighColor(reg (a0) struct RastPort *rp, reg (d0) ULONG color)
 
 
 void PUBLIC
-SetLowColor(reg (a0) struct RastPort *rp, reg (d0) ULONG color)
+SetLowColor(REG(a0, struct RastPort *rp), REG(d0, ULONG color))
 {
 	struct ColorContext *context = GetColorContext(rp);
 
@@ -356,7 +358,7 @@ SetLowColor(reg (a0) struct RastPort *rp, reg (d0) ULONG color)
 
 
 void PUBLIC
-SetColors(reg (a0) struct RastPort *rp, reg (d0) ULONG apenID, reg (d1) ULONG bpenID)
+SetColors(REG(a0, struct RastPort *rp), REG(d0, ULONG apenID), REG(d1, ULONG bpenID))
 {
     if (apenID != ~0L)
 		SetHighColor(rp, apenID);
@@ -367,7 +369,7 @@ SetColors(reg (a0) struct RastPort *rp, reg (d0) ULONG apenID, reg (d1) ULONG bp
 
 
 void PUBLIC	/* not yet public */
-SetColorPen(reg (a0) struct RastPort *rp, reg (a1) struct colorPen *pen)
+SetColorPen(REG(a0, struct RastPort *rp), REG(a1, struct colorPen *pen))
 {
 	struct ColorContext *context = GetColorContext(rp);
 
@@ -399,7 +401,7 @@ UniqueColors(struct MinList *cols)
                 cp->cp_Node.ln_Name = ncp->cp_Node.ln_Name;
             else
                 FreeString(ncp->cp_Node.ln_Name);
-            Remove(ncp);
+            MyRemove(ncp);
             FreePooled(pool,ncp,sizeof(struct colorPen));
         }
     }*/
@@ -415,7 +417,7 @@ UniqueColors(struct MinList *cols)
                     cp->cp_Node.ln_Name = ncp->cp_Node.ln_Name;
                 else
                     FreeString(ncp->cp_Node.ln_Name);
-                Remove(ncp);
+                MyRemove(ncp);
 				FreePooled(pool, ncp, sizeof(struct colorPen));
             }
             else
@@ -430,7 +432,7 @@ AddColor(struct MinList *list, STRPTR name, UBYTE red, UBYTE green, UBYTE blue)
 {
     struct colorPen *cp;
 
-	if (cp = AllocPooled(pool, sizeof(struct colorPen)))
+	if ((cp = AllocPooled(pool, sizeof(struct colorPen))) != 0)
     {
         cp->cp_Red = red;
         cp->cp_Green = green;
@@ -444,9 +446,7 @@ AddColor(struct MinList *list, STRPTR name, UBYTE red, UBYTE green, UBYTE blue)
             cp->cp_Node.ln_Type = 1;
             FindColorName(cp);
         }
-		AddTail(list, cp);
+		MyAddTail(list, cp);
     }
     return cp;
 }
-
-

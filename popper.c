@@ -87,7 +87,7 @@ PopUpList(struct Window *win, struct Gadget *refgad, struct MinList *l, ULONG ta
 	h = sh - 4;
 	top = oldtop = (count-selected < items) ? count-items : selected;
 	
-	if (popWindow = OpenWindowTags(NULL,
+	if ((popWindow = OpenWindowTags(NULL,
 			WA_Left,		sx,
 			WA_Top,			sy,
 			WA_Width,		w,
@@ -96,7 +96,7 @@ PopUpList(struct Window *win, struct Gadget *refgad, struct MinList *l, ULONG ta
 			WA_NoCareRefresh, TRUE,
 			WA_PubScreen,	scr,
 			WA_Borderless,	TRUE,
-			TAG_END)) {
+			TAG_END)) != 0) {
 		struct RastPort *rp = popWindow->RPort;
 		struct IntuiMessage *msg;
 		struct LVDrawMsg lvdm;
@@ -136,7 +136,7 @@ PopUpList(struct Window *win, struct Gadget *refgad, struct MinList *l, ULONG ta
 		while (!ende) {
 			WaitPort(iport);
 
-			while (msg = GTD_GetIMsg(iport)) {
+			while ((msg = GTD_GetIMsg(iport)) != 0) {
 				switch (msg->Class) {
 					case IDCMP_GADGETUP:
 					case IDCMP_MOUSEBUTTONS:
@@ -215,7 +215,7 @@ PopUpList(struct Window *win, struct Gadget *refgad, struct MinList *l, ULONG ta
 									n = FindListNumber(l, --oldtop + items - 1);
 									lvdm.lvdm_Bounds.MinY = 2 + itemheight * (items + oldtop - top - 1);
 									lvdm.lvdm_Bounds.MaxY = lvdm.lvdm_Bounds.MinY + itemheight - 1;
-									for (oldtop; oldtop <= top; oldtop++) {
+									for (; oldtop <= top; oldtop++) {
 										CallHookPkt(callback, n, &lvdm);
 										lvdm.lvdm_Bounds.MinY += itemheight;
 										lvdm.lvdm_Bounds.MaxY += itemheight;
@@ -308,20 +308,20 @@ PopUpTable(struct Window *win, struct Gadget *refgad, UWORD cols, UWORD rows, AP
 	if (px < 0)
 		px = 0;
 
-	if (bm = AllocBitMap(pw,ph,GetBitMapAttr(rp->BitMap,BMA_DEPTH),BMF_MINPLANES,rp->BitMap)) {
+	if ((bm = AllocBitMap(pw, ph, GetBitMapAttr(rp->BitMap, BMA_DEPTH), BMF_MINPLANES, rp->BitMap)) != 0) {
 		LockLayers(&scr->LayerInfo);
 		UnlockLayer(win->RPort->Layer);
 		BltBitMap(rp->BitMap,px,py,bm,0,0,pw,ph,0xc0,0xff,NULL);
 		EraseRect(rp,px,py,px+pw-1,py+ph-1);
 
 		DrawBevelBox(rp,px,py,pw,ph,GT_VisualInfo,vi,TAG_END);
-		((__asm void (*)(reg (a0) struct RastPort *,reg (d0) UWORD,reg (d1) UWORD,reg (d2) UWORD,reg (d3) UWORD))func)(rp,rx = px+4,ry = py+3,cols,rows);
+		((ASM void (*)(REG (a0, struct RastPort *), REG(d0, UWORD), REG(d1, UWORD), REG(d2, UWORD), REG(d3, UWORD)))func)(rp, rx = px+4, ry = py+3, cols, rows);
 		x = rx-win->LeftEdge;  y = ry-win->TopEdge;
 		w = pw-8;  h = ph-6;
 
 		while (!ende) {
 			WaitPort(iport);
-			while (msg = (struct IntuiMessage *)GetMsg(iport)) {
+			while ((msg = (struct IntuiMessage *)GetMsg(iport)) != 0) {
 				switch (msg->Class) {
 					case IDCMP_GADGETUP:
 						selected = ~0L;
@@ -351,21 +351,26 @@ PopUpTable(struct Window *win, struct Gadget *refgad, UWORD cols, UWORD rows, AP
 						} else
 							in = FALSE;
 
-						if (old != -1 && (!in || in && old != selected))
-							EraseFatRect(rp,mx = rx+(old % cols)*PWIDTH-2,my = ry+(old/cols)*PHEIGHT-2,mx+PWIDTH+1,my+PHEIGHT+1);
-
+						if (old != -1 && (!in || in && old != selected)) {
+							mx = rx + (old % cols) * PWIDTH - 2;
+							my = ry + (old / cols) * PHEIGHT - 2;
+							EraseFatRect(rp, mx, my, mx + PWIDTH + 1, my + PHEIGHT + 1);
+						}
+						
 						if (in && old != selected) {
 							SetAPen(rp,3);
-							DrawFatRect(rp,mx = rx+sx*PWIDTH-2,my = ry+sy*PHEIGHT-2,mx+PWIDTH+1,my+PHEIGHT+1);
+							mx = rx + sx * PWIDTH - 2;
+							my = ry + sy * PHEIGHT - 2;
+							DrawFatRect(rp, mx, my, mx + PWIDTH + 1, my + PHEIGHT + 1);
 						}
 						break;
 				}
-				ReplyMsg(msg);
+				ReplyMsg((struct Message *)msg);
 			}
 		}
 		BltBitMapRastPort(bm,0,0,rp,px,py,pw,ph,0xc0);
 		FreeBitMap(bm);
-		LockLayer(NULL,win->RPort->Layer);
+		LockLayer(0, win->RPort->Layer);
 		UnlockLayers(&scr->LayerInfo);
 	}
 
@@ -427,7 +432,7 @@ SetPattern(struct RastPort *rp, UBYTE pattern, UBYTE x, UBYTE y)
 
 
 void PUBLIC
-PatternPopper(reg (a0) struct RastPort *rp,reg (d0) UWORD x,reg (d1) UWORD y,reg (d2) UWORD cols,reg (d3) UWORD rows)
+PatternPopper(REG(a0, struct RastPort *rp), REG(d0, UWORD x), REG(d1, UWORD y), REG(d2, UWORD cols), REG(d3, UWORD rows))
 {
 	long c = 0,a,b;
 
@@ -444,7 +449,7 @@ PatternPopper(reg (a0) struct RastPort *rp,reg (d0) UWORD x,reg (d1) UWORD y,reg
 
 
 void PUBLIC
-ColorPopper(reg (a0) struct RastPort *rp, reg (d0) UWORD x, reg (d1) UWORD y, reg (d2) UWORD cols, reg (d3) UWORD rows)
+ColorPopper(REG(a0, struct RastPort *rp), REG(d0, UWORD x), REG(d1, UWORD y), REG(d2, UWORD cols), REG(d3, UWORD rows))
 {
 	struct colorPen *cp = (APTR)colors.mlh_Head;
 	long a, b;
@@ -520,7 +525,7 @@ ShowPopUpText(STRPTR t, long wx, long wy)
 	ed.ed_MinSpace = TextLength(&scr->RastPort," ",1);
 	ed.ed_MaxSpace = 4*ed.ed_MinSpace;
 	ed.ed_Text = t;
-	NewList(&ed.ed_List);
+	MyNewList(&ed.ed_List);
 	PrepareEditText(&ed,&scr->RastPort,t);  /* create lines */
 
 	height = scr->Height >> 1;
@@ -547,7 +552,7 @@ ShowPopUpText(STRPTR t, long wx, long wy)
 	} else
 		y = imsg.MouseY+win->TopEdge-height/2;
 
-	if (popwin = OpenWindowTags(NULL,
+	if ((popwin = OpenWindowTags(NULL,
 			WA_Left,       wx == -1 ? x : wx,
 			WA_Top,        wy == -1 ? y : wy,
 			WA_Width,      ed.ed_GadWidth,
@@ -556,7 +561,7 @@ ShowPopUpText(STRPTR t, long wx, long wy)
 			/*WA_AutoAdjust, TRUE,*/
 			WA_PubScreen,  scr,
 			WA_Borderless, TRUE,
-			TAG_END)) {
+			TAG_END)) != 0) {
 		struct RastPort *rp = popwin->RPort;
 		long   base;
 

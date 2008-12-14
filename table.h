@@ -288,8 +288,8 @@ extern int CompareCellPositions(struct tableField **atf,struct tableField **btf)
 extern void SetTFWidth(struct Page *,struct tableField *);
 extern void UpdateCellText(struct Page *page,struct tableField *tf);
 extern void SetTFText(struct Page *page,struct tableField *tf,STRPTR t);
-extern long GetTFWidth(struct Page *,long);
-extern long GetTFHeight(struct Page *,long);
+extern int32 GetTFWidth(struct Page *,long);
+extern int32 GetTFHeight(struct Page *,long);
 extern long GetTotalWidth(struct Page *page,struct tableField *tf);
 extern struct tableField *NextTableField(struct tableField *tf);
 extern struct tableField *GetRealTableField(struct Page *page,long x,long y);
@@ -298,7 +298,7 @@ extern void RemoveCell(struct Page *page,struct tableField *tf, bool recalc);
 extern void InsertCell(struct Page *page,struct tableField *tf, bool updateText);
 extern void FreeTableField(struct tableField *tf);
 extern struct tableField *MakeTableField(struct Page *page,long col,long row);
-extern struct tableField * PUBLIC AllocTableField(reg (a0) struct Page *page,reg (d0) long x,reg (d1) long y);
+extern struct tableField * PUBLIC AllocTableField(REG(a0, struct Page *page),REG(d0, long x),REG(d1, long y));
 extern struct tableField *CopyCell(struct Page *,struct tableField *);
 extern bool TextIsFormula(STRPTR text);
 
@@ -309,13 +309,13 @@ extern void SetBorder(struct Page *page,BOOL block,long col0,long point0,long co
 extern long CopyBlock(struct Page *,BOOL,BOOL);
 extern long InsertBlock(struct Page *page,long col,long row);
 extern void ChangeCellSize(struct Page *page,STRPTR width,STRPTR height,UWORD mode,struct UndoNode *undo);
-extern long PUBLIC pixel(reg (a0) struct Page *page,reg (d0) long mm,reg (d1) BOOL width);
-extern long PUBLIC mm(reg (a0) struct Page *page,reg (d0) long pixel,reg (d1) BOOL width);
+extern long PUBLIC pixel(REG(a0, struct Page *page),REG(d0, long mm),REG(d1, BOOL width));
+extern long PUBLIC mm(REG(a0, struct Page *page),REG(d0, long pixel),REG(d1, BOOL width));
 extern struct tableField *GetMarkedFields(struct Page *page,struct tableField *tf,BOOL);
-extern struct tableField * PUBLIC GetTableField(reg (a0) struct Page *page,reg (d0) long x,reg (d1) long y);
+extern struct tableField * PUBLIC GetTableField(REG(a0, struct Page *page),REG(d0, long x),REG(d1, long y));
 extern struct tableField *GetTableFieldCoord(struct Page *page,long x,long y);
 extern void RecalcTableSize(struct Page *page);
-extern void PUBLIC AllocTableSize(reg (a0) struct Page *page,reg (d0) long w,reg (d1) long h);
+extern void PUBLIC AllocTableSize(REG(a0, struct Page *page),REG(d0, long w),REG(d1, long h));
 extern void LinkCellsToTableSize(struct Page *page);
 extern void DrawTableRegion(struct Window *win,struct Page *page,struct Rectangle *refresh,BOOL vertgads,BOOL horizgads);
 extern void DrawTableTitles(struct Page *page,UBYTE horiz);
@@ -333,7 +333,7 @@ extern void setCoordPkt(struct Page *page,struct coordPkt *cp,long col,long row)
 extern void SetCellCoordPkt(struct Page *page,struct coordPkt *cp,struct tableField *tf,long col,long row);
 extern void ShowTable(struct Page *page,struct coordPkt *cp,long col,long row);
 extern void FreeTable(struct Page *page);
-extern void PUBLIC RecalcPageDPI(reg (a0) struct Page *page);
+extern void PUBLIC RecalcPageDPI(REG(a0, struct Page *page));
 extern void SetZoom(struct Page *page,ULONG zoom,BOOL force,BOOL draw);
 
 #endif   /* IGN_TABLE_H */

@@ -106,6 +106,7 @@ GetPrefsModuleFlag(uint16 type)
 		case WDT_PREFSYS:	   return PRF_SYSTEM;
 		case WDT_PREFCONTEXT:   return PRF_CONTEXT;
 	}
+	return 0; /* suppress compiler warning */
 }
 
 
@@ -272,7 +273,7 @@ AllocPrefsModuleData(struct Prefs *pr,UWORD type)
 		{
 			struct PrefDisp *pd;
 
-			if (pd = pr->pr_Disp = AllocPooled(pool,sizeof(struct PrefDisp)))
+			if ((pd = pr->pr_Disp = AllocPooled(pool, sizeof(struct PrefDisp))) != 0)
 			{
 				pd->pd_Rasta = PDR_POINTS;
 				pd->pd_IconBar = PDIB_LEFT;
@@ -287,7 +288,7 @@ AllocPrefsModuleData(struct Prefs *pr,UWORD type)
 			break;
 		}
 		case WDT_PREFICON:
-			if (pr->pr_Icon = AllocPooled(pool,sizeof(struct PrefIcon)))
+			if ((pr->pr_Icon = AllocPooled(pool, sizeof(struct PrefIcon))) != 0)
 			{
 				pr->pr_Icon->pi_Width = 24;
 				pr->pr_Icon->pi_Height = 24;
@@ -298,7 +299,7 @@ AllocPrefsModuleData(struct Prefs *pr,UWORD type)
 		{
 			struct PrefScreen *ps;
 
-			if (ps = pr->pr_Screen = AllocPooled(pool,sizeof(struct PrefScreen)))
+			if ((ps = pr->pr_Screen = AllocPooled(pool, sizeof(struct PrefScreen))) != 0)
 			{
 				ps->ps_Width = 640;
 				ps->ps_Height = 480;
@@ -314,13 +315,13 @@ AllocPrefsModuleData(struct Prefs *pr,UWORD type)
 			break;
 		}
 		case WDT_PREFFILE:
-			if (pr->pr_File = AllocPooled(pool, sizeof(struct PrefFile))) {
+			if ((pr->pr_File = AllocPooled(pool, sizeof(struct PrefFile))) != 0) {
 				pr->pr_File->pf_Flags = PFF_WARN_IOTYPE | PFF_ICONS;
 				pr->pr_File->pf_AutoSaveIntervall = 10*60;  /* 10 min */
 			}
 			break;
 		case WDT_PREFTABLE:
-			if (pr->pr_Table = AllocPooled(pool,sizeof(struct PrefTable)))
+			if ((pr->pr_Table = AllocPooled(pool, sizeof(struct PrefTable))) != 0)
 			{
 				pr->pr_Table->pt_Flags = PTF_SHOWZEROS | PTF_EDITFUNC;
 				pr->pr_Table->pt_EditFunc[PTEQ_NONE] = PTEF_COPY;
@@ -350,12 +351,12 @@ RemPrefsModule(struct Prefs *pr,struct PrefsModule *pm)
 		return;
 
 	type = pm->pm_Type;
-	if (tn = FindTreeSpecial(&prefstree.tl_Tree,pm))
+	if ((tn = FindTreeSpecial(&prefstree.tl_Tree,pm)) != 0)
 	{
 		RemoveFromLockedList(&prefstree,tn);
 		FreePooled(pool,tn,sizeof(struct TreeNode));
 	}
-	Remove((struct Node *)pm);
+	MyRemove(pm);
 
 	FreePrefsModule(pr,pm);
 	pr->pr_ModuleFlags &= ~GetPrefsModuleFlag(type);
@@ -453,7 +454,7 @@ SetPrefsModule(struct Prefs *pr,UWORD type,BYTE modified)
 
 
 struct PrefsModule *
-AddPrefsModule(struct Prefs *pr,STRPTR t,STRPTR iname,UWORD type,UBYTE flags)
+AddPrefsModule(struct Prefs *pr, CONST_STRPTR t, STRPTR iname, UWORD type, UBYTE flags)
 {
 	struct PrefsModule *pm;
 
@@ -462,7 +463,7 @@ AddPrefsModule(struct Prefs *pr,STRPTR t,STRPTR iname,UWORD type,UBYTE flags)
 	if (pr != &prefs && flags & PMF_GLOBAL || !t)
 		return NULL;
 
-	if (pm = AllocPooled(pool,sizeof(struct PrefsModule))) {
+	if ((pm = AllocPooled(pool, sizeof(struct PrefsModule))) != 0) {
 		pm->pm_Node.in_Name = t;
 		pm->pm_Node.in_Type = LNT_PREFSMODULE;
 		pm->pm_Type = type;
@@ -472,7 +473,7 @@ AddPrefsModule(struct Prefs *pr,STRPTR t,STRPTR iname,UWORD type,UBYTE flags)
 		pr->pr_ModuleFlags |= GetPrefsModuleFlag(type);
 
 		AllocPrefsModuleData(pr,type);
-		AddTail(&pr->pr_Modules,(struct Node *)pm);
+		MyAddTail(&pr->pr_Modules, pm);
 	}
 
 	return pm;
@@ -501,7 +502,7 @@ AddPrefsModuleToTree(struct Prefs *pr, struct PrefsModule *pm, struct MinList *t
 	if (pm->pm_Flags & PMF_GLOBAL)
 		flags |= TNF_STATIC | TNF_HIGHLIGHTED;
 
-	if (tn = AddTreeNode(pool,tree,pm->pm_Node.in_Name,pm->pm_Node.in_Image,flags))
+	if ((tn = AddTreeNode(pool, tree, pm->pm_Node.in_Name, pm->pm_Node.in_Image, flags)) != 0)
 		tn->tn_Special = pm;
 }
 
@@ -531,7 +532,7 @@ AddPrefsModuleToLocalPrefs(struct Mappe *mp, UWORD type)
 	if (!(pm = GetPrefsModule(&prefs, type)))
 		return;
 
-	if (pm = AddPrefsModule(pr, pm->pm_Node.in_Name, pm->pm_ImageName, pm->pm_Type, pm->pm_Flags))
+	if ((pm = AddPrefsModule(pr, pm->pm_Node.in_Name, pm->pm_ImageName, pm->pm_Type, pm->pm_Flags)) != 0)
 	{
 		struct TreeNode *tn;
 
@@ -662,20 +663,20 @@ AddStandardOutput(void)
 {
 	struct Node *ln;
 
-	if (ln = AllocPooled(pool,sizeof(struct Node)))
+	if ((ln = AllocPooled(pool, sizeof(struct Node))) != 0)
 	{
 		ln->ln_Name = AllocString("CON:/14//100/ignition-Output/AUTO/WAIT/SCREEN IGNITION.1");
-		AddTail(&outputs,ln);
+		MyAddTail(&outputs, ln);
 	}
-	if (ln = AllocPooled(pool,sizeof(struct Node)))
+	if ((ln = AllocPooled(pool, sizeof(struct Node))) != 0)
 	{
 		ln->ln_Name = AllocString("KCON:/14//100/ignition-Output/AUTO/WAIT/SCREEN IGNITION.1");
-		AddTail(&outputs,ln);
+		MyAddTail(&outputs, ln);
 	}
-	if (ln = AllocPooled(pool,sizeof(struct Node)))
+	if ((ln = AllocPooled(pool, sizeof(struct Node))) != 0)
 	{
 		ln->ln_Name = AllocString("T:ign.out");
-		AddTail(&outputs,ln);
+		MyAddTail(&outputs, ln);
 	}
 }
 
@@ -685,9 +686,9 @@ RemoveLinkWithName(struct MinList *list,STRPTR name)
 {
 	struct Link *l;
 
-	if (l = FindLinkWithName(list,name))
+	if ((l = FindLinkWithName(list, name)) != 0)
 	{
-		Remove((struct Node *)l);
+		MyRemove(l);
 		FreePooled(pool,l,sizeof(struct Link));
 
 		return true;
@@ -708,7 +709,7 @@ MakeCmdsMapLinks(struct Mappe *mp)
 		struct AppCmd *ac;
 		struct Link *l;
 
-		while(l = (APTR)RemHead(&mp->mp_AppCmds))
+		while((l = (APTR)MyRemHead(&mp->mp_AppCmds)) != 0)
 			FreePooled(pool,l,sizeof(struct Link));
 
 		if (!pm || (pm->pm_Flags & PMF_ADD))
@@ -756,7 +757,7 @@ MakeNamesMapLinks(struct Mappe *mp)
 		struct Name *nm;
 		struct Link *l;
 
-		while (l = (APTR)RemHead(&mp->mp_Names))
+		while ((l = (APTR)MyRemHead(&mp->mp_Names)) != 0)
 			FreePooled(pool,l,sizeof(struct Link));
 
 		if (!pm || (pm->pm_Flags & PMF_ADD))  // add global names
@@ -828,9 +829,9 @@ MakeFormatMapLinks(struct Mappe *mp)
 		struct PrefsModule *pm = GetPrefsModule(&mp->mp_Prefs,WDT_PREFFORMAT);
 		struct Link *l;
 
-		while (l = (APTR)RemHead(&mp->mp_Formats))
+		while ((l = (APTR)MyRemHead(&mp->mp_Formats)) != 0)
 			FreePooled(pool,l,sizeof(struct Link));
-		while (l = (APTR)RemHead(&mp->mp_CalcFormats))
+		while ((l = (APTR)MyRemHead(&mp->mp_CalcFormats)) != 0)
 			FreePooled(pool,l,sizeof(struct Link));
 
 		if (!pm || (pm->pm_Flags & PMF_ADD))
@@ -906,7 +907,7 @@ UpdateAntiFont(struct Prefs *pr)
 
 
 void PUBLIC
-AppCmdLock(reg (a0) struct LockNode *ln,reg (a1) struct MinNode *node,reg (d0) UBYTE flags)
+AppCmdLock(REG(a0, struct LockNode *ln), REG(a1, struct MinNode *node), REG(d0, UBYTE flags))
 {
 	switch (flags & LNCMDS) {
 		case LNCMD_LOCK:
@@ -977,17 +978,18 @@ InitPrefs(struct Prefs *prefs)
 {
 	long   i;
 
-	NewList(&prefs->pr_Formats);  NewList(&prefs->pr_Names);
-	NewList(&prefs->pr_AppCmds);
-	NewList(&prefs->pr_AppMenus);
-	NewList(&prefs->pr_AppKeys);
-	NewList(&prefs->pr_IconObjs);
-	NewList(&prefs->pr_Modules);
+	MyNewList(&prefs->pr_Formats);
+	MyNewList(&prefs->pr_Names);
+	MyNewList(&prefs->pr_AppCmds);
+	MyNewList(&prefs->pr_AppMenus);
+	MyNewList(&prefs->pr_AppKeys);
+	MyNewList(&prefs->pr_IconObjs);
+	MyNewList(&prefs->pr_Modules);
 
 	// context menus
 
 	for (i = 0; i < NUM_CMT; i++)
-		NewList(&prefs->pr_Contexts[i]);
+		MyNewList(&prefs->pr_Contexts[i]);
 
 	// window bounds
 
@@ -1008,9 +1010,9 @@ InitAppPrefs(STRPTR name)
 {
 	long i;
 
-	NewList(&prefstree.tl_View);  NewList(&prefstree.tl_Tree);
+	MyNewList(&prefstree.tl_View);  MyNewList(&prefstree.tl_Tree);
 	prefs.pr_TreeNode = AddTreeNode(pool,&prefstree.tl_Tree,GetString(&gLocaleInfo, MSG_GLOBAL_PREFS),NULL,TNF_CONTAINER | TNF_OPEN);
-	if (recycledprefs.pr_TreeNode = AddTreeNode(pool,&prefstree.tl_Tree,GetString(&gLocaleInfo, MSG_CLIPBOARD_PREFS),NULL,TNF_CONTAINER))
+	if ((recycledprefs.pr_TreeNode = AddTreeNode(pool, &prefstree.tl_Tree, GetString(&gLocaleInfo, MSG_CLIPBOARD_PREFS), NULL, TNF_CONTAINER)) != 0)
 		recycledprefs.pr_TreeNode->tn_Special = (APTR)~0L;
 
 	InitPrefs(&prefs);

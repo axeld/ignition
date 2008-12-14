@@ -42,9 +42,9 @@ RemLockNode(struct LockNode *ln)
 		return;
 
 	if (nextln == ln)
-		nextln = (struct LockNode *)ln->ln_Node.mln_Succ;
+		nextln = (struct LockNode *)ln->ln_Node.ln_Succ;
 
-	Remove((struct Node *)ln);
+	MyRemove(ln);
 	if (ln->ln_Data)
 		FreePooled(pool,ln->ln_Data,ln->ln_Length);
 	FreePooled(pool,ln,sizeof(struct LockNode));
@@ -56,7 +56,7 @@ RemLockNodeData(struct MinList *list,ULONG length,...)
 {
 	struct LockNode *ln;
 
-	if (ln = FindLockNodeA(list,length,&length+1))
+	if ((ln = FindLockNodeA(list, length, &length + 1)) != 0)
 		RemLockNode(ln);
 }
 
@@ -66,15 +66,15 @@ AddLockNode(struct MinList *list,BYTE pri,APTR func,ULONG length,...)
 {
 	struct LockNode *ln;
 
-	if (ln = AllocPooled(pool,sizeof(struct LockNode))) {
-		ln->ln_Pri = pri;
+	if ((ln = AllocPooled(pool, sizeof(struct LockNode))) != 0) {
+		ln->ln_Node.ln_Pri = pri;
 		ln->ln_List = list;
 		ln->ln_Function = func;
 
 		if ((ln->ln_Length = length) && (ln->ln_Data = AllocPooled(pool,length)))
 			CopyMem(&length+1,ln->ln_Data,length);
 
-		Enqueue((struct List *)&locks,(struct Node *)ln);
+		MyEnqueue(&locks, ln);
 	}
 	return ln;
 }
@@ -118,8 +118,8 @@ UnlockListNode(struct MinList *list,struct MinNode *node,UBYTE flags)
 	if (!list)
 		list = FindList(node);
 
-	for (ln = (APTR)locks.mlh_Head;ln->ln_Node.mln_Succ;ln = nextln) {
-		nextln = (struct LockNode *)ln->ln_Node.mln_Succ;
+	for (ln = (APTR)locks.mlh_Head;ln->ln_Node.ln_Succ;ln = nextln) {
+		nextln = (struct LockNode *)ln->ln_Node.ln_Succ;
 
 		if (list == ln->ln_List && ln->ln_Locked) {
 			if (!--ln->ln_Locked)
@@ -139,8 +139,8 @@ LockListNode(struct MinList *list,struct MinNode *node,UBYTE flags)
 	if (!list)
 		list = FindList(node);
 
-	for (ln = (APTR)locks.mlh_Head;ln->ln_Node.mln_Succ;ln = nextln) {
-		nextln = (struct LockNode *)ln->ln_Node.mln_Succ;
+	for (ln = (APTR)locks.mlh_Head;ln->ln_Node.ln_Succ;ln = nextln) {
+		nextln = (struct LockNode *)ln->ln_Node.ln_Succ;
 
 		if (list == ln->ln_List) {
 			if (!ln->ln_Locked++)
@@ -173,8 +173,8 @@ ApplyLockListCommand(struct MinList *list,struct MinNode *node,UBYTE cmd)
 	if (!list || gLockStop)
 		return;
 
-	for (ln = (APTR)locks.mlh_Head;ln->ln_Node.mln_Succ;ln = nextln) {
-		nextln = (struct LockNode *)ln->ln_Node.mln_Succ;
+	for (ln = (APTR)locks.mlh_Head;ln->ln_Node.ln_Succ;ln = nextln) {
+		nextln = (struct LockNode *)ln->ln_Node.ln_Succ;
 		if (list == ln->ln_List)
 			ln->ln_Function(ln,node,cmd);
 	}
@@ -199,7 +199,7 @@ void
 AddLockedTail(struct MinList *list,struct MinNode *ln)
 {
 	if (LockListNode(list,ln,LNF_ADD)) {
-		AddTail(list,ln);
+		MyAddTail(list, ln);
 		UnlockListNode(list,ln,LNF_ADD);
 	}
 }
@@ -209,7 +209,7 @@ void
 AddLockedHead(struct MinList *list,struct MinNode *ln)
 {
 	if (LockListNode(list,ln,LNF_ADD)) {
-		AddHead(list,ln);
+		MyAddHead(list, ln);
 		UnlockListNode(list,ln,LNF_ADD);
 	}
 }
@@ -239,7 +239,7 @@ void
 RemoveFromLockedList(struct MinList *list,struct MinNode *ln)
 {
 	if (LockListNode(list,ln,LNF_REMOVE)) {
-		Remove((struct Node *)ln);
+		MyRemove(ln);
 		UnlockListNode(list,ln,LNF_REMOVE);
 	}
 }
@@ -269,7 +269,7 @@ RemLockedHead(struct MinList *list)
 
 
 void PUBLIC
-FreeLock(reg (a0) struct LockNode *ln,reg (a1) struct MinNode *node,reg (d0) UBYTE flags)
+FreeLock(REG(a0, struct LockNode *ln), REG(a1, struct MinNode *node), REG(d0, UBYTE flags))
 {
 	if (flags & LNCMD_FREE)
 		CloseAppWindow(ln->ln_Data[0],TRUE);
@@ -277,7 +277,7 @@ FreeLock(reg (a0) struct LockNode *ln,reg (a1) struct MinNode *node,reg (d0) UBY
 
 
 void PUBLIC
-ListViewLock(reg (a0) struct LockNode *ln,reg (a1) struct MinNode *node,reg (d0) UBYTE flags)
+ListViewLock(REG(a0, struct LockNode *ln), REG(a1, struct MinNode *node), REG(d0, UBYTE flags))
 {
 	switch (flags & LNCMDS) {
 		case LNCMD_LOCK:
@@ -293,7 +293,7 @@ ListViewLock(reg (a0) struct LockNode *ln,reg (a1) struct MinNode *node,reg (d0)
 			struct Node *node;
 			long   i = ~0L;
 
-			if (node = ((struct Gadget *)ln->ln_Data[1])->UserData) {
+			if ((node = ((struct Gadget *)ln->ln_Data[1])->UserData) != 0) {
 				if ((i = FindListEntry(ln->ln_List,node)) == ~0L)
 					((struct Gadget *)ln->ln_Data[1])->UserData = NULL;
 			}
@@ -307,7 +307,7 @@ ListViewLock(reg (a0) struct LockNode *ln,reg (a1) struct MinNode *node,reg (d0)
 
 
 void PUBLIC
-TreeLock(reg (a0) struct LockNode *ln,reg (a1) struct MinNode *node,reg (d0) UBYTE flags)
+TreeLock(REG(a0, struct LockNode *ln), REG(a1, struct MinNode *node), REG(d0, UBYTE flags))
 {
 	switch (flags & LNCMDS) {
 		case LNCMD_LOCK:
@@ -334,7 +334,7 @@ TreeLock(reg (a0) struct LockNode *ln,reg (a1) struct MinNode *node,reg (d0) UBY
 
 
 void PUBLIC
-TextLock(reg (a0) struct LockNode *ln,reg (a1) struct MinNode *node,reg (d0) UBYTE flags)
+TextLock(REG(a0, struct LockNode *ln), REG(a1, struct MinNode *node), REG(d0, UBYTE flags))
 {
 	switch(flags & LNCMDS) {
 		case LNCMD_UNLOCK:
@@ -342,7 +342,7 @@ TextLock(reg (a0) struct LockNode *ln,reg (a1) struct MinNode *node,reg (d0) UBY
 				break;
 		case LNCMD_REFRESH:
 		{
-			STRPTR text = NULL;
+			CONST_STRPTR text = NULL;
 
 			if (IsListEmpty((struct List *)ln->ln_List))
 				text = GetString(&gLocaleInfo, MSG_EMPTY_LIST_GAD);

@@ -72,7 +72,7 @@ UpdateMapTitle(struct Mappe *mp)
 	if (mp->mp_Path)
 		len += strlen(mp->mp_Path)+5;
 
-	if (mp->mp_Title = AllocPooled(pool,strlen(mp->mp_Node.ln_Name)+len)) {
+	if ((mp->mp_Title = AllocPooled(pool,strlen(mp->mp_Node.ln_Name)+len)) != 0) {
 		strcpy(mp->mp_Title,"** ");
 		strcpy(mp->mp_Title+3,mp->mp_Node.ln_Name ? mp->mp_Node.ln_Name : "");
 		if (mp->mp_Path) {
@@ -206,7 +206,7 @@ SetPageColor(struct Page *page, struct colorPen *apen, struct colorPen *bpen)
 	BeginUndo(page,UNDO_BLOCK,t);
 
 	tf = NULL;
-	while (tf = GetMarkedFields(page, tf, TRUE)) {
+	while ((tf = GetMarkedFields(page, tf, TRUE)) != 0) {
 		if (apen) {
 			if (tf->tf_APen == tf->tf_ReservedPen)
 				tf->tf_APen = apen->cp_ID;
@@ -239,7 +239,7 @@ SetCellPattern(struct Page *page, long col, UBYTE pattern)
 		: GetString(&gLocaleInfo, MSG_REMOVE_PATTERN_UNDO));
 	tf = NULL;
 
-	while (tf = GetMarkedFields(page, tf, TRUE)) {
+	while ((tf = GetMarkedFields(page, tf, TRUE)) != 0) {
 		tf->tf_Pattern = pattern;
 		tf->tf_PatternColor = col;
 	}
@@ -272,7 +272,7 @@ SetCellSecurity(struct Page *page, LONG security)
 
 	BeginUndo(page, UNDO_BLOCK, GetString(&gLocaleInfo, MSG_SET_SECURITY_ATTRIBUTES_UNDO));
 
-	while (tf = GetMarkedFields(page, tf, FALSE)) {
+	while ((tf = GetMarkedFields(page, tf, FALSE)) != 0) {
 		tf->tf_Flags = (tf->tf_Flags & ~(TFF_SECURITY)) | security;
 
 		if (maxcol < tf->tf_Col + tf->tf_Width)
@@ -318,7 +318,7 @@ SetAlignment(struct Page *page, BYTE alignH, BYTE alignV)
 	}
 
 	BeginUndo(page,UNDO_BLOCK,t);
-	while (tf = GetMarkedFields(page, tf, TRUE)) {
+	while ((tf = GetMarkedFields(page, tf, TRUE)) != 0) {
 		if (alignV)
 			tf->tf_Alignment = (tf->tf_Alignment & (TFA_HCENTER | TFA_VIRGIN)) | alignV;
 		if (alignH)
@@ -374,7 +374,7 @@ UpdatePageFont(struct Page *page, ULONG tag,...)
 	}
 
 	if (page->pg_Gad.DispPos != PGS_NONE || page->pg_MarkCol != -1) {
-		if (styletag = FindTagItem(FA_Style,(struct TagItem *)&tag))
+		if ((styletag = FindTagItem(FA_Style, (struct TagItem *)&tag)) != 0)
 			style = styletag->ti_Data;
 		else
 			style = ~0L;
@@ -396,7 +396,7 @@ UpdatePageFont(struct Page *page, ULONG tag,...)
 				strcat(t, "/");
 
 			if (prefs.pr_Table->pt_Flags & PTF_AUTOCELLSIZE) {
-				while (tf = GetMarkedFields(page, tf, FALSE)) {
+				while ((tf = GetMarkedFields(page, tf, FALSE)) != 0) {
 					if (tf->tf_Text)
 						maxcol = 1;
 				}
@@ -453,7 +453,7 @@ UpdatePageFont(struct Page *page, ULONG tag,...)
 
 		BeginUndo(page, UNDO_BLOCK, t);
 
-		while (tf = GetMarkedFields(page, tf, TRUE /*FALSE*/)) {
+		while ((tf = GetMarkedFields(page, tf, TRUE /*FALSE*/)) != 0) {
 			if (style != ~0L) {
 				if (style & FS_ALLBITS)
 					styletag->ti_Data = style & ~FS_ALLBITS;
@@ -494,7 +494,7 @@ DisposePage(struct Page *page)
 {
 	struct gGroup *gg;
 
-	Remove(page);
+	MyRemove(page);
 	if (rxpage == page) {
 		// Nachfolger für die aktuelle Seite finden
 		struct Mappe *mp = page->pg_Mappe;
@@ -518,7 +518,7 @@ DisposePage(struct Page *page)
 		page->pg_ObjectOrder = NULL;
 	}
 
-	while (gg = (struct gGroup *)RemHead(&page->pg_gGroups))
+	while ((gg = (struct gGroup *)MyRemHead(&page->pg_gGroups)) != 0)
 		FreeGGroup(gg);
 
 	if (!ende)
@@ -539,7 +539,7 @@ SetMapName(struct Mappe *mp, STRPTR name)
 	FreeString(mp->mp_Node.ln_Name);
 	mp->mp_Node.ln_Name = AllocString(name);
 
-	if (tn = FindTreeSpecial(&prefstree.tl_Tree,mp)) {
+	if ((tn = FindTreeSpecial(&prefstree.tl_Tree, mp)) != 0) {
 		tn->tn_Node.in_Name = mp->mp_Node.ln_Name;
 		RefreshLockList(&prefstree);
 		RefreshLockList(&gProjects);
@@ -597,7 +597,7 @@ DisposeProject(struct Mappe *mp)
 		DisposePage(page);
 	}
 
-	if (tn = FindTreeSpecial(&prefstree.tl_Tree,mp)) {
+	if ((tn = FindTreeSpecial(&prefstree.tl_Tree, mp)) != 0) {
 		RemoveFromLockedList(&prefstree, (struct Node *)tn);
 
 		FreeTreeNodes(pool, &tn->tn_Nodes);
@@ -607,7 +607,7 @@ DisposeProject(struct Mappe *mp)
 	{
 		struct RexxScript *rxs;
 
-		while (rxs = (struct RexxScript *)RemHead(&mp->mp_RexxScripts))
+		while ((rxs = (struct RexxScript *)MyRemHead(&mp->mp_RexxScripts)) != 0)
 			FreeRexxScript(rxs);
 	}
 	FreeString(mp->mp_Node.ln_Name);
@@ -637,12 +637,12 @@ NewProject(void)
 {
 	struct Mappe *mp;
 
-	if (mp = AllocPooled(pool,sizeof(struct Mappe))) {
+	if ((mp = AllocPooled(pool,sizeof(struct Mappe))) != 0) {
 		struct TreeNode *tn;
 
-		NewList(&mp->mp_Pages);  NewList(&mp->mp_Projects);  NewList(&mp->mp_Formats);
-		NewList(&mp->mp_AppCmds);  NewList(&mp->mp_Names);  NewList(&mp->mp_Databases);
-		NewList(&mp->mp_Masks);  NewList(&mp->mp_RexxScripts);  NewList(&mp->mp_CalcFormats);
+		MyNewList(&mp->mp_Pages);  MyNewList(&mp->mp_Projects);  MyNewList(&mp->mp_Formats);
+		MyNewList(&mp->mp_AppCmds);  MyNewList(&mp->mp_Names);  MyNewList(&mp->mp_Databases);
+		MyNewList(&mp->mp_Masks);  MyNewList(&mp->mp_RexxScripts);  MyNewList(&mp->mp_CalcFormats);
 
 		mp->mp_Node.ln_Name = AllocString(GetString(&gLocaleInfo, MSG_UNNAMED));
 		mp->mp_Node.ln_Type = LNT_MAP;
@@ -662,14 +662,14 @@ NewProject(void)
 		PropagatePrefsToMap(&prefs, mp);
 
 		if (LockList(&prefstree, LNF_ADD)) {
-			if (tn = AddTreeNode(pool,&((struct TreeNode *)prefstree.tl_Tree.mlh_Head)->tn_Nodes,mp->mp_Node.ln_Name,NULL,TNF_CONTAINER | TNF_NOSUBDIRS)) {
+			if ((tn = AddTreeNode(pool,&((struct TreeNode *)prefstree.tl_Tree.mlh_Head)->tn_Nodes,mp->mp_Node.ln_Name,NULL,TNF_CONTAINER | TNF_NOSUBDIRS)) != 0) {
 				mp->mp_Prefs.pr_TreeNode = tn;
 				tn->tn_Special = mp;
 			}
 			UnlockList(&prefstree,LNF_ADD);
 		}
 
-		if (mp->mp_Title = AllocPooled(pool,strlen(mp->mp_Node.ln_Name)+4)) {
+		if ((mp->mp_Title = AllocPooled(pool,strlen(mp->mp_Node.ln_Name)+4)) != 0) {
 			strcpy(mp->mp_Title, "** ");
 			strcpy(mp->mp_Title + 3, mp->mp_Node.ln_Name);
 		}
@@ -682,7 +682,7 @@ NewProject(void)
 
 
 struct Page * PUBLIC
-NewPage(reg (a0) struct Mappe *mp)
+NewPage(REG(a0, struct Mappe *mp))
 {
 	struct Page *page = NULL;
 	char   t[42];
@@ -690,11 +690,11 @@ NewPage(reg (a0) struct Mappe *mp)
 	if (mp && (page = AllocPooled(pool,sizeof(struct Page)))) {
 		page->pg_Mappe = mp;
 		page->pg_Cols = 0;  page->pg_Rows = 0;
-		NewList((APTR)&page->pg_Table);
-		NewList((APTR)&page->pg_Undos);
-		NewList((APTR)&page->pg_gObjects);
-		NewList((APTR)&page->pg_gGroups);
-		NewList((APTR)&page->pg_gDiagrams);
+		MyNewList(&page->pg_Table);
+		MyNewList(&page->pg_Undos);
+		MyNewList(&page->pg_gObjects);
+		MyNewList(&page->pg_gGroups);
+		MyNewList(&page->pg_gDiagrams);
 		page->pg_APen = FindColorPen(0,0,0);
 		page->pg_BPen = FindColorPen(255,255,255);
 		page->pg_SelectCol = -1;
@@ -718,7 +718,7 @@ NewPage(reg (a0) struct Mappe *mp)
 
 		mp->mp_actPage = page;
 		SetMainPage(page);
-		AddTail(&mp->mp_Pages, (APTR)page);
+		MyAddTail(&mp->mp_Pages, page);
 	}
 	return page;
 }
@@ -855,7 +855,7 @@ SetSelect(struct Page *page, long col, long row, long width, long height, BYTE o
 	if (page->pg_Gad.DispPos > PGS_FRAME) {
 		if (page->pg_Gad.tf->tf_Text) {
 			tlen = strlen(page->pg_Gad.tf->tf_Text)+32;
-			if (t = AllocPooled(pool,tlen))
+			if ((t = AllocPooled(pool,tlen)) != 0)
 				strcpy(t,page->pg_Gad.tf->tf_Text);
 		} else
 			t = AllocPooled(pool,tlen = 32);
@@ -865,10 +865,10 @@ SetSelect(struct Page *page, long col, long row, long width, long height, BYTE o
 			SetTabGadget(page,t,PGS_IGNORE);
 			FreePooled(pool,t,tlen);
 		}
-	} else if (gad = GadgetAddress(win, GID_FORM)) {
+	} else if ((gad = GadgetAddress(win, GID_FORM)) != 0) {
 		GT_GetGadgetAttrs(gad, win, NULL, GTST_String, &s, TAG_END);
 		tlen = strlen(s) + 32;
-		if (t = AllocPooled(pool, tlen))
+		if ((t = AllocPooled(pool, tlen)))
 			strcpy(t,s);
 		if (t) {
 			selectString(page,t);
@@ -911,7 +911,7 @@ insertFormel(struct Page *page, STRPTR t)
 	size = zstrlen(source) + 4 + strlen(t);
 	// allocate for source + func + () + = + \0
 
-	if (in = AllocPooled(pool, size)) {
+	if ((in = AllocPooled(pool, size)) != 0) {
 		int offset;
 
 		if (source) {
@@ -956,18 +956,18 @@ EditFuncCopy(struct Page *page, struct tablePos *tp, BOOL textonly)
 	ULONG handle;
 	LONG maxCol;
 
-	if (un = CreateUndo(page, UNDO_BLOCK, GetString(&gLocaleInfo, MSG_COPY_CELL_UNDO))) {
+	if ((un = CreateUndo(page, UNDO_BLOCK, GetString(&gLocaleInfo, MSG_COPY_CELL_UNDO))) != 0) {
 		un->un_TablePos = *tp;
 		un->un_Type = UNT_BLOCK_CHANGED;
 		MakeUndoRedoList(page, un, &un->un_UndoList);
 	}
 
 	maxCol = tp->tp_Col + tp->tp_Width;
-	if (ptf = page->pg_Gad.tf)
+	if ((ptf = page->pg_Gad.tf) != 0)
 		maxCol += ptf->tf_Width;
 
-	if (handle = GetCellIterator(page, tp, (UBYTE)page->pg_Gad.tf)) {
-		while (tf = NextCell(handle)) {
+	if ((handle = GetCellIterator(page, tp, (UBYTE)page->pg_Gad.tf)) != 0) {
+		while ((tf = NextCell(handle)) != 0) {
 			if (ptf == tf)
 				continue;
 
@@ -982,7 +982,7 @@ EditFuncCopy(struct Page *page, struct tablePos *tp, BOOL textonly)
 				if (ptf) {
 					struct tableField *copiedCell;
 
-					if (copiedCell = CopyCell(page, ptf)) {
+					if ((copiedCell = CopyCell(page, ptf)) != 0) {
 						tf_col = tf->tf_Col;
 						tf_row = tf->tf_Row;
 
@@ -1044,11 +1044,11 @@ EditFuncSwapMove(struct Page *page, struct tablePos *tp, BYTE mode, BOOL textonl
 
 		if ((ptf && (ctf = CopyCell(page, ptf))) || (mode == PTEF_SWAP && (ctf = EmptyTableField(col, row, tf ? tf->tf_Width : 0)))) {
 			ctf->tf_OldWidth = tf ? tf->tf_Width : 0;
-			AddTail(&un->un_UndoList,ctf);
+			MyAddTail(&un->un_UndoList, ctf);
 		}
 		if (tf && (ctf = CopyCell(page,tf)) || (ctf = EmptyTableField(tp->tp_Col,tp->tp_Row,ptf ? ptf->tf_Width : 0))) {
 			ctf->tf_OldWidth = ptf ? ptf->tf_Width : 0;
-			AddTail(&un->un_UndoList,ctf);
+			MyAddTail(&un->un_UndoList, ctf);
 		}
 		SortListWith(&un->un_UndoList, CompareCellPositions);
 	}
@@ -1136,10 +1136,10 @@ EditFuncSwapMove(struct Page *page, struct tablePos *tp, BYTE mode, BOOL textonl
 	if (un) {
 		// create redo
 		if (ptf && (ctf = CopyCell(page, ptf)) || (ctf = EmptyTableField(col,row,tf ? tf->tf_Width : 0)))
-			AddTail(&un->un_RedoList, ctf);
+			MyAddTail(&un->un_RedoList, ctf);
 		if ((tf && (ctf = CopyCell(page, tf)))
 			|| (mode == PTEF_SWAP && (ctf = EmptyTableField(tp->tp_Col,tp->tp_Row,ptf ? ptf->tf_Width : 0))))
-			AddTail(&un->un_RedoList, ctf);
+			MyAddTail(&un->un_RedoList, ctf);
 
 		SortListWith(&un->un_RedoList, CompareCellPositions);
 	}
@@ -1319,7 +1319,7 @@ handleAntis(struct Page *page, BOOL horiz)
 
 	while (!ende) {
 		WaitPort(iport);
-		while (msg = GT_GetIMsg(iport)) {
+		while ((msg = GT_GetIMsg(iport)) != 0) {
 			switch (msg->Class) {
 				case IDCMP_MOUSEBUTTONS:
 					ende = msg->Code;
@@ -1374,7 +1374,7 @@ handleAntis(struct Page *page, BOOL horiz)
 
 	AllocTableSize(page,horiz ? cp.cp_Col : 0,horiz ? 0 : cp.cp_Row);
 
-	if (un = CreateUndo(page, UNDO_PRIVATE, GetString(&gLocaleInfo, MSG_CELL_SIZE_UNDO)))
+	if ((un = CreateUndo(page, UNDO_PRIVATE, GetString(&gLocaleInfo, MSG_CELL_SIZE_UNDO))) != 0)
 		un->un_Type = UNT_CELL_SIZE;
 
 	if (horiz) {
@@ -1440,11 +1440,11 @@ HandleBars(void)
 		case IDCMP_GADGETUP:
 			switch ((gad = (struct Gadget *)imsg.IAddress)->GadgetID) {
 				case GID_APEN:
-					if (GetAttr(CGA_Color,gad,(ULONG *)&i))
+					if (GetAttr(CGA_Color,(Object*)gad,(IPTR *)&i))
 						SetPageColor(page,GetColorPen(i),NULL);
 					break;
 				case GID_BPEN:
-					if (GetAttr(CGA_Color,gad,(ULONG *)&i))
+					if (GetAttr(CGA_Color,(Object*)gad,(IPTR *)&i))
 						SetPageColor(page,NULL,GetColorPen(i));
 					break;
 				case GID_FORM:
@@ -1453,7 +1453,7 @@ HandleBars(void)
 					if (page->pg_Gad.DispPos != PGS_NONE) {
 						struct tableField *tf;
 
-						if (tf = page->pg_Gad.tf) {
+						if ((tf = page->pg_Gad.tf) != 0) {
 							if (tf->tf_Flags & TFF_SECURITY) {
 								ErrorRequest(GetString(&gLocaleInfo, MSG_PROTECTED_CELL));
 								break;
@@ -1512,13 +1512,13 @@ HandleBars(void)
 					sepln.ln_Name = "-";
 					newln.ln_Name = GetString(&gLocaleInfo, MSG_NEW_PAGE);
 					sepln.ln_Type = newln.ln_Type = POPUP_NO_SELECT_BARLABEL;
-					AddTail(list, &sepln);  AddTail(list, &newln);
+					MyAddTail(list, &sepln);  MyAddTail(list, &newln);
 
 					i = PopUpList(win, GadgetAddress(win, GID_PAGE), list, TAG_END);
 					ln = FindListNumber(list, i);
 
 					// remove special entries
-					Remove(&sepln);  Remove(&newln);
+					MyRemove(&sepln);  MyRemove(&newln);
 
 					if (ln != NULL) {
 						if (ln == &newln)
@@ -1688,8 +1688,8 @@ SetProjectMouseReport(struct Page *page, BOOL set)
 
 ULONG qualrcvd;
 
-void __asm
-handleProjIDCMP(reg (a0) struct TagItem *tags)
+void ASM
+handleProjIDCMP(REG(a0, struct TagItem *tags))
 {
 	struct coordPkt cp;
 	struct Page *page = wd->wd_Data;
@@ -1701,7 +1701,7 @@ handleProjIDCMP(reg (a0) struct TagItem *tags)
 	if (qualrcvd && (imsg.Qualifier & qualrcvd) == 0 && page->pg_Gad.DispPos == PGS_FRAME
 		&& !wd->wd_ExtData[6] && page->pg_HotSpot == PGHS_CELL) {
 		SetTabGadget(page,(STRPTR)~0L,(long)((ULONG)~0 >> 1));
-		qualrcvd = NULL;
+		qualrcvd = 0;
 	}
 
 	switch (imsg.Class) {
@@ -1718,10 +1718,10 @@ handleProjIDCMP(reg (a0) struct TagItem *tags)
 						qualrcvd = IEQUALIFIER_ALT;
 						break;
 					default:
-						qualrcvd = NULL;
+						qualrcvd = 0;
 				}
 			} else
-				qualrcvd = NULL;
+				qualrcvd = 0;
 
 			if (!handleKey(page,NULL) && wd->wd_ExtData[6] == NULL && page->pg_HotSpot == PGHS_CELL)
 				HandleTabGadget(page);
@@ -1735,8 +1735,8 @@ handleProjIDCMP(reg (a0) struct TagItem *tags)
 			j = 1;  k = 0;
 			switch (i) {
 				case GID_ICONOBJ:
-					i = GetTagData(GA_UserData,NULL,tags);
-					if (i && (io = (struct IconObj *)FindName(GetIconObjsList(&page->pg_Mappe->mp_Prefs),(STRPTR)i)) && io->io_AppCmd)
+					i = GetTagData(GA_UserData, 0, tags);
+					if (i && (io = (struct IconObj *)MyFindName(GetIconObjsList(&page->pg_Mappe->mp_Prefs),(STRPTR)i)) && io->io_AppCmd)
 						ProcessAppCmd(page,io->io_AppCmd);
 					break;
 				case PROPGAD_UP_ID:
@@ -1748,8 +1748,8 @@ handleProjIDCMP(reg (a0) struct TagItem *tags)
 						k = 1;
 					if ((gad = GadgetAddress(win,i)) && gad->Flags & GFLG_SELECTED) {
 						propadd++;
-						if (gad = GadgetAddress(win,k ? PROPGAD_VERT_ID : PROPGAD_HORIZ_ID)) {
-							GetAttr(PGA_Top,gad,(ULONG *)&i);
+						if ((gad = GadgetAddress(win,k ? PROPGAD_VERT_ID : PROPGAD_HORIZ_ID))) {
+							GetAttr(PGA_Top,(Object*)gad,(IPTR *)&i);
 							if (propadd*j+i < 0) {
 								if (i)
 									i = 0;
@@ -1760,7 +1760,7 @@ handleProjIDCMP(reg (a0) struct TagItem *tags)
 
 							if (i >= 0) {
 								SetGadgetAttrs(gad,win,NULL,PGA_Top,i,TAG_END);
-								GetAttr(PGA_Top,gad,(ULONG *)&i);
+								GetAttr(PGA_Top,(Object*)gad,(IPTR *)&i);
 								if (k)
 									goto handleprojvertprop;
 								else
@@ -1884,7 +1884,7 @@ handleProjIDCMP(reg (a0) struct TagItem *tags)
 									qual = PTEQ_CONTROL;
 
 								if (prefs.pr_Table->pt_EditFunc[qual] != PTEF_NONE) {
-									STRPTR t = NULL;
+									CONST_STRPTR t = NULL;
 
 									actcp = page->pg_Gad.cp;
 									page->pg_SelectPos = prefs.pr_Table->pt_EditFunc[qual];
@@ -1983,7 +1983,7 @@ handleProjIDCMP(reg (a0) struct TagItem *tags)
 				wd->wd_ExtData[6] = NULL;
 				SetProjectMouseReport(page,FALSE);
 			}
-			if (gad = GadgetAddress(win,GID_FORM))
+			if ((gad = GadgetAddress(win,GID_FORM)) != 0)
 				gad->UserData = NULL;
 			break;
 		case IDCMP_MENUVERIFY:
@@ -2003,7 +2003,7 @@ handleProjIDCMP(reg (a0) struct TagItem *tags)
 					int	type = CMT_CELL;
 					struct gGroup *gg;
 
-					if (gg = MouseGGroup(page,NULL)) {
+					if ((gg = MouseGGroup(page,NULL))) {
 						SelectGGroup(page,gg,ACTGO_EXCLUSIVE);
 						page->pg_HotSpot = PGHS_OBJECT;
 						ProjectToGObjects(page,wd);
@@ -2018,7 +2018,7 @@ handleProjIDCMP(reg (a0) struct TagItem *tags)
 			}
 			break;
 		case IDCMP_INTUITICKS:
-			if (k = (long)wd->wd_ExtData[6]) {
+			if ((k = (long)wd->wd_ExtData[6]) != 0) {
 				if ((k == PWA_OBJECT && page->pg_Action != PGA_NONE || k != PWA_OBJECT)
 					&& (imsg.MouseX <= wd->wd_TabX || imsg.MouseY <= wd->wd_TabY || imsg.MouseX >= wd->wd_TabX+wd->wd_TabW || imsg.MouseY >= wd->wd_TabY+wd->wd_TabH)) {
 					if (!(k == PWA_TITLE && !wd->wd_ExtData[5]))
@@ -2051,13 +2051,13 @@ handleProjIDCMP(reg (a0) struct TagItem *tags)
 					i = cp.cp_Col;
 					j = (long)wd->wd_ExtData[4];
 					if (i > j)
-						swmem(&i,&j,sizeof(long));
+						swmem((UBYTE *)&i, (UBYTE *)&j, sizeof(long));
 					SetMark(page,i,1,j-i,-1);
 				} else if (!wd->wd_ExtData[5] && cp.cp_Row > 0) {
 					i = cp.cp_Row;
 					j = (long)wd->wd_ExtData[4];
 					if (i > j)
-						swmem(&i,&j,sizeof(long));
+						swmem((UBYTE *)&i, (UBYTE *)&j, sizeof(long));
 					SetMark(page,1,i,-1,j-i);
 				}
 			} else if (cp.cp_Col > 0 && cp.cp_Row > 0) {

@@ -213,7 +213,7 @@ ShowFunctionHelp(struct Page *page)
 		if (!fl->fl_Node.ln_Succ->ln_Succ)  // interne Funktionsnamen werden nicht geprüft
 			break;
 
-		if (fn = bsearch(&t,fl->fl_Array,fl->fl_Length,sizeof(struct FunctionName),(APTR)cmdcmp))
+		if ((fn = bsearch(&t, fl->fl_Array, fl->fl_Length, sizeof(struct FunctionName), (APTR)cmdcmp)) != 0)
 		{
 			ShowPopUpText(fn->fn_Name,x,y);
 			return;
@@ -228,7 +228,7 @@ WriteTabGadget(struct Page *page, struct UndoNode *un)
 {
 	struct tableField *tf;
 
-	if (tf = page->pg_Gad.tf)
+	if ((tf = page->pg_Gad.tf) != 0)
 	{
 		page->pg_Gad.tf = NULL;
 		UpdateCellText(page, tf);
@@ -247,7 +247,7 @@ BeginTabGadget(struct Page *page)
 	struct tableField *tf;
 	bool oldCell = page->pg_Gad.tf != NULL;
 
-	if (page->pg_Gad.tf = tf = AllocTableField(page, page->pg_Gad.cp.cp_Col, page->pg_Gad.cp.cp_Row))
+	if ((page->pg_Gad.tf = tf = AllocTableField(page, page->pg_Gad.cp.cp_Col, page->pg_Gad.cp.cp_Row)) != 0)
 	{
 		if (page->pg_Gad.Undo)
 			FreeTableField(page->pg_Gad.Undo);
@@ -361,20 +361,20 @@ trackFunctions(struct Term *t)
 
 		if (f == NULL)
 			return;
-		if (ln = (APTR)FindLink(&usedfuncs,f))
+		if ((ln = (APTR)FindLink(&usedfuncs, f)) != 0)
 		{
 			if ((APTR)usedfuncs.mlh_Head != ln)
 				gSessionChanged = true;
-			Remove(ln);
+			MyRemove(ln);
 		}
-		else if (ln = AllocPooled(pool,sizeof(struct Node)))
+		else if ((ln = AllocPooled(pool, sizeof(struct Node))) != 0)
 		{
 			ln->ln_Name = (APTR)f;
 			gSessionChanged = true;
 		}
 
 		if (ln)
-			AddHead(&usedfuncs,ln);
+			MyAddHead(&usedfuncs, ln);
 
 		foreach(&t->t_Args,fa)
 			trackFunctions(fa->fa_Root);
@@ -423,13 +423,13 @@ FreeTabGadget(struct Page *page)
 			else
 				strcpy(t, GetString(&gLocaleInfo, MSG_DELETE_CELL_TEXT_UNDO));
 
-			if (un = CreateUndo(page, UNDO_CELL, t))
+			if ((un = CreateUndo(page, UNDO_CELL, t)) != 0)
 			{
 				un->un_Type = UNT_BLOCK_CHANGED;
-				if (tf = page->pg_Gad.Undo)
+				if ((tf = page->pg_Gad.Undo) != 0)
 				{
 					page->pg_Gad.Undo = NULL;
-					AddTail((struct List *)&un->un_UndoList, (struct Node *)tf);
+					MyAddTail(&un->un_UndoList, tf);
 				}
 			}
 		}
@@ -439,8 +439,8 @@ FreeTabGadget(struct Page *page)
 		if (un)
 		{
 			un->un_Node.ln_Type &= ~UNDO_NOREDO;
-			if (tf = CopyCell(page, page->pg_Gad.tf))
-				AddTail((struct List *)&un->un_RedoList, (struct Node *)tf);
+			if ((tf = CopyCell(page, page->pg_Gad.tf)) != 0)
+				MyAddTail(&un->un_RedoList, tf);
 		}
 		handleEvent(page, EVT_FIELDEND, page->pg_Gad.cp.cp_Col, page->pg_Gad.cp.cp_Row);
 
@@ -499,7 +499,7 @@ HandleTabGadget(struct Page *page)
 		{
 			if (imsg.Class == IDCMP_VANILLAKEY && imsg.Code == 9)
 				firsttab = TRUE;
-			if (tf = BeginTabGadget(page))
+			if ((tf = BeginTabGadget(page)) != 0)
 				page->pg_Gad.DispPos = tf->tf_Text ? strlen(tf->tf_Text) : 0;
 			else
 				return;
@@ -596,7 +596,7 @@ HandleTabGadget(struct Page *page)
 					}
 					if (imsg.Qualifier & 3)
 					{
-						if (t = tf->tf_Text)
+						if ((t = tf->tf_Text) != 0)
 						{
 							tf->tf_Text = AllocString(tf->tf_Text + page->pg_Gad.DispPos);
 							FreeString(t);
@@ -639,7 +639,7 @@ HandleTabGadget(struct Page *page)
 					break;
 				default:
 					len = ((st = tf->tf_Text) ? strlen(st) : 0);
-					if (t = AllocPooled(pool, len + 2))
+					if ((t = AllocPooled(pool, len + 2)) != 0)
 					{
 						for (i = 0; i < len + 1; i++)
 						{
@@ -820,7 +820,7 @@ HandleTabGadget(struct Page *page)
 		{
 			struct Database *db;
 
-			if (db = (APTR)FindName(&page->pg_Mappe->mp_Databases, ma->ma_Node.ln_Name))
+			if ((db = (APTR)MyFindName(&page->pg_Mappe->mp_Databases, ma->ma_Node.ln_Name)) != 0)
 			{
 				if (ma->ma_Node.ln_Type)
 					MakeSearchFilter(db, ma);
@@ -877,13 +877,13 @@ CreateTabGadget(struct Page *page, long col, long row, BOOL makevisible)
 
 
 bool
-QueryPassword(STRPTR t, STRPTR password)
+QueryPassword(CONST_STRPTR t, STRPTR password)
 {
 	bool checked = FALSE, doit = TRUE;
 	struct Gadget *gadlist, *pgad;
 	struct IntuiMessage *msg;
 	struct Window *win;
-	STRPTR s[4];
+	CONST_STRPTR s[4];
 	long i,w;
 
 	if (!(gad = CreateContext(&gadlist)))
@@ -914,7 +914,7 @@ QueryPassword(STRPTR t, STRPTR password)
 	ngad.ng_Width = gWidth - ngad.ng_LeftEdge - rborder;
 	ngad.ng_Flags = PLACETEXT_LEFT;
 	ngad.ng_GadgetID = 1;				   // 1
-	if (pgad = CreateGadget(STRING_KIND,gad,&ngad,GT_Underscore,'_',GTST_String,NULL,GTST_EditHook,&passwordEditHook,GTST_MaxChars,32,TAG_END))
+	if ((pgad = CreateGadget(STRING_KIND, gad, &ngad, GT_Underscore, '_', GTST_String, NULL, GTST_EditHook, &passwordEditHook, GTST_MaxChars, 32, TAG_END)) != 0)
 		pgad->UserData = AllocPooled(pool,32);
 
 	ngad.ng_LeftEdge = lborder;
@@ -930,7 +930,7 @@ QueryPassword(STRPTR t, STRPTR password)
 	ngad.ng_GadgetID++;					 // 3
 	gad = CreateGadget(BUTTON_KIND, gad, &ngad, TAG_END);
 
-	if (win = OpenWindowTags(NULL, WA_Flags,		WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_ACTIVATE,
+	if ((win = OpenWindowTags(NULL, WA_Flags,		WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_ACTIVATE,
 								   WA_Left,			(scr->Width - gWidth) >> 1,
 								   WA_Top,			(scr->Height - gHeight) >> 1,
 								   WA_Title,		GetString(&gLocaleInfo, MSG_SECURITY_CHECK_TITLE),
@@ -939,7 +939,7 @@ QueryPassword(STRPTR t, STRPTR password)
 								   WA_PubScreen,	scr,
 								   WA_Gadgets,		gadlist,
 								   WA_IDCMP,		IDCMP_GADGETUP,
-								   TAG_END)) {
+								   TAG_END)) != 0) {
 		GT_RefreshWindow(win, NULL);
 		for (i = 0, w = barheight + 3; s[i]; i++, w += fontheight) {
 			itext.IText = s[i];
@@ -949,7 +949,7 @@ QueryPassword(STRPTR t, STRPTR password)
 		while (doit) {
 			WaitPort(win->UserPort);
 
-			while (msg = GTD_GetIMsg(win->UserPort)) {
+			while ((msg = GTD_GetIMsg(win->UserPort)) != 0) {
 				switch (msg->Class) {
 					case IDCMP_GADGETUP:
 						if ((gad = msg->IAddress)->GadgetID == 2) {
@@ -976,9 +976,8 @@ QueryPassword(STRPTR t, STRPTR password)
 	return checked;
 }
 
-
 uint32 PUBLIC
-PasswordEditHook(reg (a0) struct Hook *hook, reg (a1) ULONG *msg, reg (a2) struct SGWork *sgw)
+PasswordEditHook(REG(a0, struct Hook *hook), REG(a2, struct SGWork *sgw), REG(a1, ULONG *msg))
 {
 	if (*msg == SGH_KEY) {
 		STRPTR t = sgw->Gadget->UserData;
@@ -1023,4 +1022,3 @@ PasswordEditHook(reg (a0) struct Hook *hook, reg (a1) ULONG *msg, reg (a2) struc
 	}
 	return 0;
 }
-

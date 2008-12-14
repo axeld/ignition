@@ -326,7 +326,7 @@ AddReferences(struct Reference *r, struct Term *t)
 			count = (tp.tp_Width + 1) * (tp.tp_Height + 1);
 			handle = GetCellIterator(r->r_Page, &tp, false);
 
-			while (tf = NextCell(handle)) {
+			while ((tf = NextCell(handle)) != 0) {
 				if (!tf->tf_Reference
 					&& !(tf->tf_Reference = MakeReference(r->r_Page, RTYPE_CELL, tf, tf->tf_Root))) {
 					ReferenceError();
@@ -536,6 +536,8 @@ AddReferences(struct Reference *r, struct Term *t)
 			}
 			break;
 		}
+		default:
+			break;
 	}
 }
 

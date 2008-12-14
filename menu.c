@@ -9,7 +9,7 @@
 #include "funcs.h"
 
 
-void PUBLIC ProjectsMenuLock(reg (a0) struct LockNode *ln, reg (a1) struct MinNode *node, reg (d0) UBYTE flags);
+void PUBLIC ProjectsMenuLock(REG(a0, struct LockNode *ln), REG(a1, struct MinNode *node), REG(d0, UBYTE flags));
 
 
 long numsessions = NUM_SESSION;
@@ -131,7 +131,7 @@ FreeMenuList(struct MenuSpecial *ms)
 }
 
 
-static struct MenuItem *
+UNUSED static struct MenuItem *
 FindSpecialMenuItem(struct MenuItem *first, STRPTR label)
 {
 	struct MenuItem *item = first;
@@ -166,7 +166,7 @@ MakeMenuList(struct MinList *list, APTR parent, UBYTE type, ULONG id, struct Men
 			else
 				old->NextItem = item;
 
-			if (item->ItemFill = AllocPooled(pool, sizeof(struct IntuiText))) {
+			if ((item->ItemFill = AllocPooled(pool, sizeof(struct IntuiText))) != 0) {
 				// Find entries with the same name
 				
 				bool equalEntries = false;
@@ -260,7 +260,7 @@ InsertMenuSpecials(struct Prefs *pr)
 {
 	uint8 type;
 
-	if (pr->pr_ProjectsMenu.ms_Item = FindMenuSpecial(pr, "PROJECTLIST", &pr->pr_ProjectsMenu.ms_Parent, &type)) {
+	if ((pr->pr_ProjectsMenu.ms_Item = FindMenuSpecial(pr, "PROJECTLIST", &pr->pr_ProjectsMenu.ms_Parent, &type)) != 0) {
 		pr->pr_ProjectsMenu.ms_Lock = AddLockNode(&gProjects,0,ProjectsMenuLock,0);
 		pr->pr_ProjectsMenu.ms_Type = type;
 
@@ -268,7 +268,7 @@ InsertMenuSpecials(struct Prefs *pr)
 			pr->pr_ProjectsMenu.ms_Item = NULL;   // Items nicht getauscht!
 	}
 
-	if (pr->pr_SessionMenu.ms_Item = FindMenuSpecial(pr, "SESSIONLIST", &pr->pr_SessionMenu.ms_Parent, &type)) {
+	if ((pr->pr_SessionMenu.ms_Item = FindMenuSpecial(pr, "SESSIONLIST", &pr->pr_SessionMenu.ms_Parent, &type)) != 0) {
 		pr->pr_SessionMenu.ms_Type = type;
 		numsessions = cmis_num;
 
@@ -303,7 +303,7 @@ UpdateMenuSpecials(struct Prefs *pr)
 
 
 void PUBLIC
-ProjectsMenuLock(reg (a0) struct LockNode *ln,reg (a1) struct MinNode *node,reg (d0) UBYTE flags)
+ProjectsMenuLock(REG(a0, struct LockNode *ln), REG(a1, struct MinNode *node), REG(d0, UBYTE flags))
 {
 	switch(flags & LNCMDS)
 	{
@@ -333,11 +333,11 @@ FreeAppMenus(struct MinList *l)
 	struct AppMenu *am;
 	struct AppMenuEntry *ame,*same;
 
-	while(am = (APTR)RemHead(l))
+	while ((am = (APTR)MyRemHead(l)) != 0)
 	{
-		while(ame = (APTR)RemHead(&am->am_Items))
+		while ((ame = (APTR)MyRemHead(&am->am_Items)) != 0)
 		{
-			while(same = (APTR)RemHead(&ame->am_Subs))
+			while ((same = (APTR)MyRemHead(&ame->am_Subs)) != 0)
 			{
 				FreeString(same->am_Node.ln_Name);
 				FreeString(same->am_AppCmd);
@@ -364,31 +364,31 @@ CopyAppMenus(struct MinList *from,struct MinList *to)
 
 	foreach(from,am)
 	{
-		if (sam = AllocPooled(pool,sizeof(struct AppMenu)))
+		if ((sam = AllocPooled(pool,sizeof(struct AppMenu))) != 0)
 		{
 			sam->am_Node.ln_Name = AllocString(am->am_Node.ln_Name);
-			NewList(&sam->am_Items);
-			AddTail(to,sam);
+			MyNewList(&sam->am_Items);
+			MyAddTail(to, sam);
 
 			foreach(&am->am_Items,ame)
 			{
-				if (same = AllocPooled(pool,sizeof(struct AppMenuEntry)))
+				if ((same = AllocPooled(pool,sizeof(struct AppMenuEntry))) != 0)
 				{
 					same->am_Node.ln_Name = AllocString(ame->am_Node.ln_Name);
 					same->am_AppCmd = AllocString(ame->am_AppCmd);
 					same->am_ShortCut = AllocString(ame->am_ShortCut);
-					NewList(&same->am_Subs);
-					AddTail(&sam->am_Items,same);
+					MyNewList(&same->am_Subs);
+					MyAddTail(&sam->am_Items, same);
 
 					foreach(&ame->am_Subs,mame)
 					{
-						if (smame = AllocPooled(pool,sizeof(struct AppMenuEntry)))
+						if ((smame = AllocPooled(pool,sizeof(struct AppMenuEntry))) != 0)
 						{
 							smame->am_Node.ln_Name = AllocString(mame->am_Node.ln_Name);
 							smame->am_AppCmd = AllocString(mame->am_AppCmd);
 							smame->am_ShortCut = AllocString(mame->am_ShortCut);
-							NewList(&smame->am_Subs);
-							AddTail(&same->am_Subs,smame);
+							MyNewList(&smame->am_Subs);
+							MyAddTail(&same->am_Subs, smame);
 						}
 					}
 				}
@@ -415,7 +415,7 @@ CreateAppMenu(struct Prefs *pr)
 
 	/** Array nach Preferences füllen **/
 
-	if (nmenu = AllocPooled(pool,sizeof(struct NewMenu)*i))
+	if ((nmenu = AllocPooled(pool, sizeof(struct NewMenu) * i)) != 0)
 	{
 		for(i = 0,am = (struct AppMenu *)pr->pr_AppMenus.mlh_Head;am->am_Node.ln_Succ;i++, am = (struct AppMenu *)am->am_Node.ln_Succ)
 		{
@@ -522,8 +522,8 @@ HandleMenu(void)
 	struct AppMenuEntry *ame;
 	struct MenuItem *item;
 
-	if (item = ItemAddress(imsg.IDCMPWindow->MenuStrip,imsg.Code)) {
-		if (ame = GTMENUITEM_USERDATA(item))
+	if ((item = ItemAddress(imsg.IDCMPWindow->MenuStrip,imsg.Code)) != 0) {
+		if ((ame = GTMENUITEM_USERDATA(item)) != 0)
 			ProcessAppCmd(rxpage,ame->am_AppCmd);  /* erstmal... (rxpage) */
 		else {
 			struct SpecialMenuItem *smi = (APTR)item;
@@ -567,7 +567,7 @@ HandleMenu(void)
 						strcat(t,"\"");
 
 						if (processIntCmd(t) != RC_OK) {
-							Remove(s);
+							MyRemove(s);
 							FreeSession(s);
 							RefreshSession();
 						}
@@ -587,14 +587,14 @@ const struct NewContextMenu ncm_cell[] = {
 	{MSG_CUT_CONTEXT, "cut"},
 	{MSG_COPY_CONTEXT, "copy"},
 	{MSG_PASTE_CONTEXT, "paste"},
-	{NULL}
+	{0}
 };
 
 const struct NewContextMenu ncm_morecells[] = {
 	{MSG_CUT_CONTEXT, "cut"},
 	{MSG_COPY_CONTEXT, "copy"},
 	{MSG_PASTE_CONTEXT, "paste"},
-	{NULL}
+	{0}
 };
 
 const struct NewContextMenu ncm_horiztitle[] = {
@@ -604,7 +604,7 @@ const struct NewContextMenu ncm_horiztitle[] = {
 	{MSG_TITLE_INSERT_COLUMN_CONTEXT, "cell insertcol"},
 	{MSG_TITLE_OPTIMAL_WIDTH_CONTEXT, "cellsize optwidth"},
 	{MSG_TITLE_CELL_SIZE_CONTEXT, "cellsize req"},
-	{NULL}
+	{0}
 };
 
 const struct NewContextMenu ncm_verttitle[] = {
@@ -614,7 +614,7 @@ const struct NewContextMenu ncm_verttitle[] = {
 	{MSG_TITLE_INSERT_ROW_CONTEXT, "cell insertrow"},
 	{MSG_TITLE_OPTIMAL_HEIGHT_CONTEXT, "cellsize optheight"},
 	{MSG_TITLE_CELL_SIZE_CONTEXT, "cellsize req"},
-	{NULL, NULL}
+	{0, 0}
 };
 
 const struct NewContextMenu ncm_object[] = {
@@ -623,7 +623,7 @@ const struct NewContextMenu ncm_object[] = {
 	{MSG_CUT_CONTEXT, "cut"},
 	{MSG_COPY_CONTEXT, "copy"},
 	{MSG_PASTE_CONTEXT, "paste"},
-	{NULL,NULL}
+	{0,0}
 };
 
 
@@ -671,7 +671,7 @@ FreeContextMenu(struct MinList *list)
 {
 	struct ContextMenu *cm;
 
-	while (cm = (APTR)RemHead(list)) {
+	while ((cm = (APTR)MyRemHead(list)) != 0) {
 		FreeString(cm->cm_Node.ln_Name);
 		FreeString(cm->cm_AppCmd);
 		FreePooled(pool,cm,sizeof(struct ContextMenu));
@@ -687,12 +687,12 @@ AddContextMenu(struct MinList *list,STRPTR title,STRPTR cmd)
 	if (!title)
 		return NULL;
 
-	if (cm = AllocPooled(pool,sizeof(struct ContextMenu))) {
+	if ((cm = AllocPooled(pool,sizeof(struct ContextMenu))) != 0) {
 		cm->cm_Node.ln_Name = AllocString(title);
 		/*if (!strcmp(title,"-"))
 			cm->cm_Node.ln_Type = AMT_BARLABEL;*/
 		cm->cm_AppCmd = AllocString(cmd);
-		AddTail(list,cm);
+		MyAddTail(list, cm);
 	}
 	return cm;
 }
@@ -713,7 +713,7 @@ AddStandardMenu(struct Prefs *pr, long type, const struct NewContextMenu *ncm)
 {
 	long i, id;
 
-	for (i = 0; id = ncm[i].ncm_Title; i++)
+	for (i = 0; (id = ncm[i].ncm_Title); i++)
 		AddContextMenu(&pr->pr_Contexts[type], id > 0 ? GetString(&gLocaleInfo, id) : (STRPTR)"-", ncm[i].ncm_AppCmd);
 }
 
@@ -724,7 +724,7 @@ InitContextMenus(struct Prefs *pr)
 	long i;
 
 	for (i = 0;i < NUM_CMT;i++)
-		NewList(&pr->pr_Contexts[i]);
+		MyNewList(&pr->pr_Contexts[i]);
 
 	if (pr == &prefs) {
 		AddStandardMenu(pr,CMT_CELL,ncm_cell);
@@ -801,7 +801,7 @@ PopUpContextMenu(struct MinList *list)
 	height++;
 	cm = NULL;
 
-	if (cwin = OpenWindowTags(NULL,
+	if ((cwin = OpenWindowTags(NULL,
 			WA_Left,		imsg.MouseX+win->LeftEdge-(width >> 1),
 			WA_Top,			imsg.MouseY+win->TopEdge+4,
 			WA_Width,		width+8,
@@ -810,7 +810,7 @@ PopUpContextMenu(struct MinList *list)
 			WA_NoCareRefresh, TRUE,
 			WA_PubScreen,	scr,
 			WA_Borderless,	TRUE,
-			TAG_END)) {
+			TAG_END)) != 0) {
 		struct IntuiMessage *msg;
 		struct RastPort *rp = cwin->RPort;
 		long x, y;
@@ -834,7 +834,7 @@ PopUpContextMenu(struct MinList *list)
 
 		while (doit) {
 			WaitPort(iport);
-			while (msg = GTD_GetIMsg(iport)) {
+			while ((msg = GTD_GetIMsg(iport)) != 0) {
 				if (msg->Class == IDCMP_MOUSEMOVE) {
 					if (msg->MouseX >= x && msg->MouseY >= y && msg->MouseX <= x+width && msg->MouseY < y+height) {
 						struct ContextMenu *scm;

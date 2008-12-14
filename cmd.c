@@ -22,24 +22,24 @@ NewAppCmd(struct AppCmd *ac)
     struct AppCmd *sac;
     struct Command *cmd,*scmd;
 
-	if (sac = AllocPooled(pool, sizeof(struct AppCmd))) {
+	if ((sac = AllocPooled(pool, sizeof(struct AppCmd))) != 0) {
 		if (ac) {
 			CopyMem(ac, sac, sizeof(struct AppCmd));
             sac->ac_Node.in_Name = AllocString(ac->ac_Node.in_Name);
             sac->ac_HelpText = AllocString(ac->ac_HelpText);
-            if (sac->ac_ImageName = AllocString(ac->ac_ImageName))
+            if ((sac->ac_ImageName = AllocString(ac->ac_ImageName)) != 0)
                 sac->ac_Node.in_Image = LoadImage(sac->ac_ImageName);
-            NewList(&sac->ac_Cmds);
+            MyNewList(&sac->ac_Cmds);
 			foreach (&ac->ac_Cmds,cmd) {
-				if (scmd = AllocPooled(pool, sizeof(struct Command))) {
+				if ((scmd = AllocPooled(pool, sizeof(struct Command))) != 0) {
                     scmd->cmd_Name = AllocString(cmd->cmd_Name);
                     scmd->cmd_Pri = cmd->cmd_Pri;
                     scmd->cmd_Type = cmd->cmd_Type;
-                    AddTail(&sac->ac_Cmds,(struct Node *)scmd);
+                    MyAddTail(&sac->ac_Cmds, scmd);
                 }
             }
 		} else
-            NewList(&sac->ac_Cmds);
+            MyNewList(&sac->ac_Cmds);
     }
     return sac;
 }
@@ -53,7 +53,7 @@ FreeAppCmd(struct AppCmd *ac)
     if (!ac)
         return;
 
-	while (cmd = (APTR)RemHead(&ac->ac_Cmds)) {
+	while ((cmd = (APTR)MyRemHead(&ac->ac_Cmds)) != 0) {
         FreeString(cmd->cmd_Name);
         FreePooled(pool,cmd,sizeof(struct Command));
     }
@@ -71,7 +71,7 @@ FindAppCmd(struct Page *page, STRPTR t)
     if (page)
         return (struct AppCmd *)FindLinkName(&page->pg_Mappe->mp_AppCmds,t);
 
-    return (struct AppCmd *)FindName(&prefs.pr_AppCmds,t);
+    return (struct AppCmd *)MyFindName(&prefs.pr_AppCmds, t);
 }
 
 
@@ -82,12 +82,12 @@ CopyAppKeys(struct MinList *from,struct MinList *to)
 
     foreach(from, sak)
     {
-        if (ak = AllocPooled(pool,sizeof(struct AppKey)))
+        if ((ak = AllocPooled(pool, sizeof(struct AppKey))) != 0)
         {
             *ak = *sak;
             ak->ak_Node.ln_Name = AllocString(sak->ak_Node.ln_Name);
             ak->ak_AppCmd = AllocString(sak->ak_AppCmd);
-            AddTail(to,ak);
+            MyAddTail(to, ak);
         }
     }
 }
@@ -98,7 +98,7 @@ FreeAppKeys(struct MinList *list)
 {
     struct AppKey *ak;
 
-    while(ak = (struct AppKey *)RemHead(list))
+    while((ak = (struct AppKey *)MyRemHead(list)) != 0)
     {
         FreeString(ak->ak_Node.ln_Name);
         FreeString(ak->ak_AppCmd);
@@ -113,7 +113,7 @@ GetASCII(struct InputEvent *ievent,STRPTR buffer,long buflen,UWORD code)
     ievent->ie_Class = IECLASS_RAWKEY;
     ievent->ie_Code = code;
     ievent->ie_Qualifier = IEQUALIFIER_RELATIVEMOUSE;
-    ievent->ie_position.ie_addr = *((APTR *)imsg.IAddress);
+    ievent->ie_position.ie_addr = imsg.IAddress ? *((APTR *)imsg.IAddress) : NULL;
 
     return RawKeyConvert(ievent,buffer,buflen,NULL);
 }
@@ -158,7 +158,7 @@ SetAppKeyName(struct AppKey *ak)
 
     if (!ak || OpenDevice("console.device",-1,(struct IORequest *)&conReq,0))
         return;
-    if (ievent = AllocPooled(pool,sizeof(struct InputEvent)))
+    if ((ievent = AllocPooled(pool, sizeof(struct InputEvent))) != 0)
     {
         conDevice = (struct Library *)conReq.io_Device;
         FreeString(ak->ak_Node.ln_Name);
@@ -307,7 +307,7 @@ EnlargeCommandBuffer(void)
 {
     STRPTR temp;
 
-    if (temp = AllocPooled(pool,cmdbuflen+256))
+    if ((temp = AllocPooled(pool, cmdbuflen + 256)) != 0)
     {
         if (cmdbuffer)
         {
@@ -493,7 +493,7 @@ processIntCmd(STRPTR t)
         return 0;
 
     if (!(ic = (struct IntCmd *)SearchCommandInArray(t, intCmdArray, intCmdArraySize)))
-        return NULL;
+        return 0;
 
     if (!rxpage && (ic->ic_Node.ln_Type & ICF_PAGE) != 0)
     {
@@ -503,20 +503,20 @@ processIntCmd(STRPTR t)
     if (!rxmsg && (ic->ic_Node.ln_Type & ICF_MSG) != 0)
     {
         ErrorRequest(GetString(&gLocaleInfo, MSG_COMMAND_IN_SCRIPT_ONLY_ERR), t);
-        return NULL;
+        return 0;
     }
 
     rc = RC_WARN;
     SetBusy(TRUE, BT_APPLICATION);
 
-    if (cmd = BuildCommand(t))
+    if ((cmd = BuildCommand(t)) != 0)
     {
         cs.CS_Buffer = cmd; /*t2+cmdlen(ic->ic_Node.ln_Name)+1;*/
         cs.CS_Length = strlen(cs.CS_Buffer);
         cs.CS_CurChr = 0;
         memset((char *)opts, 0, sizeof(opts));
 
-        if (rda = AllocDosObject(DOS_RDARGS, TAG_END))
+        if ((rda = AllocDosObject(DOS_RDARGS, TAG_END)) != 0)
         {
             rda->RDA_Source = cs;
             rda->RDA_Flags |= RDAF_NOPROMPT;
@@ -557,14 +557,14 @@ ProcessAppCmd(struct Page *page, STRPTR t)
     if (!(ac = FindAppCmd(page,t)))
         return (long)processIntCmd(t);
 
-    NewList(&l);
+    MyNewList(&l);
     for (cmd = (APTR)ac->ac_Cmds.mlh_Head;cmd->cmd_Succ;cmd = cmd->cmd_Succ)
     {
-        if (scmd = AllocPooled(pool,sizeof(struct Command)))
+        if ((scmd = AllocPooled(pool, sizeof(struct Command))) != 0)
         {
             scmd->cmd_Type = cmd->cmd_Type;
             scmd->cmd_Name = AllocString(cmd->cmd_Name);
-            AddTail(&l,(struct Node *)scmd);
+            MyAddTail(&l, scmd);
         }
     }
     if (ac->ac_Output)
@@ -592,13 +592,13 @@ ProcessAppCmd(struct Page *page, STRPTR t)
         Close(rxout);
         rxout = out;
     }
-    while (cmd = (struct Command *)RemHead(&l))
+    while ((cmd = (struct Command *)MyRemHead(&l)) != 0)
     {
         FreeString(cmd->cmd_Name);
         FreePooled(pool,cmd,sizeof(struct Command));
     }
 
-    return NULL;
+    return 0;
 }
 
 

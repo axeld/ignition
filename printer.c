@@ -71,9 +71,9 @@ ReadUnitName(char *filename, char *name, int unit)
 
 	sprintf(name, GetString(&gLocaleInfo, MSG_DEFAULT_PRINTER_UNIT_NAME), unit);
 
-	if (iff = AllocIFF())
+	if ((iff = AllocIFF()) != 0)
 	{
-		iff->iff_Stream = file;
+		iff->iff_Stream = (IPTR)file;
 		InitIFFasDOS(iff);
 
 		if (!OpenIFF(iff, IFFF_READ))
@@ -187,11 +187,11 @@ FreePrinterProject(struct List *list)
 	if (!mp || mp->mp_Node.ln_Type != LNT_PRINTERMAP)
 		return;
 
-	while(page = (APTR)RemHead(&mp->mp_Pages))
+	while ((page = (APTR)MyRemHead(&mp->mp_Pages)) != 0)
 	{
 		/*** free cells ***/
 
-		while(tf = (APTR)RemHead(&page->pg_Table))
+		while ((tf = (APTR)MyRemHead(&page->pg_Table)) != 0)
 		{
 			FreeString(tf->tf_Text);
 			FreeFontInfo(tf->tf_FontInfo);
@@ -229,7 +229,7 @@ CopyTableSize(struct Page *page, BOOL horiz)
 	struct tableSize *ts;
 	long size;
 
-	if (ts = AllocPooled(pool, sizeof(struct tableSize) * (size = horiz ? page->pg_Cols : page->pg_Rows)))
+	if ((ts = AllocPooled(pool, sizeof(struct tableSize) * (size = horiz ? page->pg_Cols : page->pg_Rows))) != 0)
 	{
 		long i;
 
@@ -269,7 +269,7 @@ CopyPrinterProject(struct List *list)
 		return NULL;
 
 	CopyMem(mp, cmp, sizeof(struct Mappe));
-	NewList(&cmp->mp_Pages);
+	MyNewList(&cmp->mp_Pages);
 
 	cmp->mp_Node.ln_Name = AllocString(mp->mp_Node.ln_Name);
 	cmp->mp_Node.ln_Type = LNT_PRINTERMAP;
@@ -286,14 +286,14 @@ CopyPrinterProject(struct List *list)
 		}
 		page = wp->wp_Page;
 
-		if (cpage = AllocPooled(pool, sizeof(struct Page)))
+		if ((cpage = AllocPooled(pool, sizeof(struct Page))) != 0)
 		{
 			struct tableField *tf, *ctf;
 
 			CopyMem(page, cpage, sizeof(struct Page));
-			NewList(&cpage->pg_Table);
-			NewList(&cpage->pg_gObjects);
-			NewList(&cpage->pg_gGroups);
+			MyNewList(&cpage->pg_Table);
+			MyNewList(&cpage->pg_gObjects);
+			MyNewList(&cpage->pg_gGroups);
 
 			cpage->pg_Node.ln_Name = AllocString(page->pg_Node.ln_Name);
 			cpage->pg_Node.ln_Type = LNT_PRINTERPAGE;
@@ -309,13 +309,13 @@ CopyPrinterProject(struct List *list)
 
 			foreach (&page->pg_Table, tf)
 			{
-				if (ctf = AllocPooled(pool, sizeof(struct tableField)))  // simple copy, must not be freed via FreeTableField()!
+				if ((ctf = AllocPooled(pool, sizeof(struct tableField))) != 0)  // simple copy, must not be freed via FreeTableField()!
 				{
 					CopyMem(tf, ctf, sizeof(struct tableField));
 					ctf->tf_Text = AllocString(tf->tf_Text);
 					ctf->tf_FontInfo = CopyFontInfo(tf->tf_FontInfo);
 
-					AddTail(&cpage->pg_Table, ctf);
+					MyAddTail(&cpage->pg_Table, ctf);
 				}
 			}
 			LinkCellsToTableSize(cpage);
@@ -336,18 +336,18 @@ CopyPrinterProject(struct List *list)
 						// ToDo: embedded_diagram copies the diagram it references
 						//	to the source page, not ours...
 
-						if (go = (struct gObject *)gDoMethod(gos[i], GCM_COPY))
+						if ((go = (struct gObject *)gDoMethod(gos[i], GCM_COPY)) != 0)
 						{
 							cgos[i] = go;
-							AddTail(&cpage->pg_gGroups, OBJECTGROUP(go));
-							AddTail(&cpage->pg_gObjects, go);
+							MyAddTail(&cpage->pg_gGroups, OBJECTGROUP(go));
+							MyAddTail(&cpage->pg_gObjects, go);
 						}
 					}
 				}
 				cpage->pg_ObjectOrder = cgos;
 			}
 
-			AddTail(&cmp->mp_Pages, cpage);
+			MyAddTail(&cmp->mp_Pages, cpage);
 		}
 	}
 	return cmp;
@@ -534,7 +534,7 @@ FreeWDTPrinter(struct List *list)
 	if (!list)
 		return;
 
-	while (wp = (struct wdtPrinter *)RemHead(list))
+	while ((wp = (struct wdtPrinter *)MyRemHead(list)) != 0)
 	{
 		FreeString(wp->wp_Node.ln_Name);
 		FreeString(wp->wp_Range);
@@ -703,7 +703,7 @@ PrintPage(union printerIO *pio,struct PrinterExtendedData *ped,struct wdtPrintSt
 				else
 					percent /= pi.pi_Bottom - pi.pi_BeginY;
 
-				sprintf(s,"%ld%",(int)(percent*100.0));
+				sprintf(s,"%ld",(int)(percent*100.0));
 				UpdateProgressBar(wps->wps_SinglePageBar,s,percent);
 			}
 
@@ -713,7 +713,7 @@ PrintPage(union printerIO *pio,struct PrinterExtendedData *ped,struct wdtPrintSt
 			if (!go || rect.MaxY > pi.pi_BeginY+hei)  // page should be ejected
 				pio->iodrp.io_Special &= ~SPECIAL_NOFORMFEED;
 
-			if (error = DoIO((struct IORequest *)pio))
+			if ((error = DoIO((struct IORequest *)pio)) != 0)
 				break;
 
 			if (!rect.MinY)
@@ -742,9 +742,9 @@ void
 ResumeTask(struct Task *task)
 {
 	Disable();
-	Remove(task);
+	MyRemove(task);
 	task->tc_State = TS_READY;
-	AddHead(&SysBase->TaskReady,task);
+	MyAddHead(&SysBase->TaskReady,task);
 	Enable();
 }
 
@@ -753,9 +753,9 @@ void
 SuspendTask(struct Task *task)
 {
 	Disable();
-	Remove(task);
+	MyRemove(task);
 	task->tc_State = 8;
-	AddHead(&SysBase->IntrList,task);
+	MyAddHead(&SysBase->IntrList,task);
 	Enable();
 }
 
@@ -863,10 +863,12 @@ Print_InitColor(struct PrintColorContext *context, struct PrintScreenContext *sc
 
 	foreach (&colors, cp) {
 		ULONG r, g, b;
-
-		r = (r = cp->cp_Red) | (r << 8) | (r << 16) | (r << 24);
-		g = (g = cp->cp_Green) | (g << 8) | (g << 16) | (g << 24);
-		b = (b = cp->cp_Blue) | (b << 8) | (b << 16) | (b << 24);
+		r = cp->cp_Red;
+		g = cp->cp_Green;
+		b = cp->cp_Blue;
+		r = r | (r << 8) | (r << 16) | (r << 24);
+		g = g | (g << 8) | (g << 16) | (g << 24);
+		b = b | (b << 8) | (b << 16) | (b << 24);
 			
 		// there is no need to save the allocated pen (because the context will be freed soon)
 		/*cp->cp_Pen =*/ ObtainBestPen(context->pc_ColorMap, r, g, b, TAG_END);
@@ -1017,7 +1019,7 @@ Print(struct List *list, struct wdtPrinter *wp, WORD unit, struct wdtPrintStatus
 		return;
 	}
 
-	if (pio = (union printerIO *)CreateExtIO(port, sizeof(union printerIO)))
+	if ((pio = (union printerIO *)CreateExtIO(port, sizeof(union printerIO))) != 0)
 	{
 		if (!OpenDevice("printer.device", unit, (struct IORequest *)pio, 0))
 		{
@@ -1057,9 +1059,9 @@ Print(struct List *list, struct wdtPrinter *wp, WORD unit, struct wdtPrintStatus
 			if (!pio->iodrp.io_Error && (bm = AllocBitMap(width, stripe, GetBitMapAttr(rp->BitMap, BMA_DEPTH), BMF_CLEAR | BMF_MINPLANES, rp->BitMap)))
 			{
 				rp->BitMap = bm;
-				if (li = NewLayerInfo())
+				if ((li = NewLayerInfo()) != 0)
 				{
-					if (rp->Layer = CreateBehindLayer(li, rp->BitMap, 0, 0, width - 1, stripe - 1, LAYERSIMPLE, NULL))
+					if ((rp->Layer = CreateBehindLayer(li, rp->BitMap, 0, 0, width - 1, stripe - 1, LAYERSIMPLE, NULL)) != 0)
 					{
 						struct wdtPrinter *swp;
 						LONG   index = 0,count = 0;
@@ -1107,11 +1109,11 @@ Print(struct List *list, struct wdtPrinter *wp, WORD unit, struct wdtPrintStatus
 								ErrorRequest(GetString(&gLocaleInfo, MSG_NO_VALID_RANGE_ERR));
 								continue;
 							}
-							if (error = PrintPage(pio, ped, wps, rp, width, height, stripe, swp->wp_Page, realwp))
+							if ((error = PrintPage(pio, ped, wps, rp, width, height, stripe, swp->wp_Page, realwp)) != 0)
 								break;
 							Delay(100);
 						}
-						DeleteLayer(NULL, rp->Layer);
+						DeleteLayer(0, rp->Layer);
 											
 						// ToDo: do it right!
 						if (screenContext.ps_Screen != NULL) {
@@ -1180,7 +1182,7 @@ SetAsyncPrintStatusTitle(void)
 }
 
 
-void __saveds
+void SAVEDS
 AsyncPrint(void)
 {
 	struct AsyncPrint *ap;
@@ -1191,9 +1193,9 @@ AsyncPrint(void)
 	asp_wps = OpenPrintWindow();
 	asp_current = 1;
 	asp_title = title;
-	NewList(&list);
+	MyNewList(&list);
 
-	while ((ap = (struct AsyncPrint *)RemHead(&asp_queue)) || asp_adding)
+	while ((ap = (struct AsyncPrint *)MyRemHead(&asp_queue)) || asp_adding)
 	{
 		if (ap)
 		{
@@ -1212,7 +1214,7 @@ AsyncPrint(void)
 			Print(ap->ap_PrintList, ap->ap_PrintOptions, ap->ap_Unit, asp_wps);
 			asp_current++;
 
-			AddTail(&list, ap);
+			MyAddTail(&list, ap);
 		}
 		else
 			Delay(10);
@@ -1221,7 +1223,7 @@ AsyncPrint(void)
 
 	SuspendTask(asp_maintask);
 
-	while(ap = (struct AsyncPrint *)RemHead(&list))
+	while((ap = (struct AsyncPrint *)MyRemHead(&list)))
 		FreePooled(pool, ap, sizeof(struct AsyncPrint));
 
 	ResumeTask(asp_maintask);
@@ -1257,7 +1259,7 @@ PrintProject(struct List *list, struct wdtPrinter *wp, WORD unit, ULONG flags)
 
 		asp_adding = TRUE;
 
-		if (ap = AllocPooled(pool, sizeof(struct AsyncPrint))) {
+		if ((ap = AllocPooled(pool, sizeof(struct AsyncPrint))) != 0) {
 			if (CopyPrinterProject(list)) {
 				ap->ap_PrintList = list;  // make printer queue entry
 				ap->ap_PrintOptions = wp;
@@ -1269,8 +1271,8 @@ PrintProject(struct List *list, struct wdtPrinter *wp, WORD unit, ULONG flags)
 					asp_maintask = FindTask(NULL);
 					asp_adding = FALSE;
 
-					NewList(&asp_queue);
-					AddTail(&asp_queue, ap);
+					MyNewList(&asp_queue);
+					MyAddTail(&asp_queue, ap);
 					asp_count = 1;
 
 					if (CreateNewProcTags(NP_Entry, AsyncPrint, NP_StackSize, 6192, NP_Name, "ignition Printer Process", TAG_END))
@@ -1280,7 +1282,7 @@ PrintProject(struct List *list, struct wdtPrinter *wp, WORD unit, ULONG flags)
 				} else {
 					// hängen wir den neuen Print-Job in die Queue
 
-					AddTail(&asp_queue,ap);
+					MyAddTail(&asp_queue, ap);
 					asp_count++;
 					SetAsyncPrintStatusTitle();
 					if (asp_wps)
@@ -1318,8 +1320,8 @@ PrintProject(struct List *list, struct wdtPrinter *wp, WORD unit, ULONG flags)
 /************************************* Fenster-Erstellung *************************************/
 
 
-void __asm
-CreatePrinterGadgets(reg (a0) struct winData *wd)
+void ASM
+CreatePrinterGadgets(REG(a0, struct winData *wd))
 {
 	struct Mappe *mp = ((struct Page *)wd->wd_Data)->pg_Mappe;
 	long   w,mxwidth;
@@ -1462,8 +1464,8 @@ CreatePrinterGadgets(reg (a0) struct winData *wd)
 }
 
 
-void __asm
-CreatePrintStatusGadgets(reg (a0) struct winData *wd)
+void ASM
+CreatePrintStatusGadgets(REG(a0, struct winData *wd))
 {
 	gWidth = scr->Width / 3;
 	if (gWidth < 300)
@@ -1494,7 +1496,7 @@ MakePrinterList(struct List *list)
 	char name[UNITNAMESIZE];
 	int i;
 
-	NewList(list);
+	MyNewList(list);
 	strcpy(filename, "env:sys/printer.prefs");
 
 	for (i = 0; i < 10; i++)
@@ -1507,9 +1509,9 @@ MakePrinterList(struct List *list)
 		if (ReadUnitName(filename, name, i)) {
 			struct Node *ln;
 
-			if (ln = AllocPooled(pool, sizeof(struct Node))) {
+			if ((ln = AllocPooled(pool, sizeof(struct Node))) != 0) {
 				ln->ln_Name = AllocString(name);
-				AddTail(list, ln);
+				MyAddTail(list, ln);
 			}
 		}
 	}
@@ -1521,7 +1523,7 @@ UpdatePrinterGadgets(struct Window *win, struct winData *wd)
 {
 	struct wdtPrinter *wp;
 
-	if (wp = (APTR)wd->wd_ExtData[2])
+	if ((wp = (APTR)wd->wd_ExtData[2]) != 0)
 	{
 		GT_SetGadgetAttrs(wd->wd_ExtData[0], win, NULL, GTLV_Selected, FindListEntry(wd->wd_ExtData[1], wp), TAG_END);
 
@@ -1547,8 +1549,8 @@ UpdatePrinterGadgets(struct Window *win, struct winData *wd)
 }
 
 
-void __asm
-ClosePrinterWindow(reg (a0) struct Window *win, reg (d0) BOOL clean)
+void ASM
+ClosePrinterWindow(REG(a0, struct Window *win), REG(d0, BOOL clean))
 {
 	struct winData *wd = (struct winData *)win->UserData;
 
@@ -1560,8 +1562,8 @@ ClosePrinterWindow(reg (a0) struct Window *win, reg (d0) BOOL clean)
 }
 
 
-void __asm
-HandlePrinterIDCMP(reg (a0) struct TagItem *tag)
+void ASM
+HandlePrinterIDCMP(REG(a0, struct TagItem *tag))
 {
 	struct wdtPrinter *wp = (struct wdtPrinter *)wd->wd_ExtData[2];
 
@@ -1594,7 +1596,7 @@ HandlePrinterIDCMP(reg (a0) struct TagItem *tag)
 					}
 					/*** Liste freigeben ***/
 
-					while (ln = RemHead(&list)) {
+					while ((ln = MyRemHead(&list)) != 0) {
 						FreeString(ln->ln_Name);
 						FreePooled(pool, ln, sizeof(struct Node));
 					}
@@ -1614,8 +1616,8 @@ HandlePrinterIDCMP(reg (a0) struct TagItem *tag)
 						long   i;
 
 						// remove "-" & "Overview" from zooms list for display
-						Remove((struct Node *)tailPred);
-						Remove((struct Node *)tail);
+						MyRemove(tailPred);
+						MyRemove(tail);
 
 						i = PopUpList(win,gad = GadgetAddress(win, 11), &zooms, TAG_END);
 						if (i != ~0L)
@@ -1627,8 +1629,8 @@ HandlePrinterIDCMP(reg (a0) struct TagItem *tag)
 							GT_SetGadgetAttrs(gad, win, NULL, GTST_String, t, TAG_END);
 						}
 
-						AddTail(&zooms, tailPred);
-						AddTail(&zooms, tail);
+						MyAddTail(&zooms, tailPred);
+						MyAddTail(&zooms, tail);
 					}
 					break;
 			}
@@ -1766,8 +1768,8 @@ HandlePrinterIDCMP(reg (a0) struct TagItem *tag)
 }
 
 
-void __asm
-ClosePrintStatusWindow(reg (a0) struct Window *win,reg (d0) BOOL clean)
+void ASM
+ClosePrintStatusWindow(REG(a0, struct Window *win), REG(d0, BOOL clean))
 {
 	struct winData *wd = (struct winData *)win->UserData;
 	struct wdtPrintStatus *wps = wd->wd_ExtData[0];
@@ -1787,8 +1789,8 @@ ClosePrintStatusWindow(reg (a0) struct Window *win,reg (d0) BOOL clean)
 }
 
 
-void __asm
-HandlePrintStatusIDCMP(reg (a0) struct TagItem *tag)
+void ASM
+HandlePrintStatusIDCMP(REG(a0, struct TagItem *tag))
 {
 }
 

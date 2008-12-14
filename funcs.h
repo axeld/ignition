@@ -36,7 +36,7 @@ extern int32 CheckSerialNumber(bool init);
 extern void UpdateGInterface(struct Window *giwin,struct MinList *list,struct gObject *go,UBYTE page);
 extern void HandleGGadget(struct Page *page,struct gObject *go);
 extern void UpdateObjectGadgets(struct Window *win);
-extern void PUBLIC HandleFileTypeIDCMP(reg (a1) struct IntuiMessage *msg,reg (a2) struct FileRequester *fr);
+extern void PUBLIC HandleFileTypeIDCMP(REG(a1, struct IntuiMessage *msg),REG(a2, struct FileRequester *fr));
 
 // pointer.c
 extern void SetMousePointer(struct Window *win,ULONG which);
@@ -53,8 +53,8 @@ extern struct gGroup *DuplicateGGroup(struct Page *page,struct gGroup *cgg,struc
 
 // undo.c
 extern void AddUndoLink(struct MinList *list,APTR obj);
-extern struct UndoNode *CreateUndo(struct Page *page,UBYTE type,STRPTR t);
-extern struct UndoNode *BeginUndo(struct Page *page,UBYTE type,STRPTR t);
+extern struct UndoNode *CreateUndo(struct Page *page,UBYTE type,CONST_STRPTR t);
+extern struct UndoNode *BeginUndo(struct Page *page,UBYTE type,CONST_STRPTR t);
 extern void EndUndo(struct Page *);
 extern void FreeUndo(struct Page *page,struct UndoNode *un);
 extern void MakeUndoRedoList(struct Page *page,struct UndoNode *un,struct MinList *list);
@@ -70,8 +70,8 @@ extern void SetTabGadget(struct Page *page,STRPTR t,long pos);
 extern void FreeTabGadget(struct Page *page);
 extern void HandleTabGadget(struct Page *page);
 extern void CreateTabGadget(struct Page *page,long col,long row,BOOL makevisible);
-extern BOOL QueryPassword(STRPTR t,STRPTR password);
-extern ULONG PUBLIC PasswordEditHook(reg (a0) struct Hook *hook,reg (a1) ULONG *msg,reg (a2) struct SGWork *sgw);
+extern BOOL QueryPassword(CONST_STRPTR t,STRPTR password);
+extern ULONG PUBLIC PasswordEditHook(REG(a0, struct Hook *hook),REG(a2, struct SGWork *sgw),REG(a1, ULONG *msg));
 
 // database.c
 extern BOOL IsDBEmpty(struct Database *db);
@@ -121,10 +121,10 @@ extern void AddLockedHead(struct MinList *list,struct MinNode *ln);
 extern void RemoveFromLockedList(struct MinList *list,struct MinNode *ln);
 extern void RemoveLocked(struct MinNode *ln);
 extern struct MinNode *RemLockedHead(struct MinList *list);
-extern void PUBLIC FreeLock(reg (a0) struct LockNode *ln,reg (a1) struct MinNode *node,reg (d0) UBYTE flags);
-extern void PUBLIC ListViewLock(reg (a0) struct LockNode *ln,reg (a1) struct MinNode *node,reg (d0) UBYTE flags);
-extern void PUBLIC TreeLock(reg (a0) struct LockNode *ln,reg (a1) struct MinNode *node,reg (d0) UBYTE flags);
-extern void PUBLIC TextLock(reg (a0) struct LockNode *ln,reg (a1) struct MinNode *node,reg (d0) UBYTE flags);
+extern void PUBLIC FreeLock(REG(a0, struct LockNode *ln),REG(a1, struct MinNode *node),REG(d0, UBYTE flags));
+extern void PUBLIC ListViewLock(REG(a0, struct LockNode *ln),REG(a1, struct MinNode *node),REG(d0, UBYTE flags));
+extern void PUBLIC TreeLock(REG(a0, struct LockNode *ln),REG(a1, struct MinNode *node),REG(d0, UBYTE flags));
+extern void PUBLIC TextLock(REG(a0, struct LockNode *ln),REG(a1, struct MinNode *node),REG(d0, UBYTE flags));
 
 // search.c
 extern void SearchReplace(struct Page *page,UWORD mode);
@@ -176,10 +176,10 @@ extern void HandleContext(struct Page *page,LONG type,ULONG col,ULONG row);
 // support.c
 extern void Rect32ToRect(struct Rect32 *rect32,struct Rectangle *rect);
 extern int cmdcmp(STRPTR *c1,STRPTR *c2);
-extern long cmdlen(STRPTR t);
-extern STRPTR PUBLIC AllocString(reg (a0) STRPTR string);
-extern STRPTR PUBLIC AllocStringLength(reg (a0) STRPTR string,reg (d0) long len);
-extern void PUBLIC FreeString(reg (a0) STRPTR string);
+extern int32 cmdlen(STRPTR t);
+extern STRPTR PUBLIC AllocString(REG(a0, CONST_STRPTR string));
+extern STRPTR PUBLIC AllocStringLength(REG(a0, STRPTR string),REG(d0, long len));
+extern void PUBLIC FreeString(REG(a0, STRPTR string));
 extern void zstrcpy(STRPTR to,STRPTR from);
 extern int zstrcmp(STRPTR a,STRPTR b);
 extern int zstricmp(STRPTR a,STRPTR b);
@@ -190,7 +190,7 @@ extern struct Node *FindCommand(struct MinList *,STRPTR);
 extern struct Node *FindTag(struct MinList *,STRPTR);
 extern STRPTR GetUniqueName(struct MinList *list,STRPTR base);
 extern void MakeUniqueName(struct MinList *list,STRPTR *name);
-extern long CountNodes(struct MinList *);
+extern int32 CountNodes(struct MinList *);
 extern long GetListWidth(struct MinList *);
 extern void moveList(struct MinList *,struct MinList *);
 extern void swapLists(struct MinList *,struct MinList *);
@@ -209,7 +209,7 @@ extern struct Node *FindListNumber(struct MinList *l,long num);
 extern long FindListEntry(struct MinList *l,struct MinNode *n);
 extern void ProcentToString(ULONG p,STRPTR t);
 extern double ConvertDegreeProcent(STRPTR s);
-extern long ConvertTime(STRPTR s);
+extern int32 ConvertTime(STRPTR s);
 extern double ConvertNumber(STRPTR s,UBYTE targettype);
 extern void WriteChunkString(APTR iff,STRPTR t);
 extern void MakeLocaleStrings(struct MinList *list, LONG id, ...);
@@ -232,7 +232,7 @@ extern LONG GetListNumberOfName(struct MinList *mlh,STRPTR name,BOOL cmd,BOOL li
 extern BOOL AddToNameList(STRPTR buffer,STRPTR t,int *plen,int maxlength);
 extern struct Library *OpenClass(STRPTR secondary,STRPTR name,LONG version);
 extern void RemoveFromArrayList(struct ArrayList *al,void *entry);
-extern long AddToArrayList(struct ArrayList *al,void *entry);
+extern int32 AddToArrayList(struct ArrayList *al,void *entry);
 extern BOOL AddListToArrayList(struct ArrayList *source,struct ArrayList *dest);
 extern BOOL CopyArrayList(struct ArrayList *source,struct ArrayList *dest);
 extern void MakeEmptyArrayList(struct ArrayList *al);
@@ -248,7 +248,7 @@ extern void dump(STRPTR pre,UBYTE *a,long len);
 #endif
 
 // project.c
-extern struct Page * PUBLIC NewPage(reg (a0) struct Mappe *mp);
+extern struct Page * PUBLIC NewPage(REG(a0, struct Mappe *mp));
 extern struct Mappe *NewProject(void);
 extern void DisposePage(struct Page *page);
 extern BOOL DisposeProject(struct Mappe *mp);
@@ -262,7 +262,7 @@ extern void SetProjectMouseReport(struct Page *page,BOOL set);
 extern void UpdatePageFont(struct Page *page,ULONG tag,...);
 extern void UpdateProjPage(struct Window *win,struct Page *page);
 extern void ProjectToGObjects(struct Page *page,struct winData *wd);
-extern void __asm handleProjIDCMP(reg (a0) struct TagItem *tags);
+extern void ASM handleProjIDCMP(REG(a0, struct TagItem *tags));
 extern void drawSelect(struct RastPort *rp,long x1,long y1,long x2,long y2);
 extern void SetCellSecurity(struct Page *page,LONG security);
 extern void SetCellPattern(struct Page *page,long col,UBYTE pattern);
@@ -279,8 +279,8 @@ extern struct Gadget *MakeProjectGadgets(struct winData *,long w,long h);
 extern void MakeMarkText(struct Page *page,STRPTR t);
 extern void DisplayTablePos(struct Page *page);
 extern void DrawStatusFlags(struct Mappe *mp,struct Window *win);
-extern void DrawStatusText(struct Page *page,STRPTR t);
-extern void DrawHelpText(struct Window *win,struct Gadget *gad,STRPTR t);
+extern void DrawStatusText(struct Page *page,CONST_STRPTR t);
+extern void DrawHelpText(struct Window *win,struct Gadget *gad,CONST_STRPTR t);
 extern void DrawBars(struct Window *win);
 extern void RefreshToolBar(struct Page *);
 extern void FreeSession(struct Session *s);

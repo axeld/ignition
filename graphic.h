@@ -5,6 +5,8 @@
 #ifndef IGN_GRAPHIC_H
 #define IGN_GRAPHIC_H
 
+struct gBounds;
+struct gFrame;
 
 #define glContext amigamesa_context
 
@@ -17,9 +19,9 @@ struct gClass {
 	ULONG  gc_Flags;
 	struct gInterface *gc_Interface;
 	BPTR   gc_Segment;
-	ULONG  __asm (*gc_Dispatch)(reg (a0) struct gClass *,reg (a1) APTR,reg (a2) Msg);
-	ULONG  __asm (*gc_Draw)(reg (d0) struct Page *,reg (d1) ULONG,reg (a0) struct RastPort *,reg (a1) struct gClass *,reg (a2) struct gObject *,reg (a3) struct gBounds *);
-	ULONG  __asm (*gc_FreeClass)(reg (a0) struct gClass *);
+	ULONG  ASM (*gc_Dispatch)(REG(a0, struct gClass *), REG(a2, Msg), REG(a1, APTR));
+	ULONG  ASM (*gc_Draw)(REG(d0, struct Page *), REG(d1, ULONG), REG(a0, struct RastPort *), REG(a1, struct gClass *), REG(a2, struct gObject *), REG(a3, struct gBounds *));
+	ULONG  ASM (*gc_FreeClass)(REG(a0, struct gClass *));
 	STRPTR gc_ClassName;		/* internal access (file name) */
 };
 
@@ -648,31 +650,38 @@ extern void FreeAppColors(void);
 extern void UniqueColors(struct MinList *cols);
 extern void GetColorName(STRPTR t, UBYTE red, UBYTE green, UBYTE blue);
 extern void FindColorName(struct colorPen *cp);
-extern ULONG PUBLIC FindColorPen(reg (d0) UBYTE red, reg (d1) UBYTE green, reg (d2) UBYTE blue);
-extern ULONG PUBLIC TintColor(reg (d0) ULONG id,reg (d1) float tint);
+extern ULONG PUBLIC FindColorPen(REG(d0, UBYTE red), REG(d1, UBYTE green), REG(d2, UBYTE blue));
+extern ULONG PUBLIC TintColor(REG(d0, ULONG id),REG(d1, float tint));
 extern struct colorPen *GetColorPen(ULONG id);
-extern void PUBLIC SetOutlineColor(reg (a0) struct RastPort *rp,reg (d0) ULONG color);
-extern void PUBLIC SetHighColor(reg (a0) struct RastPort *rp,reg (d0) ULONG color);
-extern void PUBLIC SetLowColor(reg (a0) struct RastPort *rp,reg (d0) ULONG color);
-extern void PUBLIC SetColors(reg (a0) struct RastPort *rp,reg (d0) ULONG apenID,reg (d1) ULONG bpenID);
-extern void PUBLIC SetColorPen(reg (a0) struct RastPort *rp, reg (a1) struct colorPen *pen);
+extern void PUBLIC SetOutlineColor(REG(a0, struct RastPort *rp),REG(d0, ULONG color));
+extern void PUBLIC SetHighColor(REG(a0, struct RastPort *rp),REG(d0, ULONG color));
+extern void PUBLIC SetLowColor(REG(a0, struct RastPort *rp),REG(d0, ULONG color));
+extern void PUBLIC SetColors(REG(a0, struct RastPort *rp),REG(d0, ULONG apenID),REG(d1, ULONG bpenID));
+extern void PUBLIC SetColorPen(REG(a0, struct RastPort *rp), REG(a1, struct colorPen *pen));
 extern struct colorPen *AddColor(struct MinList *list, STRPTR name, UBYTE red, UBYTE green, UBYTE blue);
 
 // graphic.c
-#define gAreaMove(rp,x,y) SafeAreaDraw(x,y)
-#define gAreaDraw(rp,x,y) SafeAreaDraw(x,y)
-#define gAreaEnd(rp) SafeAreaEnd(rp)
+#if defined(HAVE_SAFECLIP)
+#	define gAreaMove(rp,x,y) SafeAreaDraw(x,y)
+#	define gAreaDraw(rp,x,y) SafeAreaDraw(x,y)
+#	define gAreaEnd(rp) SafeAreaEnd(rp)
+#else
+#	define gAreaMove(rp,x,y) AreaMove(rp,x,y)
+#	define gAreaDraw(rp,x,y) AreaDraw(rp,x,y)
+#	define gAreaEnd(rp) AreaEnd(rp)
+#endif
+
 extern ULONG SafeInit (ULONG nvertmax);
 extern void SafeClose (void);
 extern void SafeAreaDraw(LONG x,LONG y);
 extern void SafeAreaEnd (struct RastPort *rp);
-extern ULONG PUBLIC GetDPI(reg (a0) struct Page *page);
-extern LONG PUBLIC GetOffset(reg (a0) struct Page *page,reg (d0) BOOL horiz);
+extern ULONG PUBLIC GetDPI(REG(a0, struct Page *page));
+extern LONG PUBLIC GetOffset(REG(a0, struct Page *page),REG(d0, BOOL horiz));
 extern void MakeTmpRas(long w,long h);
 extern void RectFill32(struct RastPort *rp,long x1,long y1,long x2,long y2);
 extern void DrawHorizBlock(struct RastPort *rp,ULONG dpi,long x1,long y,long x2,ULONG points,UWORD flags);
 extern void DrawVertBlock(struct RastPort *rp,ULONG dpi,long x,long y1,long y2,ULONG points,UWORD flags);
-void PUBLIC DrawLine(reg (a0) struct RastPort *rp,reg (d0) ULONG dpi,reg (d1) long x1,reg (d2) long y1,reg (d3) long x2,reg (d4) long y2,reg (d5) ULONG points,reg (d6) UWORD flags);
+void PUBLIC DrawLine(REG(a0, struct RastPort *rp),REG(d0, ULONG dpi),REG(d1, long x1),REG(d2, long y1),REG(d3, long x2),REG(d4, long y2),REG(d5, ULONG points),REG(d6, UWORD flags));
 extern struct gClass *FindGClass(STRPTR name);
 extern BOOL LoadGClass(struct gClass *gc);
 extern void FreeGClasses(void);
@@ -685,8 +694,8 @@ extern void FreeGraphics(void);
 extern void InitGraphics(void);
 
 // objects.c
-extern void PUBLIC gInsertRemoveCellsTerm(reg (a0) struct gcpInReCells *gcpc,reg (a1) struct Page *page,reg (a2) STRPTR *term,reg (a3) struct Term *t);
-extern void PUBLIC gInsertRemoveCellsTablePos(reg (a0) struct gcpInReCells *gcpc,reg (a1) struct Page *page,reg (a2) STRPTR *term,reg (a3) struct TablePos *tp);
+extern void PUBLIC gInsertRemoveCellsTerm(REG(a0, struct gcpInReCells *gcpc),REG(a1, struct Page *page),REG(a2, STRPTR *term),REG(a3, struct Term *t));
+extern void PUBLIC gInsertRemoveCellsTablePos(REG(a0, struct gcpInReCells *gcpc),REG(a1, struct Page *page),REG(a2, STRPTR *term),REG(a3, struct tablePos *tp));
 extern void RefreshGObjectReferences(struct gObject *go);
 extern void DrawGObject(struct RastPort *rp, struct Page *page,struct gObject *go,long x,long y);
 extern void DrawSingleGObject(struct Page *page,struct gObject *go);
@@ -695,7 +704,6 @@ extern BYTE CheckGObject(struct Page *page,struct gObject *go,long x,long y);
 extern void DrawGObjectKnobs(struct Page *page,struct gObject *go);
 extern void DeselectGObjects(struct Page *page);
 extern void DrawGObjectMove(struct Page *page);
-extern void DrawGFrame(struct Page *page,struct gFrame *gf);
 extern void DrawMultiSelectFrame(struct Page *page,UBYTE mode);
 extern struct gInterface *GetGInterfaceTag(struct gClass *gc,ULONG tag);
 extern void RefreshGObjectDrawing(struct Page *page,struct gObject *go);
@@ -703,7 +711,6 @@ extern void UpdateGObject(struct Page *page,struct gObject *go);
 extern void UpdateGGroups(struct Page *page);
 extern void FreeGObject(struct gObject *go);
 extern void FreeGGroup(struct gGroup *gg);
-extern struct gFrame *CreateGFrame(struct Page *page,struct gObj *go,BOOL hidden);
 extern void SetGFramePositionMode(struct Page *page,struct gFrame *gf);
 extern void RefreshGFrames(struct Page *page);
 extern struct gObject *gMakeRefObject(struct Page *page, struct gClass *gc, struct gObject *go, const STRPTR undoText);
@@ -728,15 +735,19 @@ extern BOOL HandleGObjects(struct Page *page);
 extern void PrepareCreateObject(struct Page *page,struct gClass *gc,BOOL more);
 extern ULONG gDoClassMethodA(struct gClass *gc,APTR go,Msg msg);
 extern ULONG gDoClassMethod(struct gClass *gc,APTR go,ULONG id,...);
-extern ULONG PUBLIC gDoMethodA(reg (a0) APTR go,reg (a1) Msg msg);
+extern ULONG PUBLIC gDoMethodA(REG(a0, APTR go),REG(a1, Msg msg));
 extern ULONG gDoMethod(APTR go,ULONG id,...);
-extern ULONG PUBLIC gDoSuperMethodA(reg (a0) struct gClass *gc,reg (a1) APTR go,reg (a2) Msg msg);
-extern BOOL PUBLIC gIsSubclassFrom(reg (a0) struct gClass *gc,reg (a1) struct gClass *supergc);
-extern void PUBLIC gSuperDraw(reg (d0) struct Page *page,reg (d1) ULONG dpi,reg (a0) struct RastPort *rp,reg (a1) struct gClass *gc,reg (a2) struct gObject *go,reg (a3) struct gBounds *gb);
+extern ULONG PUBLIC gDoSuperMethodA(REG(a0, struct gClass *gc),REG(a1, APTR go),REG(a2, Msg msg));
+extern BOOL PUBLIC gIsSubclassFrom(REG(a0, struct gClass *gc),REG(a1, struct gClass *supergc));
+extern void PUBLIC gSuperDraw(REG(d0, struct Page *page),REG(d1, ULONG dpi),REG(a0, struct RastPort *rp),REG(a1, struct gClass *gc),REG(a2, struct gObject *go),REG(a3, struct gBounds *gb));
 extern void SetGRastPort(struct RastPort *rp);
 extern void gRemoveObjectsFromScreen(struct Mappe *mp, struct Screen *scr);
 extern void gAddObjectsToScreen(struct Mappe *mp, struct Screen *scr);
 
+#if 0
+extern void DrawGFrame(struct Page *page,struct gFrame *gf);
+extern struct gFrame *CreateGFrame(struct Page *page,struct gObj *go,BOOL hidden);
+#endif
 
 // diagram.c
 extern void UpdateDiagramTypePage(struct Window *win, struct winData *wd, struct gDiagram *gd);
@@ -744,7 +755,7 @@ extern void SetDiagramAttrsA(struct Window *win, struct gDiagram *gd, struct Tag
 extern void RefreshPreviewSize(struct Window *win);
 extern void UpdateDiagramGadgets(struct Window *win);
 extern void UpdateObjectReferences(struct gObject *oldgo, struct gObject *newgo);
-extern struct gLink * PUBLIC gGetLink(reg (a0) struct gDiagram *gd, reg (d0) long col, reg (d1) long row);
+extern struct gLink * PUBLIC gGetLink(REG(a0, struct gDiagram *gd), REG(d0, long col), REG(d1, long row));
 
 
 #endif   /* IGN_GRAHPIC_H */

@@ -113,7 +113,7 @@ gText3d(STRPTR s, struct point3d *p, UBYTE size, ULONG pen, UBYTE flags)
 			t->t_FontInfo = SetFontInfo(g_sc->sc_FontInfo,dpi,FA_PointHeight,g_sc->sc_FontInfo->fi_FontSize->fs_PointHeight*size/100,TAG_END);
 		t->t_Pen = pen;
 
-		AddTail(&g_sc->sc_Texts,t);
+		MyAddTail(&g_sc->sc_Texts,t);
 	}*/
 	return t;
 }
@@ -161,7 +161,7 @@ zordercmp(struct field3d **f1, struct field3d **f2)
 	return -1L;
 }
 
-/*
+#if 0
 void
 gSetColor(struct RastPort *rp, ULONG id, double intensity)
 {
@@ -169,7 +169,7 @@ gSetColor(struct RastPort *rp, ULONG id, double intensity)
 
 	/* vielleicht noch Muster setzen? */
 }
-*/
+#endif
 
 void
 SetObjectColor(struct object3d *ob, LONG apen, LONG open)
@@ -205,8 +205,8 @@ long gtfcol,gtfrow;
  */
 
 struct tableField * PUBLIC
-GetTableFields(reg (a0) struct Page *page, reg (a1) struct tableField *tf, reg (a2) struct tablePos *tp,
-	reg (d0) BOOL horiz, reg (d1) long datarow)
+GetTableFields(REG(a0, struct Page *page), REG(a1, struct tableField *tf), REG(a2, struct tablePos *tp),
+	REG(d0, BOOL horiz), REG(d1, long datarow))
 {
 	long col,row;
 
@@ -255,7 +255,7 @@ GetTableFields(reg (a0) struct Page *page, reg (a1) struct tableField *tf, reg (
 
 
 struct gLink * PUBLIC
-gGetLink(reg (a0) struct gDiagram *gd, reg (d0) long col, reg (d1) long row)
+gGetLink(REG(a0, struct gDiagram *gd), REG(d0, long col), REG(d1, long row))
 {
 	if (!gd || !gd->gd_Links)
 		return NULL;
@@ -276,13 +276,13 @@ gInitLinks(struct gDiagram *gd, BOOL all)
 	struct gLink *gl;
 	long   i,j;
 
-	NewList(&gd->gd_Values);
+	MyNewList(&gd->gd_Values);
 
 	for (j = 0; j < gd->gd_Rows; j++)
 	{
 		for (i = 0; i < gd->gd_Cols; i++)
 		{
-			if (gl = gGetLink(gd, i, j))
+			if ((gl = gGetLink(gd, i, j)) != 0)
 			{
 				gl->gl_Row = j;
 
@@ -297,7 +297,7 @@ gInitLinks(struct gDiagram *gd, BOOL all)
 				}
 				gl->gl_Flags = (gl->gl_Flags & ~(GLF_FIRST_OF_ROW | GLF_LAST_OF_ROW)) | (i == 0 ? GLF_FIRST_OF_ROW : 0);
 
-				AddTail(&gd->gd_Values, gl);	// generate a list (for list-view)
+				MyAddTail(&gd->gd_Values, gl);	// generate a list (for list-view)
 			}
 		}
 		if (gl)
@@ -326,9 +326,9 @@ gFillCells(struct gDiagram *gd)
 
 	col = gd->gd_TablePos.tp_Col;  row = gd->gd_TablePos.tp_Row;
 
-	if (handle = GetCellIterator(gd->gd_DataPage,&gd->gd_TablePos,FALSE))
+	if ((handle = GetCellIterator(gd->gd_DataPage,&gd->gd_TablePos,FALSE)) != 0)
 	{
-		while (tf = NextCell(handle))
+		while ((tf = NextCell(handle)) != 0)
 			gl[tf->tf_Col-col+(tf->tf_Row-row)*wid].gl_Cell = tf;
 
 		FreeCellIterator(handle);
@@ -336,7 +336,7 @@ gFillCells(struct gDiagram *gd)
 
 	for (i = 0;i < num;i++)
 	{
-		if (tf = gl[i].gl_Cell)
+		if ((tf = gl[i].gl_Cell) != 0)
 		{
 			if (gl[i].gl_Value != tf->tf_Value)
 			{
@@ -380,7 +380,7 @@ struct gInterface gDiagramInterface[] =
 	{GDA_ReadData,	NULL, GIT_CYCLE, NULL, "readdata"},
 	{GDA_DataPage,	NULL, GIT_DATA_PAGE, NULL, "datapage"},
 	{GDA_Range,		NULL, GIT_FORMULA, NULL, "range"},
-	{NULL}
+	{0}
 };
 
 #define GDS_REMAKE 1
@@ -408,9 +408,9 @@ UpdateRangeData(struct gDiagram *gd,struct tablePos *tp)
 		}
 
 		CopyMem(tp,&gd->gd_TablePos,sizeof(struct tablePos));
-		NewList(&gd->gd_Values);
+		MyNewList(&gd->gd_Values);
 
-		if (gd->gd_Links = AllocPooled(pool,sizeof(struct gLink)*num))
+		if ((gd->gd_Links = AllocPooled(pool, sizeof(struct gLink)*num)) != 0)
 		{
 			if (gl)
 				CopyMem(gl,gd->gd_Links,sizeof(struct gLink)*min(num,oldnum));
@@ -474,7 +474,7 @@ gDiagramSet(struct gDiagram *gd,struct TagItem *tstate)
 
 	if (tstate)
 	{
-		while (ti = NextTagItem(&tstate))
+		while ((ti = NextTagItem(&tstate)) != 0)
 		{
 			switch (ti->ti_Tag)
 			{
@@ -541,7 +541,7 @@ gDiagramGet(struct gClass *gc, struct gDiagram *gd, struct gcpGet *gcpg)
 
 
 ULONG PUBLIC
-gDiagramDispatch(reg (a0) struct gClass *gc,reg (a1) struct gDiagram *gd,reg (a2) Msg msg)
+gDiagramDispatch(REG(a0, struct gClass *gc), REG(a2, struct gDiagram *gd), REG(a1, Msg msg))
 {
 	ULONG rc = 0L;
 
@@ -549,20 +549,20 @@ gDiagramDispatch(reg (a0) struct gClass *gc,reg (a1) struct gDiagram *gd,reg (a2
 	{
 		case GCM_NEW:
 			if (((struct gClass *)gd)->gc_Dispatch == gDiagramDispatch)  // keine Instanzen dieser Klasse
-				return NULL;
+				return 0;
 
-			if (rc = gDoSuperMethodA(gc, gd, msg))
+			if ((rc = gDoSuperMethodA(gc, gd, msg)) != 0)
 			{
 				struct point2d *p;
 
 				gd = (struct gDiagram *)rc;
 
-				NewList(&gd->gd_Values);
+				MyNewList(&gd->gd_Values);
 				gd->gd_Object.go_Flags |= GOF_FRAMED;
 
 				gDiagramSet(gd,((struct gcpSet *)msg)->gcps_AttrList);
 
-				if (p = AllocPooled(pool, sizeof(struct point2d) * 2))
+				if ((p = AllocPooled(pool, sizeof(struct point2d) * 2)) != 0)
 				{
 					p[0].x = 10240;  p[0].y = 10240;				// 1 cm Abstand von der linken, oberen Ecke
 					p[1].x = 10240 + 102400;  p[1].y = 10240 + 102400;  // 10 cm breit und hoch
@@ -585,7 +585,7 @@ gDiagramDispatch(reg (a0) struct gClass *gc,reg (a1) struct gDiagram *gd,reg (a2
 		{
 			struct gDiagram *cgd;
 
-			if (cgd = (struct gDiagram *)(rc = gDoSuperMethodA(gc, gd, msg)))
+			if ((cgd = (struct gDiagram *)(rc = gDoSuperMethodA(gc, gd, msg))))
 			{
 				struct Term *term;
 
@@ -626,7 +626,7 @@ gDiagramDispatch(reg (a0) struct gClass *gc,reg (a1) struct gDiagram *gd,reg (a2
 			struct gcpInReCells *gcpc = (APTR)msg;
 			struct Term *t;
 
-			if (t = CreateTree(gd->gd_DataPage,gd->gd_Range))
+			if ((t = CreateTree(gd->gd_DataPage,gd->gd_Range)) != 0)
 			{
 				struct tablePos tp;
 
@@ -974,7 +974,7 @@ gMakeGLContext(struct gDiagram3d *gd)
 
 
 ULONG PUBLIC
-gDiagram3dDispatch(reg (a0) struct gClass *gc,reg (a1) struct gDiagram3d *gd,reg (a2) Msg msg)
+gDiagram3dDispatch(REG(a0, struct gClass *gc), REG(a2, struct gDiagram3d *gd), REG(a1, Msg msg))
 {
 	ULONG rc = 0L;
 
@@ -1129,7 +1129,7 @@ gBalken3dDraw(reg (d0) struct Page *page, reg (d1) ULONG dpi, reg (a0) struct Ra
 
 
 ULONG PUBLIC
-gBalken3dDispatch(reg (a0) struct gClass *gc,reg (a1) struct gDiagram3d *gd,reg (a2) Msg msg)
+gBalken3dDispatch(REG(a0, struct gClass *gc), REG(a2, struct gDiagram3d *gd), REG(a1, Msg msg))
 {
 	ULONG rc;
 
@@ -1167,14 +1167,14 @@ struct gInterface gAxesInterface[] =
 	{GAA_ShowNumbers,	NULL, GIT_CHECKBOX,	NULL, "axes_shownumbers"},
 	{GAA_TransparentBackground, NULL, GIT_CHECKBOX, NULL, "axes_background"},
 	{GAA_BPen,			NULL, GIT_PEN,		NULL, "axes_backgroundpen"},
-	{NULL}
+	{0}
 };
 
 
 /** Berechnet die Koordinate eines Y-Wertes in der Darstellung
  */
 
-long __regargs
+long REGARGS
 GetAxisY(struct gAxes *ga, double y, int scale)
 {
 	/* MERKER: scale ist noch nicht implementiert! */
@@ -1185,7 +1185,7 @@ GetAxisY(struct gAxes *ga, double y, int scale)
 /** Berechnet den für eine Achse benutzten 10er Logarithmus
  */
 
-double __regargs
+double REGARGS
 GetAxisLg(double x)
 {
 	double lg;
@@ -1299,8 +1299,8 @@ ResizeAxes(struct Page *page, struct gDiagram *gd, struct gAxes *ga, struct gBou
 
 
 void PUBLIC
-gAxesDraw(reg (d0) struct Page *page, reg (d1) ULONG dpi, reg (a0) struct RastPort *rp,
-	reg (a1) struct gClass *gc, reg (a2) struct gDiagram *gd, reg (a3) struct gBounds *gb)
+gAxesDraw(REG(d0, struct Page *page), REG(d1, ULONG dpi), REG(a0, struct RastPort *rp),
+	REG(a1, struct gClass *gc), REG(a2, struct gDiagram *gd), REG(a3, struct gBounds *gb))
 {
 	struct gAxes *ga = GINST_DATA(gc, gd);
 	long   offset = 0;
@@ -1430,7 +1430,7 @@ gAxesSet(struct gDiagram *gd, struct gAxes *ga, struct TagItem *tstate)
 
 	if (tstate)
 	{
-		while (ti = NextTagItem(&tstate))
+		while ((ti = NextTagItem(&tstate)) != 0)
 		{
 			switch (ti->ti_Tag)
 			{
@@ -1489,7 +1489,7 @@ gAxesSet(struct gDiagram *gd, struct gAxes *ga, struct TagItem *tstate)
 
 
 ULONG PUBLIC
-gAxesDispatch(reg (a0) struct gClass *gc, reg (a1) struct gDiagram *gd, reg (a2) Msg msg)
+gAxesDispatch(REG(a0, struct gClass *gc), REG(a2, struct gDiagram *gd), REG(a1, Msg msg))
 {
 	struct gAxes *ga = GINST_DATA(gc, gd);
 	ULONG  rc = 0L;
@@ -1497,7 +1497,7 @@ gAxesDispatch(reg (a0) struct gClass *gc, reg (a1) struct gDiagram *gd, reg (a2)
 	switch (msg->MethodID)
 	{
 		case GCM_NEW:
-			if (rc = gDoSuperMethodA(gc, gd, msg))
+			if ((rc = gDoSuperMethodA(gc, gd, msg)) != 0)
 			{
 				gd = (struct gDiagram *)rc;
 				ga = GINST_DATA(gc, gd);
@@ -1521,7 +1521,7 @@ gAxesDispatch(reg (a0) struct gClass *gc, reg (a1) struct gDiagram *gd, reg (a2)
 		{
 			struct gObject *cgo;
 
-			if (cgo = (struct gObject *)(rc = gDoSuperMethodA(gc, gd, msg)))
+			if ((cgo = (struct gObject *)(rc = gDoSuperMethodA(gc, gd, msg))) != 0)
 			{
 				struct gAxes *cga = GINST_DATA(gc, cgo);
 
@@ -1632,27 +1632,27 @@ gAxesDispatch(reg (a0) struct gClass *gc, reg (a1) struct gDiagram *gd, reg (a2)
 struct gInterface gEmbedDiagramInterface[] =
 {
 	{GEA_References, NULL, GIT_BUTTON, NULL},
-	{NULL}
+	{0}
 };
 
 
 void PUBLIC
-gEmbedDiagramDraw(reg (d0) struct Page *page, reg (d1) ULONG dpi, reg (a0) struct RastPort *rp, reg (a1) struct gClass *gc,
-	reg (a2) struct gDiagram *gd, reg (a3) struct gBounds *gb)
+gEmbedDiagramDraw(REG(d0, struct Page *page), REG(d1, ULONG dpi), REG(a0, struct RastPort *rp), REG(a1, struct gClass *gc),
+	REG(a2, struct gDiagram *gd), REG(a3, struct gBounds *gb))
 {
 	gSuperDraw(page, dpi, rp, gc, gd, gb);
 }
 
 
 ULONG PUBLIC
-gEmbedDiagramDispatch(reg (a0) struct gClass *gc, reg (a1) struct gObject *go, reg (a2) Msg msg)
+gEmbedDiagramDispatch(REG(a0, struct gClass *gc), REG(a2, struct gObject *go), REG(a1, Msg msg))
 {
 	ULONG  rc;
 
 	switch (msg->MethodID)
 	{
 		case GCM_NEW:
-			if (rc = gDoSuperMethodA(gc, go, msg))
+			if ((rc = gDoSuperMethodA(gc, go, msg)))
 			{
 				struct gEmbedded *ge = GINST_DATA(gc->gc_Super, (struct gObject *)rc);
 
@@ -1666,7 +1666,7 @@ gEmbedDiagramDispatch(reg (a0) struct gClass *gc, reg (a1) struct gObject *go, r
 			// don't call the super method's GCM_COPY but the one of the super class's
 			// super class and copy the referenced object instead of only linking it
 			// to this object
-			if (cgo = (struct gObject *)(rc = gDoSuperMethodA(gc->gc_Super, go, msg)))
+			if ((cgo = (struct gObject *)(rc = gDoSuperMethodA(gc->gc_Super, go, msg))))
 			{
 				struct gEmbedded *cge = GINST_DATA(gc->gc_Super, cgo);
 
@@ -1678,8 +1678,8 @@ gEmbedDiagramDispatch(reg (a0) struct gClass *gc, reg (a1) struct gObject *go, r
 					cge->ge_References = diagram;
 					if (diagram != NULL) {
 						diagram->gd_Object.go_Page = go->go_Page;
-						AddTail(&diagram->gd_Object.go_ReferencedBy, &cge->ge_Link);
-						AddTail(&go->go_Page->pg_gDiagrams, diagram);
+						MyAddTail(&diagram->gd_Object.go_ReferencedBy, &cge->ge_Link);
+						MyAddTail(&go->go_Page->pg_gDiagrams, diagram);
 					}
 				}
 			}
@@ -1707,9 +1707,9 @@ gEmbedDiagramDispatch(reg (a0) struct gClass *gc, reg (a1) struct gObject *go, r
 			if (ge->ge_Type != GET_DIAGRAM || !go->go_Page || !(page = (struct Page *)FindListNumber(&go->go_Page->pg_Mappe->mp_Pages,ge->ge_PageNumber)))
 				break;
 
-			if (rgo = (struct gObject *)FindListNumber(&page->pg_gDiagrams, ge->ge_Pos))
+			if ((rgo = (struct gObject *)FindListNumber(&page->pg_gDiagrams, ge->ge_Pos)) != 0)
 			{
-				ULONG tags[3] = {GEA_References, NULL, TAG_END};
+				ULONG tags[3] = {GEA_References, 0, TAG_END};
 
 				tags[1] = (ULONG)rgo;
 				gDoMethod(go, GCM_SET, tags);
@@ -1726,8 +1726,8 @@ gEmbedDiagramDispatch(reg (a0) struct gClass *gc, reg (a1) struct gObject *go, r
 /***************************** Fenster-Handling für Diagramme *****************************/
 
 
-void __asm
-handlePreviewIDCMP(reg (a0) struct TagItem *tag)
+void ASM
+handlePreviewIDCMP(REG(a0, struct TagItem *tag))
 {
 	//struct gObject *go = wd->wd_ExtData[0];
 
@@ -1756,7 +1756,7 @@ UpdateDiagramGadgets(struct Window *win)
 		return;
 
 	if ((gad = wd->wd_PageHandlingGadget) != NULL)
-		GetAttr(IGA_Active, gad, (ULONG *)&activePage);
+		GetAttr(IGA_Active, (Object *)gad, (IPTR *)&activePage);
 
 	/** Achsen-Gadgets (de-)aktivieren **/
 	{
@@ -1772,7 +1772,7 @@ UpdateDiagramGadgets(struct Window *win)
 	}
 	
 	/** Werte-Seite **/
-	if (gad = PageGadget(wd->wd_Pages[3], 10))
+	if ((gad = PageGadget(wd->wd_Pages[3], 10)) != 0)
 	{
 		GT_SetGadgetAttrs(gad, activePage == 3 ? win : NULL, NULL, GTLV_Labels, &gd->gd_Values, GA_Disabled, FALSE, TAG_END);
 		for (i = 11; i < 14; i++)
@@ -1780,7 +1780,7 @@ UpdateDiagramGadgets(struct Window *win)
 	}
 	
 	/** Diagrammtyp-Seite **/
-	if (gad = PageGadget(wd->wd_Pages[1], 8))
+	if ((gad = PageGadget(wd->wd_Pages[1], 8)) != 0)
 	{
 		GT_SetGadgetAttrs(gad, activePage == 1 ? win : NULL, NULL, GTLV_Selected,
 			FindListEntry(&gdiagrams, (struct Node *)gd->gd_Object.go_Class), TAG_END);
@@ -1886,8 +1886,11 @@ UpdateObjectReferences(struct gObject *oldgo, struct gObject *newgo)
 	struct gObject *rgo;
 	struct Link *l, *nl;
 
-	for (l = (APTR)oldgo->go_ReferencedBy.mlh_Head; nl = (APTR)l->l_Node.mln_Succ; l = nl)
-		gSetObjectAttrs((rgo = l->l_Link)->go_Page, rgo, GEA_References, newgo, TAG_END);
+	for (l = (APTR)oldgo->go_ReferencedBy.mlh_Head; (nl = (APTR)l->l_Node.mln_Succ) != 0; l = nl)
+	{
+		rgo = l->l_Link;
+		gSetObjectAttrs(rgo->go_Page, rgo, GEA_References, newgo, TAG_END);
+	}
 }
 
 
@@ -1919,7 +1922,7 @@ SetDiagramType(struct Window *win, struct winData *wd, struct gClass *gc)
 	if (!win || !wd || !gc || !(gc->gc_Node.in_Type & GCT_INTERNAL) && !gc->gc_Segment && !LoadGClass(gc))
 		return;
 
-	if (lastgd = wd->u.diagram.wd_CurrentDiagram)
+	if ((lastgd = wd->u.diagram.wd_CurrentDiagram) != 0)
 	{
 		if (gc == lastgd->gd_Object.go_Class)
 			return;
@@ -1929,14 +1932,14 @@ SetDiagramType(struct Window *win, struct winData *wd, struct gClass *gc)
 
 	if (!((gad = PageGadget(wd->wd_Pages[0], 5))
 		&& GT_GetGadgetAttrs(gad, win, NULL, GTTX_Text, &storage, TAG_END)
-		&& (page = (struct Page *)FindName(&((struct Page *)wd->wd_Data)->pg_Mappe->mp_Pages, (STRPTR)storage))))
+		&& (page = (struct Page *)MyFindName(&((struct Page *)wd->wd_Data)->pg_Mappe->mp_Pages, (STRPTR)storage))))
 		page = (struct Page *)wd->wd_Data;
 
-	if (gd = (struct gDiagram *)gDoClassMethod(gc, gc, GCM_NEW, NULL, page))
+	if ((gd = (struct gDiagram *)gDoClassMethod(gc, gc, GCM_NEW, NULL, page)) != 0)
 	{
-		ULONG  tags[] = {GOA_Name,	NULL,
-						 GDA_DataPage,NULL,
-						 GDA_Range,   NULL,
+		ULONG  tags[] = {GOA_Name,	0,
+						 GDA_DataPage,0,
+						 GDA_Range,   0,
 						 GDA_ReadData,0,
 /*					 	 GDA_RotX,	0,
 						 GDA_RotY,	0,
@@ -1953,7 +1956,7 @@ SetDiagramType(struct Window *win, struct winData *wd, struct gClass *gc)
 
 		if ((gad = PageGadget(wd->wd_Pages[0], 1)) && GT_GetGadgetAttrs(gad, win, NULL, GTST_String, &storage, TAG_END))
 			tags[1] = storage;	// GOA_Name
-		if (gad = PageGadget(wd->wd_Pages[0], 5))
+		if ((gad = PageGadget(wd->wd_Pages[0], 5)) != 0)
 			tags[3] = (ULONG)gad->UserData;
 		if ((gad = PageGadget(wd->wd_Pages[0], 2)) && GT_GetGadgetAttrs(gad,win,NULL,GTST_String,&storage,TAG_END))
 			tags[5] = storage;	// GDA_Range
@@ -1972,7 +1975,7 @@ SetDiagramType(struct Window *win, struct winData *wd, struct gClass *gc)
 		{
 			struct Window *pwin;
 
-			if (pwin = GetAppWindow(WDT_PREVIEW))
+			if ((pwin = GetAppWindow(WDT_PREVIEW)) != 0)
 			{
 				((struct winData *)pwin->UserData)->wd_ExtData[0] = gd;
 				RefreshPreviewSize(pwin);
@@ -1998,7 +2001,7 @@ SetDiagramType(struct Window *win, struct winData *wd, struct gClass *gc)
 				un->un_Type = UNT_DIAGRAM_TYPE;
 			}
 
-			AddTail(&gd->gd_Object.go_Page->pg_gDiagrams, gd);
+			MyAddTail(&gd->gd_Object.go_Page->pg_gDiagrams, gd);
 		}
 	}
 
@@ -2007,7 +2010,7 @@ SetDiagramType(struct Window *win, struct winData *wd, struct gClass *gc)
 		UpdateObjectReferences(lastgd, gd);
 
 		if (oldgd)
-			Remove((struct Node *)lastgd);
+			MyRemove(lastgd);
 
 		if (!un)
 			FreeGObject(lastgd);
@@ -2015,8 +2018,8 @@ SetDiagramType(struct Window *win, struct winData *wd, struct gClass *gc)
 }
 
 
-void __asm
-CloseDiagramWindow(reg (a0) struct Window *win, reg (d0) BOOL clean)
+void ASM
+CloseDiagramWindow(REG(a0, struct Window *win), REG(d0, BOOL clean))
 {
 	struct winData *wd = (struct winData *)win->UserData;
 	struct gDiagram *gd = wd->u.diagram.wd_CurrentDiagram;
@@ -2025,7 +2028,7 @@ CloseDiagramWindow(reg (a0) struct Window *win, reg (d0) BOOL clean)
 	if (gd != NULL)
 		gd->gd_Object.go_Window = NULL;
 
-	while (gg = (APTR)RemHead(wd->u.diagram.wd_Gadgets))
+	while ((gg = (APTR)MyRemHead(wd->u.diagram.wd_Gadgets)) != 0)
 		FreePooled(pool, gg, sizeof(struct gGadget));
 
 	if (clean)
@@ -2037,7 +2040,7 @@ CloseDiagramWindow(reg (a0) struct Window *win, reg (d0) BOOL clean)
 		if (!ende)  // damit da nichts durcheinandergeht
 			CloseAppWindow(GetAppWindow(WDT_PREVIEW), TRUE);
 
-		if (gd = wd->u.diagram.wd_CurrentDiagram)
+		if ((gd = wd->u.diagram.wd_CurrentDiagram) != 0)
 		{
 			// "Ok" will set wd_CurrentDiagram to NULL, so we can safely free
 			// it, when it's still there here (if you are editing a diagram,
@@ -2049,8 +2052,8 @@ CloseDiagramWindow(reg (a0) struct Window *win, reg (d0) BOOL clean)
 }
 
 
-void __asm
-HandleDiagramIDCMP(reg (a0) struct TagItem *tag)
+void ASM
+HandleDiagramIDCMP(REG(a0, struct TagItem *tag))
 {
 	struct gDiagram *gd = wd->u.diagram.wd_CurrentDiagram;
 	struct Page *page = wd->wd_Data;
@@ -2201,7 +2204,7 @@ HandleDiagramIDCMP(reg (a0) struct TagItem *tag)
 						struct gClass *gc = FindGClass("embed_diagram");
 
 						gMakeRefObject(page, gc, gd, GetString(&gLocaleInfo, MSG_CREATE_DIAGRAM_OBJ));
-						AddTail(&page->pg_gDiagrams, gd);
+						MyAddTail(&page->pg_gDiagrams, gd);
 					}
 					break;
 				}
@@ -2221,5 +2224,3 @@ HandleDiagramIDCMP(reg (a0) struct TagItem *tag)
 			break;
 	}
 }
-
-

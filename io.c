@@ -16,7 +16,7 @@ struct MinList io_fvs, io_fonts;
 struct Node *io_lastfont;
 
 
-STRPTR
+CONST_STRPTR
 IFFErrorText(long err)
 {
 	switch (err) {
@@ -126,7 +126,7 @@ CryptString(STRPTR target, STRPTR source)
 
 
 STRPTR PUBLIC
-ioita(reg (d0) ULONG d1,reg (d1) ULONG d2,reg (d2) long komma,reg (d3) UBYTE flags)
+ioita(REG(d0, ULONG d1), REG(d1, ULONG d2), REG(d2, long komma), REG(d3, UBYTE flags))
 {
 	ULONG ld[2];
 	double *d = (double *)ld;
@@ -138,7 +138,7 @@ ioita(reg (d0) ULONG d1,reg (d1) ULONG d2,reg (d2) long komma,reg (d3) UBYTE fla
 
 
 void PUBLIC
-ioUpdateTFText(reg (a0) struct Page *page,reg (a1) struct tableField *tf)
+ioUpdateTFText(REG(a0, struct Page *page), REG(a1, struct tableField *tf))
 {
 	if (!page || !tf)
 		return;
@@ -153,7 +153,7 @@ lpGetColorPen(struct MinList *list,long id)
 {
 	struct Node *ln;
 
-	if (ln = FindListNumber(list, id))
+	if ((ln = FindListNumber(list, id)) != 0)
 		return (ULONG)ln->ln_Name;
 
 	return (ULONG)id;
@@ -175,7 +175,7 @@ lpFindColorPen(UBYTE red, UBYTE green, UBYTE blue)
 
 
 struct colorPen * PUBLIC
-ioAddPen(reg (a0) STRPTR name,reg (d0) UBYTE r,reg (d1) UBYTE g,reg (d2) UBYTE b)
+ioAddPen(REG(a0, STRPTR name), REG(d0, UBYTE r), REG(d1, UBYTE g), REG(d2, UBYTE b))
 {
 	struct colorPen *cp;
 
@@ -518,7 +518,7 @@ LoadCells(struct IFFHandle *iff, LONG context, struct Page *page, struct MinList
 				if (skip_row)
 					row = tf->tf_Row+1;
 			}
-			AddTail(list,tf);
+			MyAddTail(list,tf);
 			tf->tf_Col = col;
 			tf->tf_Row = row;
 #ifdef DUMP_CELLS
@@ -624,7 +624,7 @@ LoadCells(struct IFFHandle *iff, LONG context, struct Page *page, struct MinList
 				LONG   num = ReadValue(&a, tag - CELL_BYTEFORMAT);
 				struct Node *ln;
 
-				if (ln = FindListNumber(&io_fvs, num))
+				if ((ln = FindListNumber(&io_fvs, num)) != 0)
 					ln = (struct Node *)ln->ln_Name;
 
 				tf->tf_Format = AllocString((STRPTR)ln);
@@ -664,7 +664,7 @@ LoadCells(struct IFFHandle *iff, LONG context, struct Page *page, struct MinList
 				LONG num = ReadValue(&a, tag - CELL_BYTEFONT);
 				struct Node *ln;
 
-				if (ln = FindListNumber(&io_fonts, num))
+				if ((ln = FindListNumber(&io_fonts, num)) != 0)
 					ln = (struct Node *)ln->ln_Name;
 
 				io_lastfont = ln;
@@ -757,11 +757,11 @@ LoadObject(struct IFFHandle *iff, LONG context, struct Page *page)
 
 	if (!(go->go_Class->gc_Node.in_Type & GCT_DIAGRAM))
 	{
-		AddTail(&page->pg_gObjects, go);
-		AddTail(&page->pg_gGroups, OBJECTGROUP(go));
+		MyAddTail(&page->pg_gObjects, go);
+		MyAddTail(&page->pg_gGroups, OBJECTGROUP(go));
 	}
 	else
-		AddTail(&page->pg_gDiagrams, go);
+		MyAddTail(&page->pg_gDiagrams, go);
 
 	//AddGObject(page,NULL,go,ADDREM_NONE);
 
@@ -790,7 +790,7 @@ LoadPage(struct IFFHandle *iff, struct Mappe *mp)
 		if ((error = ParseIFF(iff,IFFPARSE_STEP)) && error != IFFERR_EOC)
 			break;
 
-		if (cn = CurrentChunk(iff))
+		if ((cn = CurrentChunk(iff)) != 0)
 		{
 			if (error == IFFERR_EOC)  // leaving a chunk
 			{
@@ -811,7 +811,7 @@ LoadPage(struct IFFHandle *iff, struct Mappe *mp)
 					page->pg_Zoom = *(ULONG *)t;  t += 4;
 					RecalcPageDPI(page);
 
-					if (ln = FindListNumber(&io_fonts,*(ULONG *)t))
+					if ((ln = FindListNumber(&io_fonts, *(ULONG *)t)) != 0)
 						page->pg_Family = (struct Node *)ln->ln_Name;
 
 					t += 4;
@@ -819,7 +819,7 @@ LoadPage(struct IFFHandle *iff, struct Mappe *mp)
 					io_lastfont = page->pg_Family;
 
 					page->pg_mmStdWidth = *(ULONG *)t;  t += 4;
-					while(i = *(ULONG *)t)
+					while ((i = *(ULONG *)t) != 0)
 					{
 						AllocTableSize(page,i,0);  t += 4;
 						(page->pg_tfWidth-1+i)->ts_mm = *(ULONG *)t;
@@ -828,7 +828,7 @@ LoadPage(struct IFFHandle *iff, struct Mappe *mp)
 					t += 4;
 
 					page->pg_mmStdHeight = *(ULONG *)t;  t += 4;
-					while(i = *(ULONG *)t)
+					while ((i = *(ULONG *)t) != 0)
 					{
 						AllocTableSize(page,0,i);  t += 4;
 						(page->pg_tfHeight-1+i)->ts_mm = *(ULONG *)t;
@@ -840,7 +840,7 @@ LoadPage(struct IFFHandle *iff, struct Mappe *mp)
 
 					if ((t-(UBYTE *)sp->sp_Data) < sp->sp_Size)
 					{
-						while(i = *(ULONG *)t)
+						while ((i = *(ULONG *)t) != 0)
 						{
 							AllocTableSize(page,i,0);  t += 4;
 							(page->pg_tfWidth-1+i)->ts_Title = ReadString(&t);
@@ -849,7 +849,7 @@ LoadPage(struct IFFHandle *iff, struct Mappe *mp)
 
 						if ((t-(UBYTE *)sp->sp_Data) < sp->sp_Size)
 						{
-							while(i = *(ULONG *)t)
+							while ((i = *(ULONG *)t) != 0)
 							{
 								AllocTableSize(page,0,i);  t += 4;
 								(page->pg_tfHeight-1+i)->ts_Title = ReadString(&t);
@@ -871,7 +871,7 @@ LoadPage(struct IFFHandle *iff, struct Mappe *mp)
 
 								bug("**** warning: cell at %ld:%ld\n",tf->tf_Col,tf->tf_Row);
 								tf = (struct tableField *)tf->tf_Node.mln_Succ;
-								Remove((struct Node *)dtf);
+								MyRemove(dtf);
 								FreeTableField(dtf);
 
 								if (!tf->tf_Node.mln_Succ)
@@ -922,10 +922,10 @@ LoadDatabase(struct IFFHandle *iff,struct Mappe *mp)
 	db->db_Content = ReadString(&d);
 	db->db_PageNumber = ReadLong(&d);
 
-	NewList(&db->db_Fields);
-	NewList(&db->db_Indices);
-	NewList(&db->db_Filters);
-	AddTail(&mp->mp_Databases,db);
+	MyNewList(&db->db_Fields);
+	MyNewList(&db->db_Indices);
+	MyNewList(&db->db_Filters);
+	MyAddTail(&mp->mp_Databases, db);
 
 	for (i = ReadLong(&d); i > 0; i--)
 	{
@@ -934,7 +934,7 @@ LoadDatabase(struct IFFHandle *iff,struct Mappe *mp)
 
 		fi->fi_Node.ln_Type = *d++;
 		fi->fi_Special = ReadString(&d);
-		AddTail(&db->db_Fields, fi);
+		MyAddTail(&db->db_Fields, fi);
 	}
 
 	while (d < stop)
@@ -943,7 +943,7 @@ LoadDatabase(struct IFFHandle *iff,struct Mappe *mp)
 		switch (b)
 		{
 			case 1:  /* read indices */
-				while (b = *d++)
+				while ((b = *d++) != 0)
 				{
 					if (!(in = AllocPooled(pool, sizeof(struct Index))))
 						return IFFERR_NOMEM;
@@ -954,7 +954,7 @@ LoadDatabase(struct IFFHandle *iff,struct Mappe *mp)
 						in->in_Node.ln_Type = 1;
 					}
 					in->in_Node.ln_Name = ReadString(&d);
-					AddTail(&db->db_Indices, in);
+					MyAddTail(&db->db_Indices, in);
 				}
 				break;
 			case 2:  /* read mask */
@@ -963,8 +963,8 @@ LoadDatabase(struct IFFHandle *iff,struct Mappe *mp)
 
 				ma->ma_Node.ln_Name = AllocString(db->db_Node.ln_Name);
 				ma->ma_Page = (APTR)ReadLong(&d);
-				NewList(&ma->ma_Fields);
-				AddTail(&mp->mp_Masks, ma);
+				MyNewList(&ma->ma_Fields);
+				MyAddTail(&mp->mp_Masks, ma);
 
 				for (i = ReadLong(&d); i > 0; i--) {
 					if (!(mf = AllocPooled(pool, sizeof(struct MaskField))))
@@ -973,7 +973,7 @@ LoadDatabase(struct IFFHandle *iff,struct Mappe *mp)
 					mf->mf_Col = ReadLong(&d);
 					mf->mf_Row = ReadLong(&d);
 					mf->mf_Node.ln_Name = ReadString(&d);
-					AddTail(&ma->ma_Fields, mf);
+					MyAddTail(&ma->ma_Fields, mf);
 				}
 				break;
 			case 3:		/* read filter */
@@ -987,7 +987,7 @@ LoadDatabase(struct IFFHandle *iff,struct Mappe *mp)
 				filter->fi_Node.ln_Name = ReadString(&d);
 				filter->fi_Filter = ReadString(&d);
 
-				AddTail(&db->db_Filters, filter);
+				MyAddTail(&db->db_Filters, filter);
 				break;
 			}
 		}
@@ -1010,10 +1010,10 @@ LoadFonts(struct IFFHandle *iff)
 	{
 		STRPTR family = (UBYTE *)sp->sp_Data + pos;
 
-		if (ln = AllocPooled(pool, sizeof(struct Node)))
+		if ((ln = AllocPooled(pool, sizeof(struct Node))))
 		{
 			// gibt es diesen Schriftsatz auf diesem System?
-			if (!(ln->ln_Name = (char *)FindName(&families, family)))
+			if (!(ln->ln_Name = (char *)MyFindName(&families, family)))
 			{
 				/* MERKER: nette Auswahlmöglichkeit schaffen */
 				/* for now: find known good font */
@@ -1048,15 +1048,15 @@ LoadFonts(struct IFFHandle *iff)
 					}
 				}
 			}
-			AddTail(&io_fonts, ln);
+			MyAddTail(&io_fonts, ln);
 		}
 		pos += strlen(family) + 1;
 	}
 }
 
 
-static long __asm
-StandardLoadProject(reg (d0) BPTR dat, reg (a0) struct Mappe *mp)
+static long ASM
+StandardLoadProject(REG(d0, BPTR dat), REG(a0, struct Mappe *mp))
 {
 	struct IFFHandle *iff;
 	struct Node *ln;
@@ -1067,7 +1067,7 @@ StandardLoadProject(reg (d0) BPTR dat, reg (a0) struct Mappe *mp)
 		return RC_FAIL;
 
 	InitIFFasDOS(iff);
-	iff->iff_Stream = dat;
+	iff->iff_Stream = (IPTR)dat;
 
 	PropChunks(iff, chunks, 3);
 	PropPrefsChunks(iff, ID_TABL,PRF_NAMES | PRF_FORMAT | PRF_DISPLAY | PRF_KEYS | PRF_ICON | PRF_CMDS | PRF_MENU | PRF_CONTEXT);
@@ -1089,7 +1089,7 @@ StandardLoadProject(reg (d0) BPTR dat, reg (a0) struct Mappe *mp)
             if ((error = ParseIFF(iff, IFFPARSE_STEP)) && error != IFFERR_EOC)
 				break;
 
-			if (cn = CurrentChunk(iff))
+			if ((cn = CurrentChunk(iff)) != 0)
 			{
 				if (error == IFFERR_EOC)      // leaving a chunk
 				{
@@ -1192,10 +1192,10 @@ StandardLoadProject(reg (d0) BPTR dat, reg (a0) struct Mappe *mp)
 
 	FreeIFF(iff);
 
-	while (ln = RemHead(&io_fonts))
+	while ((ln = MyRemHead(&io_fonts)) != 0)
 		FreePooled(pool, ln, sizeof(struct Node));
 
-	while (ln = RemHead(&io_fvs))
+	while ((ln = MyRemHead(&io_fvs)) != 0)
 	{
 		FreeString(ln->ln_Name);
 		FreePooled(pool, ln, sizeof(struct Node));
@@ -1445,7 +1445,7 @@ MakeCellStream(struct Page *page, struct tableField *tf, uint8 tag, struct table
 			{
 				struct NumberLink *nl;
 
-				if (nl = FindLink(&io_fonts, fi->fi_Family))
+				if ((nl = FindLink(&io_fonts, fi->fi_Family)) != 0)
 				{
 					font = fi->fi_Family;
 					WriteValue(CELL_BYTEFONT, nl->nl_Number, &buffer);
@@ -1475,7 +1475,7 @@ MakeCellStream(struct Page *page, struct tableField *tf, uint8 tag, struct table
 		//bug("write: (%ld:%ld) \"%s\" (text = \"%s\"), %s\n", tf->tf_Col, tf->tf_Row, tf->tf_Format, tf->tf_Original, fullnames ? "full names" : "links");
 		if (tf->tf_Format && fullnames)
 			WriteString(CELL_FORMATNAME, tf->tf_Format, &buffer);
-		else if (tf->tf_Format && (nl = (APTR)FindName((struct List *)&io_fvs, tf->tf_Format)))
+		else if (tf->tf_Format && (nl = (APTR)MyFindName(&io_fvs, tf->tf_Format)))
 			WriteValue(CELL_BYTEFORMAT, nl->nl_Number, &buffer);
 		else
 			WriteBytes(CELL_NOFORMAT,NULL, 0, &buffer);
@@ -1592,7 +1592,7 @@ SaveObject(struct IFFHandle *iff, struct gObject *go)
 {
 	long error;
 
-	if (error = PushChunk(iff, 0, ID_OBJ, IFFSIZE_UNKNOWN))
+	if ((error = PushChunk(iff, 0, ID_OBJ, IFFSIZE_UNKNOWN)) != 0)
 		return error;
 
 	gDoMethod(go, GCM_SAVE, iff, &io_fonts);
@@ -1630,7 +1630,7 @@ SavePage(struct IFFHandle *iff,struct Page *pg)
 {
 	long error;
 
-	if (error = PushChunk(iff,ID_PAGE,ID_FORM,IFFSIZE_UNKNOWN))
+	if ((error = PushChunk(iff, ID_PAGE, ID_FORM, IFFSIZE_UNKNOWN)) != 0)
 		return error;
 
 	if (!(error = PushChunk(iff,0,ID_PGHD,IFFSIZE_UNKNOWN)))
@@ -1643,7 +1643,7 @@ SavePage(struct IFFHandle *iff,struct Page *pg)
 		WriteChunkBytes(iff,(UBYTE *)&pg->pg_BPen+1,3);
 		WriteChunkBytes(iff,&pg->pg_Zoom,4);
 
-		if (nl = (APTR)FindName((struct List *)&io_fonts,pg->pg_Family->ln_Name))
+		if ((nl = (APTR)MyFindName(&io_fonts, pg->pg_Family->ln_Name)) != 0)
 		{
 			j = nl->nl_Number;
 			WriteChunkBytes(iff,&j,4);
@@ -1736,7 +1736,7 @@ SavePage(struct IFFHandle *iff,struct Page *pg)
 	{
 		ULONG handle;
 
-		if (handle = GetCellIterator(pg,NULL,FALSE))
+		if ((handle = GetCellIterator(pg, NULL, FALSE)) != 0)
 		{
 			error = SaveCells(iff, pg, handle, IO_STANDARD_SAVE);
 			FreeCellIterator(handle);
@@ -1761,7 +1761,7 @@ SaveDatabases(struct IFFHandle *iff, struct Mappe *mp)
 
 	foreach (&mp->mp_Databases, db)
 	{
-		if (error = PushChunk(iff, 0, ID_DB,IFFSIZE_UNKNOWN))
+		if ((error = PushChunk(iff, 0, ID_DB, IFFSIZE_UNKNOWN)) != 0)
 			return error;
 
 		WriteChunkString(iff, db->db_Node.ln_Name);
@@ -1852,15 +1852,15 @@ SaveDatabases(struct IFFHandle *iff, struct Mappe *mp)
 			}
 		}
 
-		if (error = PopChunk(iff))
+		if ((error = PopChunk(iff)) != 0)
 			return error;
 	}
 	return 0L;
 }
 
 
-static long __asm
-StandardSaveProject(reg (d0) BPTR dat,reg (a0) struct Mappe *mp)
+static long ASM
+StandardSaveProject(REG(d0, BPTR dat), REG(a0, struct Mappe *mp))
 {
 	struct IFFHandle *iff;
 	long   error;
@@ -1869,7 +1869,7 @@ StandardSaveProject(reg (d0) BPTR dat,reg (a0) struct Mappe *mp)
 		return(RC_FAIL);
 
 	InitIFFasDOS(iff);
-	iff->iff_Stream = dat;
+	iff->iff_Stream = (IPTR)dat;
 
 	if (!(error = OpenIFF(iff,IFFF_WRITE)))
 	{
@@ -1986,8 +1986,8 @@ StandardSaveProject(reg (d0) BPTR dat,reg (a0) struct Mappe *mp)
 
 #ifdef ENABLE_OLD_FORMAT
 
-static long __asm
-OldLoadProject(reg (d0) BPTR dat,reg (a0) struct Mappe *mp)
+static long ASM
+OldLoadProject(REG(d0, BPTR dat), REG(a0, struct Mappe *mp))
 {
 	struct tableField *tf;
 	struct Page *page = NULL;
@@ -2002,7 +2002,7 @@ OldLoadProject(reg (d0) BPTR dat,reg (a0) struct Mappe *mp)
 	ULONG  pen;
 	long   i,a,b,c,mode = 3;
 
-	NewList(&list);  NewList(&forms);  NewList(&cols);
+	MyNewList(&list);  MyNewList(&forms);  MyNewList(&cols);
 	FGets(dat,t,BUFLEN);
 	if (!strcmp(t,"#ign-pre\n"))
 	{
@@ -2102,9 +2102,9 @@ OldLoadProject(reg (d0) BPTR dat,reg (a0) struct Mappe *mp)
 					case 1:     /* #fonts */
 						if (ln = AllocPooled(pool,sizeof(struct Node)))
 						{
-							if (!(ln->ln_Name = (char *)FindName(&families,t)))
+							if (!(ln->ln_Name = (char *)MyFindName(&families, t)))
 								ln->ln_Name = (char *)families.mlh_Head;
-							AddTail(&list,ln);
+							MyAddTail(&list, ln);
 						}
 						break;
 					case 2:     /* #table */
@@ -2230,9 +2230,9 @@ OldLoadProject(reg (d0) BPTR dat,reg (a0) struct Mappe *mp)
 								db->db_Node.ln_Name = AllocString(t+2);
 								db->db_Node.ln_Type = NMT_DATABASE;
 								db->db_PageNumber = ~0L;
-								NewList(&db->db_Fields);
-								NewList(&db->db_Indices);
-								NewList(&db->db_Filters);
+								MyNewList(&db->db_Fields);
+								MyNewList(&db->db_Indices);
+								MyNewList(&db->db_Filters);
 								while(*s)
 								{
 									if (*s == 'p')
@@ -2266,12 +2266,12 @@ OldLoadProject(reg (d0) BPTR dat,reg (a0) struct Mappe *mp)
 													*(s-1) = 0;
 												fi->fi_Special = AllocString(t+2+b);
 											}
-											AddTail(&db->db_Fields,fi);
+											MyAddTail(&db->db_Fields, fi);
 										}
 										b = (long)(s-t);
 									}
 								}
-								AddTail(&mp->mp_Databases,db);
+								MyAddTail(&mp->mp_Databases, db);
 							}
 						}
 						else if (*s == 'i')  /* index */
@@ -2289,7 +2289,7 @@ OldLoadProject(reg (d0) BPTR dat,reg (a0) struct Mappe *mp)
 									in->in_Node.ln_Name = AllocStringLength(s,a-(*(s+a) ? 1 : 0));
 									s += a;
 								}
-								AddTail(&db->db_Indices,in);
+								MyAddTail(&db->db_Indices, in);
 							}
 						}
 						else if (*s == 'm')  /* mask */
@@ -2302,7 +2302,7 @@ OldLoadProject(reg (d0) BPTR dat,reg (a0) struct Mappe *mp)
 							{
 								ma->ma_Node.ln_Name = AllocString(db->db_Node.ln_Name);
 								ma->ma_Page = (struct Page *)~0L;
-								NewList((struct List *)&ma->ma_Fields);
+								MyNewList(&ma->ma_Fields);
 								a = 0;  // Modus 0: Maske, 1: Maskenfeld
 								b = 0;  c = 0;
 								while(*s)
@@ -2330,12 +2330,12 @@ OldLoadProject(reg (d0) BPTR dat,reg (a0) struct Mappe *mp)
 													*(s-1) = 0;
 												mf->mf_Node.ln_Name = AllocString(t+b);
 											}
-											AddTail((struct List *)&ma->ma_Fields,mf);
+											MyAddTail(&ma->ma_Fields,mf);
 										}
 										b = (long)(s-t);
 									}
 								}
-								AddTail(&mp->mp_Masks,ma);
+								MyAddTail(&mp->mp_Masks, ma);
 							}
 						}
 						break;
@@ -2345,9 +2345,9 @@ OldLoadProject(reg (d0) BPTR dat,reg (a0) struct Mappe *mp)
 						if (ln = AllocPooled(pool,sizeof(struct Node)))
 						{
 							ln->ln_Name = AllocString(s+2);
-							AddTail(&forms,ln);
+							MyAddTail(&forms, ln);
 						}
-						if (!FindName(&prefs.pr_Formats,s+2) && !FindName(&mp->mp_Prefs.pr_Formats,s+2))
+						if (!MyFindName(&prefs.pr_Formats, s + 2) && !MyFindName(&mp->mp_Prefs.pr_Formats, s + 2))
 						{
 							i = s+2-t;  s = t;  a = 1;  b = -1;  c = -1;  pen = ~0L;
 							while(*s)
@@ -2382,7 +2382,7 @@ OldLoadProject(reg (d0) BPTR dat,reg (a0) struct Mappe *mp)
 						{
 							/*bug("color: %s (%ld/%ld/%ld)\n",cp->cp_Node.ln_Name,cp->cp_Red,cp->cp_Green,cp->cp_Blue);*/
 							ln->ln_Name = (STRPTR)cp->cp_ID;
-							AddTail(&cols,ln);
+							MyAddTail(&cols,ln);
 						}
 						break;
 					case 7:   /* #object */
@@ -2402,11 +2402,11 @@ OldLoadProject(reg (d0) BPTR dat,reg (a0) struct Mappe *mp)
 		}
 	}
 
-	while (ln = RemHead(&list))
+	while ((ln = MyRemHead(&list)) != 0)
 		FreePooled(pool,ln,sizeof(struct Node));
-	while (ln = RemHead(&cols))
+	while ((ln = MyRemHead(&cols) != 0)
 		FreePooled(pool,ln,sizeof(struct Node));
-	while (ln = RemHead(&forms))
+	while ((ln = MyRemHead(&forms) != 0)
 	{
 		FreeString(ln->ln_Name);
 		FreePooled(pool,ln,sizeof(struct Node));
@@ -2439,16 +2439,19 @@ const struct {UWORD jsr;APTR func;} io_functable[] = {
 void
 InitIOType(struct IOType *io)
 {
-	BOOL * __asm (*initIOSegment)(reg (a0) APTR,reg (a1) APTR *,reg (a2) APTR,reg (a3) APTR,reg (a6) APTR,reg (d0) APTR,reg (d1) APTR, reg (d3) APTR, reg (d4) APTR, reg (d2) long);
+#if defined(__AROS__)
+	return;
+#else
+	BOOL * ASM (*initIOSegment)(REG(a0, APTR), REG(a1, APTR *), REG(a2, APTR), REG(a3, APTR), REG(a6, APTR), REG(d0, APTR), REG(d1, APTR), REG(d3, APTR), REG(d4, APTR), REG(d2, long));
 	BPTR dir,olddir,segment;
 
 	if (io->io_Segment || !io->io_Filename)
 		return;
 
-	if (dir = Lock(CLASSES_PATH,ACCESS_READ))
+	if ((dir = Lock(CLASSES_PATH,ACCESS_READ)) != 0)
 	{
 		olddir = CurrentDir(dir);
-		if (segment = LoadSeg(io->io_Filename))
+		if ((segment = LoadSeg(io->io_Filename)) != 0)
 		{
 			initIOSegment = ((segment+1) << 2);
 			if (initIOSegment(io, (APTR)((UBYTE *)io_functable + sizeof(io_functable)), pool, DOSBase,
@@ -2462,6 +2465,7 @@ InitIOType(struct IOType *io)
 		CurrentDir(olddir);
 		UnLock(dir);
 	}
+#endif
 }
 
 
@@ -2536,8 +2540,8 @@ LoadProject(struct Mappe *mp, struct IOType *type)
 
 	rc = RC_WARN;
 
-	if (dat = Open(t, MODE_OLDFILE)) {
-		if (len = FRead(dat, s, 1, 128)) {
+	if ((dat = Open(t, MODE_OLDFILE)) != 0) {
+		if ((len = FRead(dat, s, 1, 128)) != 0) {
 			ascii = TRUE;
 			for (i = 0; i < len; i++) {
 				if (!IsAlNum(loc, c = *(s+i)) && (c < 32 || c > 126) && c != 10 && c != 9 && c != 13) {
@@ -2580,8 +2584,8 @@ LoadProject(struct Mappe *mp, struct IOType *type)
 					D(bug("Load-DataType %s.\n", io->io_Node.ln_Name));
 					Seek(dat, 0, OFFSET_BEGINNING);
 
-					NewList(&io_fonts);
-					NewList(&io_fvs);
+					MyNewList(&io_fonts);
+					MyNewList(&io_fvs);
 					calcflags = (calcflags & ~CF_REQUESTER) | CF_SUSPEND; /* setzt Berechnung der Zellen aus */
 
 					if (!(rc = io->io_Load(dat, mp))) {
@@ -2705,7 +2709,7 @@ LoadProject(struct Mappe *mp, struct IOType *type)
 
 							for (i = 0, fi = (APTR)db->db_Fields.mlh_Head; fi->fi_Node.ln_Succ; fi = (APTR)fi->fi_Node.ln_Succ, i++)
 							{
-								if (tf = GetFields(db,i))
+								if ((tf = GetFields(db,i)) != 0)
 									fi->fi_Node.ln_Name = AllocFieldText(db, tf, i);
 							}
 
@@ -2715,7 +2719,7 @@ LoadProject(struct Mappe *mp, struct IOType *type)
 							foreach (&db->db_Filters, filter) {
 								// create filter term (and replace short field names
 								// with full database references)
-								if (filter->fi_Root = CreateTree(db->db_Page, filter->fi_Filter))
+								if ((filter->fi_Root = CreateTree(db->db_Page, filter->fi_Filter)) != 0)
 									PrepareFilter(db, filter->fi_Root);
 
 								// generate filter index & set current filter
@@ -2782,7 +2786,7 @@ AddNumberLink(struct MinList *list, APTR link)
 {
 	struct NumberLink *nl;
 
-	if (nl = AllocPooled(pool, sizeof(struct NumberLink)))
+	if ((nl = AllocPooled(pool, sizeof(struct NumberLink))) != 0)
 	{
 		if (IsListEmpty((struct List *)list))
 			nl->nl_Number = 0;
@@ -2790,7 +2794,7 @@ AddNumberLink(struct MinList *list, APTR link)
 			nl->nl_Number = ((struct NumberLink *)list->mlh_TailPred)->nl_Number + 1;
 
 		nl->nl_Link = link;
-		AddTail(list, nl);
+		MyAddTail(list, nl);
 	}
 }
 
@@ -2879,7 +2883,7 @@ SaveProject(struct Mappe *mp, struct IOType *io, bool confirmOverwrite)
 		struct Node *fv;
 
 		/*************************** Listen vorbereiten *******************************/
-		NewList((struct List *)&io_fonts);  NewList((struct List *)&io_fvs);
+		MyNewList(&io_fonts);  MyNewList(&io_fvs);
 										
 		// add map-specific formats
 		foreach (&mp->mp_Prefs.pr_Formats, fv)
@@ -2892,7 +2896,7 @@ SaveProject(struct Mappe *mp, struct IOType *io, bool confirmOverwrite)
 					AddNumberLink(&io_fonts, tf->tf_FontInfo->fi_Family);
 												
 				// add global formats used in the project
-				if (tf->tf_Format && !FindName((struct List *)&io_fvs, tf->tf_Format))
+				if (tf->tf_Format && !MyFindName(&io_fvs, tf->tf_Format))
 					AddNumberLink(&io_fvs, tf->tf_Format);
 			}
 
@@ -2920,9 +2924,9 @@ SaveProject(struct Mappe *mp, struct IOType *io, bool confirmOverwrite)
 		if (!rc)
 			mp->mp_FileType = io;
 
-		while (ln = RemHead((struct List *)&io_fonts))
+		while ((ln = MyRemHead(&io_fonts)))
 			FreePooled(pool, ln, sizeof(struct Node));
-		while (ln = RemHead((struct List *)&io_fvs))
+		while ((ln = MyRemHead(&io_fvs)))
 			FreePooled(pool, ln, sizeof(struct Node));
 
 		AddToSession(mp);
@@ -2930,23 +2934,23 @@ SaveProject(struct Mappe *mp, struct IOType *io, bool confirmOverwrite)
 		if (prefs.pr_File->pf_Flags & PFF_ICONS) {
 			struct DiskObject *dio;
 
-			if (dio = GetDiskObject(t))  // is there an icon attached to the file?
+			if ((dio = GetDiskObject(t)) != 0)  // is there an icon attached to the file?
 				FreeDiskObject(dio);
 			else {                       // Create a new one
 				BPTR olddir,dir;
 				STRPTR tool;
 
-				if (dir = Lock(iconpath, SHARED_LOCK)) {
+				if ((dir = Lock(iconpath, SHARED_LOCK)) != 0) {
 					char s[256];
 
 					olddir = CurrentDir(dir);
-					if (dio = GetDiskObject("def_ign"))
+					if ((dio = GetDiskObject("def_ign")) != 0)
 						tool = dio->do_DefaultTool;
 					CurrentDir(olddir);
 					UnLock(dir);
 
 					if (!dio) {
-						if (dio = GetDefDiskObject(WBPROJECT)) {
+						if ((dio = GetDefDiskObject(WBPROJECT)) != 0) {
 							tool = dio->do_DefaultTool;
 							dio->do_DefaultTool = NULL;
 						}
@@ -2978,7 +2982,7 @@ initStandardIOTypes(void)
 {
 	struct IOType *io;
 
-	if (io = AllocPooled(pool, sizeof(struct IOType))) {
+	if ((io = AllocPooled(pool, sizeof(struct IOType))) != 0) {
 		io->io_Node.ln_Name = AllocString(GetString(&gLocaleInfo, MSG_DEFAULT_FILE_FORMAT_NAME));
 		io->io_Node.ln_Pri = 42;
 		io->io_Flags = IOF_WRITEABLE | IOF_READABLE;
@@ -2994,7 +2998,7 @@ initStandardIOTypes(void)
 			MSG_IO_STANDARD_FORMAT_2_DESCR,
 			NULL);
 
-		Enqueue((struct List *)&iotypes, io);
+		MyEnqueue(&iotypes, io);
 	}
 
 #ifdef ENABLE_OLD_FORMAT
@@ -3013,7 +3017,7 @@ initStandardIOTypes(void)
 			"Unterstützt nicht unbedingt alle Fähigkeiten.",
 			NULL);
 		
-		Enqueue((struct List *)&iotypes, io);
+		MyEnqueue(&iotypes, io);
 	}
 #endif
 }
@@ -3032,7 +3036,7 @@ WriteIOTag(BPTR file, STRPTR tag, STRPTR data)
 }
 
 
-static void
+static void UNUSED
 SaveIOTypeDescription(struct IOType *io)
 {
 	BPTR dir,olddir;
@@ -3048,7 +3052,7 @@ SaveIOTypeDescription(struct IOType *io)
 		return;
 	}
 
-	if (dir = Lock(CLASSES_PATH,ACCESS_READ)) {
+	if ((dir = Lock(CLASSES_PATH, ACCESS_READ)) != 0) {
 		char t[256];
 		BPTR file;
 
@@ -3058,7 +3062,7 @@ SaveIOTypeDescription(struct IOType *io)
 		strcpy(t, io->io_Filename);
 		strcat(t, "descr");
 
-		if (file = Open(t, MODE_NEWFILE)) {
+		if ((file = Open(t, MODE_NEWFILE)) != 0) {
 			struct Node *ln;
 
 			WriteIOTag(file, "NAME", io->io_Node.ln_Name);
@@ -3163,8 +3167,8 @@ LoadIOTypeDescription(struct IOType *io, BPTR file)
 			if (!stricmp(t + 1, loc->loc_PrefLanguages[language]))
 				readDescription = true;
 		} else if (t[0] == ' ' && readDescription && (ln = AllocPooled(pool, sizeof(struct Node)))) {
-			if (ln->ln_Name = AllocString(t + 1))
-				AddTail((APTR)&io->io_Description, ln);
+			if ((ln->ln_Name = AllocString(t + 1)) != 0)
+				MyAddTail(&io->io_Description, ln);
 			else
 				FreePooled(pool, ln, sizeof(struct Node));
 		}
@@ -3204,7 +3208,7 @@ closeIO(void)
 {
 	struct IOType *io;
 
-	while (io = (APTR)RemHead(&iotypes)) {
+	while ((io = (APTR)MyRemHead(&iotypes))) {
 		//SaveIOTypeDescription(io);
 
 		FreeString(io->io_Node.ln_Name);
@@ -3221,25 +3225,25 @@ closeIO(void)
 void
 initIO(void)
 {
-	struct AnchorPath __aligned ap;
+	struct AnchorPath ALIGNED ap;
 	BPTR   dir,olddir,file;
 	long   rc,i;
 	struct IOType *io;
 
-	NewList(&iotypes);
+	MyNewList(&iotypes);
 	initStandardIOTypes();
-	if (dir = Lock(CLASSES_PATH,ACCESS_READ)) {
+	if ((dir = Lock(CLASSES_PATH,ACCESS_READ)) != 0) {
 		olddir = CurrentDir(dir);
 		memset(&ap,0,sizeof(struct AnchorPath));
 		for (rc = MatchFirst("#?.iodescr",&ap); !rc; rc = MatchNext(&ap)) {
-			if (file = Open(ap.ap_Info.fib_FileName, MODE_OLDFILE)) {
-				if (io = AllocPooled(pool, sizeof(struct IOType))) {
-					NewList((struct List *)&io->io_Description);
-					if (io->io_Filename = AllocPooled(pool,i = strlen(ap.ap_Info.fib_FileName)-4))
+			if ((file = Open(ap.ap_Info.fib_FileName, MODE_OLDFILE)) != 0) {
+				if ((io = AllocPooled(pool, sizeof(struct IOType))) != 0) {
+					MyNewList(&io->io_Description);
+					if ((io->io_Filename = AllocPooled(pool,i = strlen(ap.ap_Info.fib_FileName)-4)) != 0)
 						CopyMem(ap.ap_Info.fib_FileName,io->io_Filename,i-1);
 
 					LoadIOTypeDescription(io,file);
-					Enqueue((struct List *)&iotypes,io);
+					MyEnqueue(&iotypes, io);
 				}
 				Close(file);
 			}
@@ -3249,5 +3253,3 @@ initIO(void)
 		UnLock(dir);
 	}
 }
-
-

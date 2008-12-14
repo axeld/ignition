@@ -23,10 +23,10 @@ FreeArrows(void)
 bool
 AllocArrows(void)
 {
-	if (rightImg = (struct Image *)NewObject(NULL, "sysiclass", SYSIA_Which, RIGHTIMAGE, SYSIA_DrawInfo, dri, TAG_END)) {
-		if (leftImg = (struct Image *)NewObject(NULL, "sysiclass", SYSIA_Which, LEFTIMAGE, SYSIA_DrawInfo, dri, TAG_END)) {
-			if (upImg = (struct Image *)NewObject(NULL, "sysiclass", SYSIA_Which, UPIMAGE, SYSIA_DrawInfo, dri, TAG_END)) {
-				if (downImg = (struct Image *)NewObject(NULL, "sysiclass", SYSIA_Which, DOWNIMAGE, SYSIA_DrawInfo, dri, TAG_END))
+	if ((rightImg = (struct Image *)NewObject(NULL, "sysiclass", SYSIA_Which, RIGHTIMAGE, SYSIA_DrawInfo, dri, TAG_END)) != 0) {
+		if ((leftImg = (struct Image *)NewObject(NULL, "sysiclass", SYSIA_Which, LEFTIMAGE, SYSIA_DrawInfo, dri, TAG_END)) != 0) {
+			if ((upImg = (struct Image *)NewObject(NULL, "sysiclass", SYSIA_Which, UPIMAGE, SYSIA_DrawInfo, dri, TAG_END)) != 0) {
+				if ((downImg = (struct Image *)NewObject(NULL, "sysiclass", SYSIA_Which, DOWNIMAGE, SYSIA_DrawInfo, dri, TAG_END)) != 0)
                     return true;
 
                 DisposeObject(upImg);
@@ -47,9 +47,9 @@ ChangeAppScreen(bool closescreen)
 
 	// Save all additional window data
 
-    NewList((struct List *)&list);
-	while (win = GetAppWindow(WDT_ANY)) {
-		if (sw = AllocPooled(pool,sizeof(struct saveWin))) {
+    MyNewList(&list);
+	while ((win = GetAppWindow(WDT_ANY)) != 0) {
+		if ((sw = AllocPooled(pool, sizeof(struct saveWin))) != 0) {
             sw->sw_Type = ((struct winData *)win->UserData)->wd_Type;
             sw->sw_Left = win->LeftEdge;
             sw->sw_Top = win->TopEdge;
@@ -60,12 +60,12 @@ ChangeAppScreen(bool closescreen)
                 sw->sw_WinData = ((struct winData *)win->UserData)->wd_Data;
 			else {
                 sw->sw_Title = win->Title;
-                if (sw->sw_WinData = AllocPooled(pool,sizeof(struct winData)))
+                if ((sw->sw_WinData = AllocPooled(pool,sizeof(struct winData))) != 0)
                     CopyMem(win->UserData,sw->sw_WinData,sizeof(struct winData));
 
-                NewList((struct List *)&sw->sw_WinData->wd_Objs);
+                MyNewList(&sw->sw_WinData->wd_Objs);
             }
-            AddTail((struct List *)&list,(struct Node *)sw);
+            MyAddTail(&list, sw);
         }
 		CloseAppWindow(win, FALSE);
     }
@@ -76,7 +76,7 @@ ChangeAppScreen(bool closescreen)
     }
 
 	if (!closescreen || (scr = OpenAppScreen())) {
-		while(sw = (struct saveWin *)RemTail((APTR)&list)) {
+		while ((sw = (struct saveWin *)MyRemTail(&list)) != 0) {
 			if (sw->sw_Type == WDT_PROJECT) {
                 OpenProjWindow((struct Page *)sw->sw_WinData,WA_Left,  sw->sw_Left,
                                                              WA_Top,   sw->sw_Top,
@@ -179,7 +179,7 @@ OpenAppScreen(void)
 
 	switch (prefs.pr_Screen->ps_Type) {
         case PST_OWN:
-            if (scr = OpenScreenTags(NULL,SA_LikeWorkbench, TRUE,
+            if ((scr = OpenScreenTags(NULL,SA_LikeWorkbench, TRUE,
                                           SA_PubName,       pubname,
 										  SA_Title,         SCREEN_TITLE,
                                           SA_Interleaved,   TRUE,
@@ -192,18 +192,18 @@ OpenAppScreen(void)
                                           SA_BackFill,      prefs.pr_Screen->ps_BackFill ? &fillHook : NULL,
                                           SA_PubTask,       FindTask(NULL),
 										  SA_PubSig,        SIGBREAKB_CTRL_C,
-                                          TAG_END))
+                                          TAG_END)) != 0)
                 scr->UserData = (APTR)iport;
             break;
         case PST_LIKEWB:
-			if (scr = LockPubScreen("Workbench")) {
+			if ((scr = LockPubScreen("Workbench")) != 0) {
 				// if the depth of the Workbench screen is lower than 3 (fewer than 8 colours),
 				// we will set our amount of colours to a minimum of 8 colours.
 				if ((depth = scr->RastPort.BitMap->Depth) < 3)
                     depth = 3;
 				UnlockPubScreen(NULL, scr);
             }
-            if (scr = OpenScreenTags(NULL,SA_LikeWorkbench, TRUE,
+            if ((scr = OpenScreenTags(NULL,SA_LikeWorkbench, TRUE,
 										  SA_PubName,       pubname,
 										  SA_Title,         SCREEN_TITLE,
 	                                      SA_Interleaved,   TRUE,
@@ -212,7 +212,7 @@ OpenAppScreen(void)
 	                                      SA_BackFill,      prefs.pr_Screen->ps_BackFill ? &fillHook : NULL,
                                           SA_PubTask,       FindTask(NULL),
 										  SA_PubSig,        SIGBREAKB_CTRL_C,
-	                                      TAG_END))
+	                                      TAG_END)) != 0)
                 scr->UserData = (APTR)iport;
             break;
         case PST_PUBLIC:

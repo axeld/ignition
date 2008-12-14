@@ -248,7 +248,7 @@ extern ULONG LoadPrefs(struct Prefs *prefs,STRPTR name,BPTR lock,long flags);
 
 // base
 extern void InitPrefsGadgetsLabels(void);
-extern void PUBLIC AppCmdLock(reg (a0) struct LockNode *ln,reg (a1) struct MinNode *node,reg (d0) UBYTE flags);
+extern void PUBLIC AppCmdLock(REG(a0, struct LockNode *ln),REG(a1, struct MinNode *node),REG(d0, UBYTE flags));
 extern void AddStandardOutput(void);
 extern STRPTR MakePrefsTitle(struct Mappe *mp, uint8 type, STRPTR prefsTitle);
 extern void RefreshMapTexts(struct Mappe *mp,BOOL all);
@@ -259,7 +259,7 @@ extern BOOL HasPrefsModule(struct Prefs *pr,UWORD type);
 extern struct PrefsModule *GetPrefsModule(struct Prefs *pr,UWORD type);
 extern BOOL SetPrefsModule(struct Prefs *pr,UWORD type,BYTE modified);
 extern void RemPrefsModule(struct Prefs *pr,struct PrefsModule *pm);
-extern struct PrefsModule *AddPrefsModule(struct Prefs *pr,STRPTR t,STRPTR iname,UWORD type,UBYTE flags);
+extern struct PrefsModule *AddPrefsModule(struct Prefs *pr,CONST_STRPTR t,STRPTR iname,UWORD type,UBYTE flags);
 extern void AddPrefsModuleToTree(struct Prefs *pr,struct PrefsModule *pm,struct MinList *tree);
 extern void AddPrefsModulesToTree(struct Prefs *pr,struct MinList *tree);
 extern void AddPrefsModuleToLocalPrefs(struct Mappe *mp,UWORD type);

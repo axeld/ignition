@@ -70,11 +70,11 @@ perzentile(double perzentil,struct FuncArg *arg)
     for(num = 0,fa = arg;fa->fa_Node.mln_Succ;fa = (APTR)fa->fa_Node.mln_Succ)
         num += GetRangeSize(fa->fa_Root);
 
-    if (values = AllocPooled(pool,sizeof(double)*num))
+    if ((values = AllocPooled(pool, sizeof(double)*num)) != 0)
     {
         for(i = 0,fa = arg;fa->fa_Node.mln_Succ;fa = (APTR)fa->fa_Node.mln_Succ)
         {
-            while(tf = GetRangeCells(fa->fa_Root,tf))
+            while ((tf = GetRangeCells(fa->fa_Root, tf)) != 0)
                 values[i++] = tf->tf_Value;
         }
         dqsort(values,num);
@@ -127,7 +127,7 @@ cfVarianz(struct MinList *args)
 
     foreach(args,fa)
     {
-        while(tf = GetRangeCells(fa->fa_Root,tf))
+        while((tf = GetRangeCells(fa->fa_Root, tf)) != 0)
             val += tf->tf_Value*tf->tf_Value;
     }
     return (val - mittel) / (num - 1);
@@ -156,13 +156,13 @@ cfProdukt(struct MinList *args)
 
     foreach(args,fa)
     {
-        if (tf = GetRangeCells(fa->fa_Root,tf))
+        if ((tf = GetRangeCells(fa->fa_Root, tf)) != 0)
         {
             do
             {
                 val *= tf->tf_Value;
             }
-            while(tf = GetRangeCells(fa->fa_Root,tf));
+            while((tf = GetRangeCells(fa->fa_Root, tf)) != 0);
         }
         else
             val *= TreeValue(fa->fa_Root);
@@ -180,7 +180,7 @@ cfAnzahl(struct MinList *args)
 
     foreach(args,fa)
     {
-        while(tf = GetRangeCells(fa->fa_Root,tf))
+        while ((tf = GetRangeCells(fa->fa_Root, tf)) != 0)
         {
             if (tf->tf_Text)
                 val += 1.0;
@@ -210,7 +210,7 @@ cfMittelwert(struct MinList *args)
 
 	foreach(args, fa)
     {
-        if (tf = GetRangeCells(fa->fa_Root,tf))
+        if ((tf = GetRangeCells(fa->fa_Root, tf)) != 0)
         {
             do
             {
@@ -218,7 +218,7 @@ cfMittelwert(struct MinList *args)
                     calcerr = CTERR_LOOP;
                 val += tf->tf_Value;
             }
-            while(tf = GetRangeCells(fa->fa_Root,tf));
+            while((tf = GetRangeCells(fa->fa_Root, tf)) != 0);
 
             num += GetRangeSize(fa->fa_Root);
         }
@@ -246,7 +246,7 @@ cfMinMax(BOOL isMax, struct MinList *args)
 
     for(fa = (APTR)args->mlh_Head;fa->fa_Node.mln_Succ;fa = (APTR)fa->fa_Node.mln_Succ)
     {
-        if (tf = GetRangeCells(fa->fa_Root,tf))
+        if ((tf = GetRangeCells(fa->fa_Root, tf)) != 0)
         {
             pos = 0;
             do
@@ -257,7 +257,7 @@ cfMinMax(BOOL isMax, struct MinList *args)
                 isFirst = FALSE;
                 pos++;
             }
-            while(tf = GetRangeCells(fa->fa_Root,tf));
+            while((tf = GetRangeCells(fa->fa_Root, tf)) != 0);
 
             if (!isMax && pos < GetRangeSize(fa->fa_Root) && val > 0.0)
                 val = 0.0;
@@ -498,7 +498,7 @@ cfUnd(struct MinList *args)
     {
         if (fa->fa_Root->t_Op == OP_RANGE)
         {
-            for(pos = 0;tf = GetRangeCells(fa->fa_Root,tf);pos++)
+            for (pos = 0; (tf = GetRangeCells(fa->fa_Root, tf)) != 0; pos++)
             {
                 if (!tf->tf_Value)
 					return 0.0;
@@ -521,7 +521,7 @@ cfOder(struct MinList *args)
 
 	for (fa = (APTR)args->mlh_Head;fa->fa_Node.mln_Succ;fa = (APTR)fa->fa_Node.mln_Succ)
     {
-		while (tf = GetRangeCells(fa->fa_Root,tf))
+		while ((tf = GetRangeCells(fa->fa_Root, tf)) != 0)
         {
             if (tf->tf_Value)
 				return 1.0;
@@ -536,9 +536,9 @@ cfAuswahl(struct Result *r, struct List *args)
 {
     struct FuncArg *fa;
 
-    if (fa = (APTR)FindListNumber(args,0))
+    if ((fa = (APTR)FindListNumber(args, 0)) != 0)
     {
-        if (fa = (APTR)FindListNumber(args,(long)TreeValue(fa->fa_Root)))
+        if ((fa = (APTR)FindListNumber(args, (long)TreeValue(fa->fa_Root))) != 0)
 			return CalcTree(r, fa->fa_Root);
     }
 	return CT_OK;
@@ -550,13 +550,13 @@ cfWenn(struct Result *r,struct MinList *args)
 {
     struct FuncArg *fa;
 
-    if (fa = (APTR)FindListNumber((struct List *)args,0))
+    if ((fa = (APTR)FindListNumber((struct List *)args, 0)) != 0)
     {
         long num = 2;
 
         if (TreeValue(fa->fa_Root))
             num = 1;
-        if (fa = (APTR)FindListNumber((struct List *)args,num))
+        if ((fa = (APTR)FindListNumber((struct List *)args, num)) != 0)
 			return CalcTree(r, fa->fa_Root);
 
 		return CT_OK;
@@ -793,13 +793,13 @@ cfEndKapitalEinfach(struct MinList *args)
     struct FuncArg *fa;
     double start,zins,jahre;
 
-    if (fa = (APTR)FindListNumber((struct List *)args,0))
+    if ((fa = (APTR)FindListNumber((struct List *)args, 0)) != 0)
     {
         start = TreeValue(fa->fa_Root);
-        if (fa = (APTR)FindListNumber((struct List *)args,1))
+        if ((fa = (APTR)FindListNumber((struct List *)args, 1)) != 0)
         {
             zins = TreeValue(fa->fa_Root);
-            if (fa = (APTR)FindListNumber((struct List *)args,2))
+            if ((fa = (APTR)FindListNumber((struct List *)args, 2)) != 0)
             {
                 jahre = TreeValue(fa->fa_Root);
 				return start * (1 + zins * jahre);
@@ -816,13 +816,13 @@ cfEndKapitalZZ(struct MinList *args)
     struct FuncArg *fa;
     double start,zins,jahre;
 
-    if (fa = (APTR)FindListNumber((struct List *)args,0))
+    if ((fa = (APTR)FindListNumber((struct List *)args,0)))
     {
         start = TreeValue(fa->fa_Root);
-        if (fa = (APTR)FindListNumber((struct List *)args,1))
+        if ((fa = (APTR)FindListNumber((struct List *)args,1)))
         {
             zins = TreeValue(fa->fa_Root);
-            if (fa = (APTR)FindListNumber((struct List *)args,2))
+            if ((fa = (APTR)FindListNumber((struct List *)args,2)))
             {
                 jahre = TreeValue(fa->fa_Root);
 				return start * pow(1 + zins, jahre);
@@ -839,13 +839,13 @@ cfStartKapitalZZ(struct MinList *args)
     struct FuncArg *fa;
 	double start, zins, jahre;
 
-    if (fa = (APTR)FindListNumber((struct List *)args,0))
+    if ((fa = (APTR)FindListNumber((struct List *)args,0)))
     {
         start = TreeValue(fa->fa_Root);
-        if (fa = (APTR)FindListNumber((struct List *)args,1))
+        if ((fa = (APTR)FindListNumber((struct List *)args,1)))
         {
             zins = TreeValue(fa->fa_Root);
-            if (fa = (APTR)FindListNumber((struct List *)args,2))
+            if ((fa = (APTR)FindListNumber((struct List *)args,2)))
             {
                 jahre = TreeValue(fa->fa_Root);
 				return start / pow(1 + zins, jahre);
@@ -862,13 +862,13 @@ cfLaufzeitZZ(struct MinList *args)
     struct FuncArg *fa;
 	double start, end, zins;
 
-    if (fa = (APTR)FindListNumber((struct List *)args,0))
+    if ((fa = (APTR)FindListNumber((struct List *)args, 0)) != 0)
     {
         start = TreeValue(fa->fa_Root);
-        if (fa = (APTR)FindListNumber((struct List *)args,1))
+        if ((fa = (APTR)FindListNumber((struct List *)args, 1)) != 0)
         {
             end = TreeValue(fa->fa_Root);
-            if (fa = (APTR)FindListNumber((struct List *)args,2))
+            if ((fa = (APTR)FindListNumber((struct List *)args, 2)) != 0)
             {
                 zins = TreeValue(fa->fa_Root);
 				return (double)((log10(end)-log10(start)) / log10(1 + zins));
@@ -886,7 +886,7 @@ cfGross(struct MinList *args)
     STRPTR t,s;
 
     fa = (APTR)args->mlh_Head;
-    if (t = s = TreeText(fa->fa_Root))
+    if ((t = s = TreeText(fa->fa_Root)) != 0)
     {
         for(;*s;s++)
             *s = ToUpper(*s);
@@ -902,7 +902,7 @@ cfKlein(struct MinList *args)
     STRPTR t,s;
 
     fa = (APTR)args->mlh_Head;
-    if (t = s = TreeText(fa->fa_Root))
+    if ((t = s = TreeText(fa->fa_Root)) != 0)
     {
         for(;*s;s++)
             *s = ToLower(*s);
@@ -919,7 +919,7 @@ cfLinks(struct MinList *args)
     long   len;
 
     fa = (APTR)args->mlh_Head;
-    if (t = TreeText(fa->fa_Root))
+    if ((t = TreeText(fa->fa_Root)) != 0)
     {
         fa = (APTR)fa->fa_Node.mln_Succ;
         len = (long)TreeValue(fa->fa_Root);
@@ -943,7 +943,7 @@ cfRechts(struct MinList *args)
     long   len;
 
     fa = (APTR)args->mlh_Head;
-    if (t = TreeText(fa->fa_Root))
+    if ((t = TreeText(fa->fa_Root)) != 0)
     {
         fa = (APTR)fa->fa_Node.mln_Succ;
         len = (long)TreeValue(fa->fa_Root);
@@ -967,7 +967,7 @@ cfMitte(struct MinList *args)
     long   len,pos;
 
     fa = (APTR)args->mlh_Head;
-    if (t = TreeText(fa->fa_Root))
+    if ((t = TreeText(fa->fa_Root)) != 0)
     {
         fa = (APTR)fa->fa_Node.mln_Succ;
         pos = (long)TreeValue(fa->fa_Root);
@@ -996,10 +996,10 @@ cfPattern(struct MinList *args)
     STRPTR t,pattern;
     long   cmp = 0;
 
-    if (fa = (APTR)FindListNumber((struct List *)args,0))
+    if ((fa = (APTR)FindListNumber((struct List *)args, 0)) != 0)
     {
         pattern = TreeText(fa->fa_Root);
-        if (fa = (APTR)FindListNumber((struct List *)args,1))
+        if ((fa = (APTR)FindListNumber((struct List *)args, 1)) != 0)
         {
             char dest[256];
 
@@ -1030,7 +1030,7 @@ cfLength(struct MinList *args)
     long   l = 0;
 
     fa = (APTR)args->mlh_Head;
-    if (t = TreeText(fa->fa_Root))
+    if ((t = TreeText(fa->fa_Root)) != 0)
     {
         l = strlen(t);
         FreeString(t);
@@ -1048,7 +1048,7 @@ cfWert(struct MinList *args)
     STRPTR t = NULL,fvt = NULL;
     double val = 0.0;
 
-    if (fa = (APTR)FindListNumber((struct List *)args,0))
+    if ((fa = (APTR)FindListNumber((struct List *)args, 0)) != 0)
         t = TreeText(fa->fa_Root);
     if (t && (fa = (APTR)FindListNumber((struct List *)args,1)))
         fvt = TreeText(fa->fa_Root);
@@ -1069,10 +1069,10 @@ cfText(struct MinList *args)
     STRPTR t = NULL,fvt = NULL;
     double val;
 
-    if (fa = (APTR)FindListNumber((struct List *)args,0))
+    if ((fa = (APTR)FindListNumber((struct List *)args, 0)) != 0)
     {
         val = TreeValue(fa->fa_Root);
-        if (fa = (APTR)FindListNumber((struct List *)args,1))
+        if ((fa = (APTR)FindListNumber((struct List *)args,1)))
             fvt = TreeText(fa->fa_Root);
         t = AllocString(FitValueInFormat(val,NULL,fvt,-1,ITA_NONE));
         FreeString(fvt);
@@ -1088,11 +1088,11 @@ cfPosition(struct MinList *args)
     STRPTR t1,t2;
     long   l = 0,i,len1,len2;
 
-    if (fa = (APTR)FindListNumber((struct List *)args,0))
+    if ((fa = (APTR)FindListNumber((struct List *)args, 0)) != 0)
     {
-        if ((t1 = TreeText(fa->fa_Root)) && (fa = (APTR)FindListNumber((struct List *)args,1)))
+        if ((t1 = TreeText(fa->fa_Root)) && (fa = (APTR)FindListNumber((struct List *)args, 1)) != 0)
         {
-            if (t2 = TreeText(fa->fa_Root))
+            if ((t2 = TreeText(fa->fa_Root)) != 0)
             {
                 len1 = strlen(t1);  len2 = strlen(t2);
                 for(i = 0;i < len2-len1+1;i++)
@@ -1119,7 +1119,7 @@ cfChar(struct MinList *args)
     struct FuncArg *fa;
     STRPTR t;
 
-    if (t = AllocPooled(pool,2))
+    if ((t = AllocPooled(pool, 2)) != 0)
     {
         fa = (APTR)args->mlh_Head;
         *t = (UBYTE)TreeValue(fa->fa_Root);
@@ -1155,7 +1155,7 @@ cfAPen(struct MinList *args)
     ULONG  id;
 
     calcflags |= CF_NOLOOPS;
-    if (tf = TreeCell(((struct FuncArg *)args->mlh_Head)->fa_Root))
+    if ((tf = TreeCell(((struct FuncArg *)args->mlh_Head)->fa_Root)) != 0)
         id = tf->tf_APen;
     else
         id = calcpage->pg_APen;
@@ -1172,7 +1172,7 @@ cfBPen(struct MinList *args)
     ULONG  id;
 
     calcflags |= CF_NOLOOPS;
-    if (tf = TreeCell(((struct FuncArg *)args->mlh_Head)->fa_Root))
+    if ((tf = TreeCell(((struct FuncArg *)args->mlh_Head)->fa_Root)) != 0)
         id = tf->tf_BPen;
     else
         id = calcpage->pg_BPen;
@@ -1189,7 +1189,7 @@ cfFont(struct MinList *args)
     STRPTR t;
 
     calcflags |= CF_NOLOOPS;
-    if (tf = TreeCell(((struct FuncArg *)args->mlh_Head)->fa_Root))
+    if ((tf = TreeCell(((struct FuncArg *)args->mlh_Head)->fa_Root)) != 0)
         t = tf->tf_FontInfo->fi_Family->ln_Name;
     else
         t = calcpage->pg_Family->ln_Name;
@@ -1206,7 +1206,7 @@ cfPointHeight(struct MinList *args)
     long   points;
 
     calcflags |= CF_NOLOOPS;
-    if (tf = TreeCell(((struct FuncArg *)args->mlh_Head)->fa_Root))
+    if ((tf = TreeCell(((struct FuncArg *)args->mlh_Head)->fa_Root)) != 0)
         points = tf->tf_FontInfo->fi_FontSize->fs_PointHeight;
     else
         points = calcpage->pg_PointHeight;
@@ -1276,7 +1276,7 @@ cfMonat(struct MinList *args)
     struct FuncArg *fa;
     long   monat = 1;
 
-    if (fa = (struct FuncArg *)args->mlh_Head)
+    if ((fa = (struct FuncArg *)args->mlh_Head) != 0)
         tagedatum((long)TreeValue(fa->fa_Root),NULL,&monat,NULL);
 
 	return (double)monat;
@@ -1289,7 +1289,7 @@ cfTag(struct MinList *args)
     struct FuncArg *fa;
     long   tag = 1;
 
-    if (fa = (struct FuncArg *)args->mlh_Head)
+    if ((fa = (struct FuncArg *)args->mlh_Head) != 0)
         tagedatum((long)TreeValue(fa->fa_Root),&tag,NULL,NULL);
 
 	return (double)tag;
@@ -1302,7 +1302,7 @@ cfJahr(struct MinList *args)
     struct FuncArg *fa;
     long   jahr = 0;
 
-    if (fa = (struct FuncArg *)args->mlh_Head)
+    if ((fa = (struct FuncArg *)args->mlh_Head) != 0)
         tagedatum((long)TreeValue(fa->fa_Root),NULL,NULL,&jahr);
 
 	return (double)jahr;
@@ -1315,7 +1315,7 @@ cfSchaltjahr(struct MinList *args)
     struct FuncArg *fa;
     long   jahr = 0;
 
-    if (fa = (struct FuncArg *)args->mlh_Head)
+    if ((fa = (struct FuncArg *)args->mlh_Head) != 0)
         tagedatum((long)TreeValue(fa->fa_Root),NULL,NULL,&jahr);
 
 	return (double)schaltjahr(jahr);
@@ -1328,7 +1328,7 @@ cfTagImJahr(struct MinList *args)
     struct FuncArg *fa;
     long   tag = 1,monat,jahr;
 
-    if (fa = (struct FuncArg *)args->mlh_Head)
+    if ((fa = (struct FuncArg *)args->mlh_Head) != 0)
     {
         tagedatum((long)TreeValue(fa->fa_Root),&tag,&monat,&jahr);
         tag += mday[monat-1]+(monat > 2 && schaltjahr(jahr) ? 1 : 0);
@@ -1343,7 +1343,7 @@ cfWoche(struct MinList *args)
     struct FuncArg *fa;
     long   datum,tag = 1,monat,jahr;
 
-    if (fa = (struct FuncArg *)args->mlh_Head)
+    if ((fa = (struct FuncArg *)args->mlh_Head) != 0)
     {
         tagedatum(datum = (long)TreeValue(fa->fa_Root),&tag,&monat,&jahr);
 		tag += mday[monat - 1] + (monat > 2 && schaltjahr(jahr) ? 1 : 0);
@@ -1360,7 +1360,7 @@ cfWochentag(struct MinList *args)
     struct FuncArg *fa;
     long   tag = 1;
 
-    if (fa = (struct FuncArg *)args->mlh_Head)
+    if ((fa = (struct FuncArg *)args->mlh_Head) != 0)
         tag = weekday((long)TreeValue(fa->fa_Root));
 
 	return (double)tag;
@@ -1410,16 +1410,16 @@ cfDatumRechnen(struct MinList *args)
     struct FuncArg *fa;
     long   datum = 0,month,jahr,i;
 
-    if (fa = (struct FuncArg *)args->mlh_Head)
+    if ((fa = (struct FuncArg *)args->mlh_Head) != 0)
     {
         datum = (long)TreeValue(fa->fa_Root);
         tagedatum(datum,NULL,&month,&jahr);
-        if (fa = (APTR)FindListNumber((struct List *)args,1)) // Tag
+        if ((fa = (APTR)FindListNumber((struct List *)args, 1)) != 0) // Tag
             datum += (long)TreeValue(fa->fa_Root);
-        if (fa = (APTR)FindListNumber((struct List *)args,2)) // Monat
+        if ((fa = (APTR)FindListNumber((struct List *)args, 2)) != 0) // Monat
         {
             i = (long)TreeValue(fa->fa_Root);
-            if (fa = (APTR)FindListNumber((struct List *)args,3)) // Jahr
+            if ((fa = (APTR)FindListNumber((struct List *)args, 3)) != 0) // Jahr
                 i += (long)TreeValue(fa->fa_Root)*12;
             if (i > 0)
             {
@@ -1454,9 +1454,9 @@ cfMonthlength(struct MinList *args)
     struct FuncArg *fa;
     long   m = 1,j = 1;
 
-    if (fa = (struct FuncArg *)FindListNumber((struct List *)args,0))
+    if ((fa = (struct FuncArg *)FindListNumber((struct List *)args, 0)) != 0)
         m = (long)TreeValue(fa->fa_Root);
-    if (fa = (struct FuncArg *)FindListNumber((struct List *)args,1))
+    if ((fa = (struct FuncArg *)FindListNumber((struct List *)args, 1)) != 0)
         j = (long)TreeValue(fa->fa_Root);
 
 	return (double)monthlength(m,j);
@@ -1497,7 +1497,7 @@ cfDbPosition(struct MinList *args)
     struct Database *db = NULL,*pdb = NULL;
     long   pos = 0,*refs;
 
-    if (fa = (struct FuncArg *)FindListNumber((struct List *)args,0))
+    if ((fa = (struct FuncArg *)FindListNumber((struct List *)args, 0)) != 0)
     {
         if (fa->fa_Root && (fa->fa_Root->t_Op == OP_TEXT || fa->fa_Root->t_Op == OP_NAME))
             db = (APTR)FindTag(&calcpage->pg_Mappe->mp_Databases,fa->fa_Root->t_Text);
@@ -1536,7 +1536,7 @@ cfDbSize(struct MinList *args)
     struct Database *db = NULL,*pdb = NULL;
     long   size = 0,*refs;
 
-    if (fa = (struct FuncArg *)FindListNumber((struct List *)args,0))
+    if ((fa = (struct FuncArg *)FindListNumber((struct List *)args, 0)) != 0)
     {
         if (fa->fa_Root && (fa->fa_Root->t_Op == OP_TEXT || fa->fa_Root->t_Op == OP_NAME))
             db = (APTR)FindTag(&calcpage->pg_Mappe->mp_Databases,fa->fa_Root->t_Text);
@@ -1601,7 +1601,7 @@ cfDbFilter(struct MinList *args)
 
 
 static long
-cfRealDBFiltered(struct Database *db,double *v,struct Term *term,struct Term *filter,void __asm (*func)(reg (a0) double *,reg (a1) struct tableField *tf))
+cfRealDBFiltered(struct Database *db, double *v, struct Term *term, struct Term *filter, void ASM (*func)(REG(a0, double *), REG(a1, struct tableField *tf)))
 {
     long   size,i,current,c,r,count = 0;
     struct Filter *fil;
@@ -1646,7 +1646,7 @@ cfRealDBFiltered(struct Database *db,double *v,struct Term *term,struct Term *fi
         if (TreeValue(filter))        /* Kriterium trifft zu */
         {
             count++;
-            if (tf = GetTableField(calcpage,c,r))
+            if ((tf = GetTableField(calcpage, c, r)) != 0)
                 func(v,tf);
         }
     }
@@ -1658,7 +1658,7 @@ cfRealDBFiltered(struct Database *db,double *v,struct Term *term,struct Term *fi
 
 
 static long
-cfDbFiltered(struct MinList *args,double *v,void __asm (*func)(reg (a0) double *,reg (a1) struct tableField *tf))
+cfDbFiltered(struct MinList *args, double *v, void ASM (*func)(REG(a0, double *), REG(a1, struct tableField *tf)))
 {
     struct FuncArg *fa,*tail = (APTR)args->mlh_TailPred;
     struct Term *t,*filter;
@@ -1680,7 +1680,7 @@ cfDbFiltered(struct MinList *args,double *v,void __asm (*func)(reg (a0) double *
         for (fa = (APTR)args->mlh_Head;fa != tail;fa = (APTR)fa->fa_Node.mln_Succ)
         {
             tf_col = col;  tf_row = row;
-            while (tf = GetRangeCells(fa->fa_Root,tf))
+            while ((tf = GetRangeCells(fa->fa_Root, tf)) != 0)
             {
                 tf_col = tf->tf_Col;  tf_row = tf->tf_Row;
 
@@ -1699,8 +1699,8 @@ cfDbFiltered(struct MinList *args,double *v,void __asm (*func)(reg (a0) double *
 }
 
 
-static void __asm
-cfdbsumme(reg (a0) double *v,reg (a1) struct tableField *tf)
+static void ASM
+cfdbsumme(REG(a0, double *v), REG(a1, struct tableField *tf))
 {
     *v += tf->tf_Value;
 }
@@ -1716,8 +1716,8 @@ cfDbSumme(struct MinList *args)
 }
 
 
-static void __asm
-cfdbprodukt(reg (a0) double *v,reg (a1) struct tableField *tf)
+static void ASM
+cfdbprodukt(REG(a0, double *v), REG(a1, struct tableField *tf))
 {
     *v *= tf->tf_Value;
 }
@@ -1733,8 +1733,8 @@ cfDbProdukt(struct MinList *args)
 }
 
 
-static void __asm
-cfdbmin(reg (a0) double *v,reg (a1) struct tableField *tf)
+static void ASM
+cfdbmin(REG(a0, double *v), REG(a1, struct tableField *tf))
 {
     if (*v > tf->tf_Value)
         *v = tf->tf_Value;
@@ -1751,8 +1751,8 @@ cfDbMin(struct MinList *args)
 }
 
 
-static void __asm
-cfdbmax(reg (a0) double *v,reg (a1) struct tableField *tf)
+static void ASM
+cfdbmax(REG(a0, double *v), REG(a1, struct tableField *tf))
 {
     if (*v < tf->tf_Value)
         *v = tf->tf_Value;
@@ -1769,8 +1769,8 @@ cfDbMax(struct MinList *args)
 }
 
 
-static void __asm
-cfdbanzahl(reg (a0) double *v,reg (a1) struct tableField *tf)
+static void ASM
+cfdbanzahl(REG(a0, double *v), REG(a1, struct tableField *tf))
 {
     if (tf->tf_Text)
         *v += 1.0;
@@ -1813,7 +1813,7 @@ struct oan {ULONG tag;STRPTR name;} objattrnames[] =
     {GOA_FontInfo,         "fontsize"},
     {GOA_HasOutline,       "outlined"},
     {GOA_Weight,           "weight"},
-    {NULL,NULL}
+    {0,0}
 };
 
 
@@ -1834,8 +1834,8 @@ cfObjectAttr(struct Result *r,struct MinList *args)
 
     /*** Object heraussuchen ***/
 
-    if (!(go = FindName(&calcpage->pg_gObjects,obj)))
-        go = FindName(&calcpage->pg_gDiagrams,obj);
+    if (!(go = MyFindName(&calcpage->pg_gObjects, obj)))
+        go = MyFindName(&calcpage->pg_gDiagrams, obj);
 
     FreeString(obj);  obj = NULL;
 
@@ -1936,7 +1936,7 @@ cfObjectAttr(struct Result *r,struct MinList *args)
 static double
 cfNop(struct MinList *args)
 {
-    return NULL;
+    return 0.0;
 }
 
 
@@ -1948,7 +1948,7 @@ AddFunction(STRPTR abb,STRPTR args,UBYTE ftype,APTR code,BYTE type)
 {
     struct Function *f;
 
-    if (f = AllocPooled(pool,sizeof(struct Function)))
+    if ((f = AllocPooled(pool, sizeof(struct Function))) != 0)
     {
         long min,max,mode;
 
@@ -1985,7 +1985,7 @@ AddFunction(STRPTR abb,STRPTR args,UBYTE ftype,APTR code,BYTE type)
         }
         f->f_MinArgs = min;  f->f_MaxArgs = max;
 
-        AddTail(&funcs,f);
+        MyAddTail(&funcs, f);
     }
 }
 
@@ -2012,7 +2012,7 @@ FindFunctionWithLanguage(struct FunctionLanguage *fl,STRPTR name)
 {
     struct FunctionName *fn;
 
-    if (fn = bsearch(&name,fl->fl_Array,fl->fl_Length,sizeof(struct FunctionName),(APTR)cmdcmp))
+    if ((fn = bsearch(&name, fl->fl_Array, fl->fl_Length, sizeof(struct FunctionName), (APTR)cmdcmp)) != 0)
         return fn->fn_Function;
 
     return NULL;
@@ -2037,7 +2037,7 @@ FindFunction(STRPTR name, struct Term *t)
 
     foreach (&flangs, fl)
     {
-        if (f = FindFunctionWithLanguage(fl, name))
+        if ((f = FindFunctionWithLanguage(fl, name)) != 0)
         {
             if (t)
                 t->t_Function = f;
@@ -2066,7 +2066,7 @@ AddFunctionLanguage(STRPTR name, APTR array, ULONG length, ULONG bytes)
     if (!name || !array || !length)
         return NULL;
 
-    if (fl = AllocPooled(pool,sizeof(struct FunctionLanguage)))
+    if ((fl = AllocPooled(pool, sizeof(struct FunctionLanguage))) != 0)
     {
         fl->fl_Node.ln_Name = AllocString(name);
         fl->fl_Array = array;
@@ -2074,7 +2074,7 @@ AddFunctionLanguage(STRPTR name, APTR array, ULONG length, ULONG bytes)
         fl->fl_Bytes = bytes;
         qsort(array, length, sizeof(struct FunctionName), (APTR)CompareFunctionNames);
 
-        AddTail(&flangs, fl);
+        MyAddTail(&flangs, fl);
     }
     return fl;
 }
@@ -2100,7 +2100,7 @@ LoadFunctionLanguage(STRPTR name)
 	AddPart(line, name, 230);
 	strcat(line, ".functions");
 
-	if (file = Open(line, MODE_OLDFILE))
+	if ((file = Open(line, MODE_OLDFILE)) != 0)
     {
 		while (FGets(file, line, 256))
         {
@@ -2154,7 +2154,7 @@ MakeFunctionArray(void)
     struct Function *f;
     ULONG  num,i = 0;
 
-    NewList(&flangs);
+    MyNewList(&flangs);
     num = CountNodes(&funcs);
 
 	if ((array = AllocPooled(pool, num * sizeof(struct FunctionName))) == NULL)
@@ -2176,12 +2176,12 @@ MakeFunctionArray(void)
 		for (i = 0; loc->loc_PrefLanguages[i]; i++)
 			LoadFunctionLanguage(loc->loc_PrefLanguages[i]);
 
-		Remove(fl);          // to have the right order
+		MyRemove(fl);          // to have the right order
 
 		if (IsListEmpty((struct List *)&flangs))
 			ErrorRequest(GetString(&gLocaleInfo, MSG_NO_FUNCTABLE_ERR));
 
-		AddTail(&flangs,fl);
+		MyAddTail(&flangs,fl);
 
 		foreach (&funcs, f)
 		{
@@ -2195,7 +2195,7 @@ MakeFunctionArray(void)
 void
 initFuncs(void)
 {
-    NewList(&funcs);  NewList(&fewfuncs);  NewList(&refs);
+    MyNewList(&funcs);  MyNewList(&fewfuncs);  MyNewList(&refs);
 
     itaPoint = loc->loc_DecimalPoint;
     if (!itaPoint || (*itaPoint != '.' && *itaPoint != ','))
@@ -2293,5 +2293,3 @@ initFuncs(void)
 
     MakeFunctionArray();
 }
-
-

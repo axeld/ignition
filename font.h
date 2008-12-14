@@ -93,15 +93,15 @@ extern void GetFonts(struct MinList *list,STRPTR dir,BOOL addfont);
 extern void AddFontPath(STRPTR path);
 extern void FreeFonts(void);
 extern void GetFontChars(struct FontSize *,STRPTR);
-extern void PUBLIC DrawTextWithWidth(reg (a0) struct RastPort *rp,reg (a1) struct FontInfo *fi,reg (a2) STRPTR t,reg (d0) long x,reg (d1) long y,reg (d2) long width);
-extern void PUBLIC DrawText(reg (a0) struct RastPort *rp,reg (a1) struct FontInfo *fi,reg (a2) STRPTR t,reg (d0) long x,reg (d1) long y);
-extern ULONG PUBLIC OutlineLength(reg (a0) struct FontInfo *fi,reg (a1) STRPTR text,reg (d0) long len);
-extern ULONG PUBLIC OutlineHeight(reg (a0) struct FontInfo *fi,reg (a1) STRPTR text,reg (d0) long len);
-extern void PUBLIC FreeFontInfo(reg (a0) struct FontInfo *fi);
-extern struct FontInfo * PUBLIC NewFontInfoA(reg (a0) struct FontInfo *fi,reg (d0) ULONG dpi,reg (a1) struct TagItem *ti);
+extern void PUBLIC DrawTextWithWidth(REG(a0, struct RastPort *rp),REG(a1, struct FontInfo *fi),REG(a2, STRPTR t),REG(d0, long x),REG(d1, long y),REG(d2, long width));
+extern void PUBLIC DrawText(REG(a0, struct RastPort *rp),REG(a1, struct FontInfo *fi),REG(a2, STRPTR t),REG(d0, long x),REG(d1, long y));
+extern ULONG PUBLIC OutlineLength(REG(a0, struct FontInfo *fi),REG(a1, STRPTR text),REG(d0, long len));
+extern ULONG PUBLIC OutlineHeight(REG(a0, struct FontInfo *fi),REG(a1, STRPTR text),REG(d0, long len));
+extern void PUBLIC FreeFontInfo(REG(a0, struct FontInfo *fi));
+extern struct FontInfo * PUBLIC NewFontInfoA(REG(a0, struct FontInfo *fi),REG(d0, ULONG dpi),REG(a1, struct TagItem *ti));
 extern struct FontInfo *NewFontInfo(struct FontInfo *fi,ULONG dpi,ULONG tag,...);
-extern struct FontInfo * PUBLIC SetFontInfoA(reg (a0) struct FontInfo *fi,reg (d0) ULONG dpi,reg (a1) struct TagItem *ti);
+extern struct FontInfo * PUBLIC SetFontInfoA(REG(a0, struct FontInfo *fi),REG(d0, ULONG dpi),REG(a1, struct TagItem *ti));
 extern struct FontInfo *SetFontInfo(struct FontInfo *fi,ULONG dpi,ULONG tag,...);
-extern struct FontInfo * PUBLIC CopyFontInfo(reg (a0) struct FontInfo *fi);
+extern struct FontInfo * PUBLIC CopyFontInfo(REG(a0, struct FontInfo *fi));
 
 #endif   /* IGN_FONT_H */

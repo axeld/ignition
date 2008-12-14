@@ -31,7 +31,7 @@ OpenFontEngine(struct FontFamily *ff, long style)
 		return NULL;
 
 	for (fo = (APTR)fonts.mlh_Head; fo->fo_Node.ln_Succ; fo = (APTR)fo->fo_Node.ln_Succ) {
-		name = (STRPTR)GetTagData(OT_Family, NULL, fo->fo_Tags);
+		name = (STRPTR)GetTagData(OT_Family, 0, fo->fo_Tags);
 		if (name != NULL && !strcmp(name, ff->ff_Node.ln_Name)) {
 			// Found font of the requested family - now check for its properties.
 			// If the font matches 100%, take it
@@ -57,13 +57,13 @@ OpenFontEngine(struct FontFamily *ff, long style)
 		fo = fallback;
 	}
 
-	if (fo && !fo->fo_Engine && (name = (STRPTR)GetTagData(OT_Engine, NULL, fo->fo_Tags)) != NULL) {
+	if (fo && !fo->fo_Engine && (name = (STRPTR)GetTagData(OT_Engine, 0, fo->fo_Tags)) != NULL) {
 		// open font engine with first usage
 
 		fo->fo_Space = GetTagData(OT_SpaceWidth, 2540, fo->fo_Tags);
 		strcpy(engine, name);  strcat(engine, ".library");
-		if (BulletBase = OpenLibrary(engine, 0L)) {
-			if (fo->fo_Engine = OpenEngine()) {
+		if ((BulletBase = OpenLibrary(engine, 0L)) != 0) {
+			if ((fo->fo_Engine = OpenEngine()) != 0) {
 				if (!SetInfo(fo->fo_Engine, OT_OTagPath, fo->fo_Node.ln_Name,
 											OT_OTagList, fo->fo_Tags,
 											TAG_END))
@@ -109,7 +109,7 @@ CreateChar(struct FontSize *fs, UWORD code)
 	if (!fs)
 		return NULL;
 
-	if (fc = FindFontChar(fs, code))
+	if ((fc = FindFontChar(fs, code)) != 0)
 		return fc;
 
 	// we really have to recreate the character
@@ -128,17 +128,17 @@ CreateChar(struct FontSize *fs, UWORD code)
 	{
 		if (!ObtainInfo(gle, OT_GlyphMap, &glm, TAG_END))
 		{
-			if (fc = AllocPooled(pool, sizeof(struct FontChar)))
+			if ((fc = AllocPooled(pool, sizeof(struct FontChar))) != 0)
 			{
 				fc->fc_Code = code;
 				fc->fc_Glyph = *glm;
-				if (fc->fc_Glyph.glm_BitMap = AllocPooled(fs->fs_Pool, glm->glm_BMModulo * glm->glm_BMRows))
+				if ((fc->fc_Glyph.glm_BitMap = AllocPooled(fs->fs_Pool, glm->glm_BMModulo * glm->glm_BMRows)) != 0)
 				{
 					CopyMem(glm->glm_BitMap, fc->fc_Glyph.glm_BitMap, glm->glm_BMModulo * glm->glm_BMRows);
 					if (code < 256)
 						fs->fs_CharsArray[code] = fc;
 					else
-						AddTail((struct List *)&fs->fs_Chars, (struct Node *)fc);
+						MyAddTail(&fs->fs_Chars, fc);
 				}
 				else
 					FreePooled(pool, fc, sizeof(struct FontChar));
@@ -163,7 +163,7 @@ GetFontChars(struct FontSize *fs, STRPTR t)
 
 
 uint32 PUBLIC
-OutlineLength(reg (a0) struct FontInfo *fi,reg (a1) STRPTR t,reg (d0) long len)
+OutlineLength(REG(a0, struct FontInfo *fi), REG(a1, STRPTR t), REG(d0, long len))
 {
 	struct FontSize *fs;
 	struct FontChar *fc;
@@ -177,7 +177,7 @@ OutlineLength(reg (a0) struct FontInfo *fi,reg (a1) STRPTR t,reg (d0) long len)
 	for (; *t && len; t++, len--) {
 		if (*t == ' ')
 			length += fs->fs_Space;
-		else if (fc = CreateChar(fs,(UWORD)*t)) {
+		else if ((fc = CreateChar(fs, (UWORD)*t)) != 0) {
 			if (fi->fi_Kerning) {
 				if (*(t+1)) {
 					if (SetInfo(fs->fs_Font->fo_Engine,OT_GlyphCode,*t,OT_GlyphCode2,*(t+1),TAG_END) || ObtainInfo(fs->fs_Font->fo_Engine,fi->fi_Kerning == FK_TEXT ? OT_TextKernPair : OT_DesignKernPair,&kern,TAG_END))
@@ -198,7 +198,7 @@ OutlineLength(reg (a0) struct FontInfo *fi,reg (a1) STRPTR t,reg (d0) long len)
 
 
 uint32 PUBLIC
-OutlineHeight(reg (a0) struct FontInfo *fi,reg (a1) STRPTR t,reg (d0) long len)
+OutlineHeight(REG(a0, struct FontInfo *fi),REG(a1, STRPTR t),REG(d0, long len))
 {
 	if (fi)
 		return fi->fi_FontSize->fs_EMHeight;    /* TODO: was Pointheight */
@@ -209,7 +209,7 @@ OutlineHeight(reg (a0) struct FontInfo *fi,reg (a1) STRPTR t,reg (d0) long len)
 
 
 void PUBLIC
-DrawText(reg (a0) struct RastPort *rp, reg (a1) struct FontInfo *fi, reg (a2) STRPTR t, reg (d0) long x, reg (d1) long y)
+DrawText(REG(a0, struct RastPort *rp), REG(a1, struct FontInfo *fi), REG(a2, STRPTR t), REG(d0, long x), REG(d1, long y))
 {
 	struct FontSize *fs;
 	struct FontChar *fc;
@@ -230,7 +230,7 @@ DrawText(reg (a0) struct RastPort *rp, reg (a1) struct FontInfo *fi, reg (a2) ST
 	{
 		if (*t == ' ')
 			x += fs->fs_Space;
-		else if (fc = CreateChar(fs, (UWORD)*t))
+		else if ((fc = CreateChar(fs, (UWORD)*t)) != 0)
 		{
 			glm = fc->fc_Glyph;
 			if (fi->fi_Kerning)
@@ -277,7 +277,7 @@ DrawText(reg (a0) struct RastPort *rp, reg (a1) struct FontInfo *fi, reg (a2) ST
 	}
 }
 
-/*
+#if 0
 void PUBLIC
 DrawTextWithWidth(reg (a0) struct RastPort *rp,reg (a1) struct FontInfo *fi,reg (a2) STRPTR t,reg (d0) long x,reg (d1) long y,reg (d2) long width)
 {
@@ -337,7 +337,7 @@ DrawTextWithWidth(reg (a0) struct RastPort *rp,reg (a1) struct FontInfo *fi,reg 
 	if (fi->fi_Style & FS_UNDERLINED)
 		DrawHorizBlock(rp,fs->fs_DPI,ox,y+((fs->fs_PointHeight >> 16)*(fs->fs_DPI & 0xffff))/(72*9),x,0x100,0);
 }
-*/
+#endif
 
 void
 FreeFontSize(struct FontSize *fs)
@@ -352,7 +352,7 @@ FreeFontSize(struct FontSize *fs)
 			if (fs->fs_CharsArray[i])
 				FreePooled(pool, fs->fs_CharsArray[i], sizeof(struct FontChar));
 		}
-		while (fc = (struct FontChar *)RemHead((struct List *)&fs->fs_Chars))
+		while ((fc = (struct FontChar *)MyRemHead(&fs->fs_Chars)) != 0)
 			FreePooled(pool, fc, sizeof(struct FontChar));
 
 		DeletePool(fs->fs_Pool);
@@ -372,9 +372,9 @@ GetFontSize(struct FontInfo *fi, ULONG dpi, long pointheight)
 	if (!(fo = OpenFontEngine((APTR)fi->fi_Family, fi->fi_Style)))
 		return NULL;
 
-	if (fs = AllocPooled(pool, sizeof(struct FontSize)))
+	if ((fs = AllocPooled(pool, sizeof(struct FontSize))) != 0)
 	{
-		NewList((struct List *)&fs->fs_Chars);
+		MyNewList(&fs->fs_Chars);
 		fs->fs_DPI = dpi;
 		fs->fs_PointHeight = pointheight;
 		fs->fs_EMWidth = ((pointheight * xdpi)/72) >> 16;
@@ -390,7 +390,7 @@ GetFontSize(struct FontInfo *fi, ULONG dpi, long pointheight)
 			FreePooled(pool, fs, sizeof(struct FontSize));
 			return NULL;
 		}
-		if (fc = CreateChar(fs, '{'))
+		if ((fc = CreateChar(fs, '{')) != 0)
 			fs->fs_EMTop = fs->fs_EMHeight-fc->fc_Glyph.glm_Y0 + fc->fc_Glyph.glm_BlackTop;
 	}
 
@@ -399,21 +399,21 @@ GetFontSize(struct FontInfo *fi, ULONG dpi, long pointheight)
 
 
 void PUBLIC
-FreeFontInfo(reg (a0) struct FontInfo *fi)
+FreeFontInfo(REG(a0, struct FontInfo *fi))
 {
 	//D(bug("freefont: %lx, locked = %ld\n",fi,fi ? fi->fi_Locked : 0));
 
 	if (!fi || --fi->fi_Locked > 0)
 		return;
 
-	Remove((struct Node *)fi);
+	MyRemove(fi);
 	FreeFontSize(fi->fi_FontSize);
 	FreePooled(pool,fi,sizeof(struct FontInfo));
 }
 
 
 struct FontInfo * PUBLIC
-ChangeFontInfoA(reg (a0) struct FontInfo *ofi, reg (d0) ULONG thisdpi, reg (a1) struct TagItem *ti, reg (d1) UBYTE freeref)
+ChangeFontInfoA(REG(a0, struct FontInfo *ofi), REG(d0, ULONG thisdpi), REG(a1, struct TagItem *ti), REG(d1, UBYTE freeref))
 {
 	struct FontInfo *fi, *sfi = NULL;
 	struct TagItem *tstate;
@@ -463,7 +463,7 @@ ChangeFontInfoA(reg (a0) struct FontInfo *ofi, reg (d0) ULONG thisdpi, reg (a1) 
 	}
 
 	tstate = ti;
-	while (ti = NextTagItem(&tstate))   /* Change attributes */
+	while ((ti = NextTagItem(&tstate)) != 0)   /* Change attributes */
 	{
 		if (ti->ti_Data == ~0L)
 			continue;
@@ -537,10 +537,10 @@ ChangeFontInfoA(reg (a0) struct FontInfo *ofi, reg (d0) ULONG thisdpi, reg (a1) 
 		FreeFontSize(ofi->fi_FontSize);
 		fi = ofi;  ofi = NULL;
 	}
-	else if (fi = AllocPooled(pool, sizeof(struct FontInfo)))
+	else if ((fi = AllocPooled(pool, sizeof(struct FontInfo))) != 0)
 	{
 		fi->fi_Locked = 1;
-		AddTail(&infos, fi);
+		MyAddTail(&infos, fi);
 	}
 
 	if (ofi && freeref)
@@ -563,7 +563,7 @@ ChangeFontInfoA(reg (a0) struct FontInfo *ofi, reg (d0) ULONG thisdpi, reg (a1) 
 		fi->fi_FontSize = sfi->fi_FontSize;
 		fi->fi_FontSize->fs_Locked++;
 	}
-	else if (fi->fi_FontSize = fs = GetFontSize(fi, thisdpi, height))
+	else if ((fi->fi_FontSize = fs = GetFontSize(fi, thisdpi, height)))
 	{
 		TRACE(("got font size with style = %ld\n", fs->fs_Font->fo_Style));
 
@@ -616,7 +616,7 @@ ChangeFontInfoA(reg (a0) struct FontInfo *ofi, reg (d0) ULONG thisdpi, reg (a1) 
 
 
 struct FontInfo * PUBLIC
-NewFontInfoA(reg (a0) struct FontInfo *fi, reg (d0) ULONG dpi, reg (a1) struct TagItem *ti)
+NewFontInfoA(REG(a0, struct FontInfo *fi), REG(d0, ULONG dpi), REG(a1, struct TagItem *ti))
 {
 	return ChangeFontInfoA(fi, dpi, ti, FALSE);
 }
@@ -630,7 +630,7 @@ NewFontInfo(struct FontInfo *fi, ULONG dpi, ULONG tag, ...)
 
 
 struct FontInfo * PUBLIC
-SetFontInfoA(reg (a0) struct FontInfo *ofi, reg (d0) ULONG thisdpi, reg (a1) struct TagItem *ti)
+SetFontInfoA(REG(a0, struct FontInfo *ofi), REG(d0, ULONG thisdpi), REG(a1, struct TagItem *ti))
 {
 	return ChangeFontInfoA(ofi, thisdpi, ti, TRUE);
 }
@@ -669,7 +669,7 @@ SetFontInfo(struct FontInfo *ofi, ULONG dpi, ULONG tag, ...)
 
 
 struct FontInfo * PUBLIC
-CopyFontInfo(reg (a0) struct FontInfo *fi)
+CopyFontInfo(REG(a0, struct FontInfo *fi))
 {
 	if (!fi)
 		return NULL;
@@ -694,12 +694,12 @@ FreeFonts(void)
 	struct FontFamily *ff;
 	struct Font *fo;
 
-	while (ff = (struct FontFamily *)RemHead(&families))
+	while ((ff = (struct FontFamily *)MyRemHead(&families)) != 0)
 		FreeFamily(ff);
 	while (!IsListEmpty((struct List *)&infos))
 		FreeFontInfo((struct FontInfo *)infos.mlh_Head);
 
-	while (fo = (struct Font *)RemHead(&fonts))
+	while ((fo = (struct Font *)MyRemHead(&fonts)) != 0)
 	{
 		FreePooled(pool, fo->fo_Tags, GetTagData(OT_FileIdent, 0, fo->fo_Tags));
 		if (fo->fo_Engine)
@@ -716,7 +716,7 @@ FreeFonts(void)
 void
 GetFonts(struct MinList *list, STRPTR dir, BOOL addfont)
 {
-	struct AnchorPath __aligned ap;
+	struct AnchorPath ALIGNED ap;
 	struct TagItem *otag;
 	struct FontFamily *ff;
 	struct Font *fo;
@@ -732,13 +732,17 @@ GetFonts(struct MinList *list, STRPTR dir, BOOL addfont)
 
 	for (rc = MatchFirst("#?.otag", &ap); !rc; rc = MatchNext(&ap))
 	{
-		if (font = Open(ap.ap_Info.fib_FileName, MODE_OLDFILE))
+		if ((font = Open(ap.ap_Info.fib_FileName, MODE_OLDFILE)) != 0)
 		{
-			if (otag = AllocPooled(pool, ap.ap_Info.fib_Size))
+			if ((otag = AllocPooled(pool, ap.ap_Info.fib_Size)) != 0)
 			{
 				Read(font, otag, ap.ap_Info.fib_Size);
 				for (i = 0; (otag + i)->ti_Tag != TAG_END; i++)
 				{
+					// OTAG fonts are in big endian format
+					(otag+i)->ti_Tag = LONG2BE((otag+i)->ti_Tag);
+					(otag+i)->ti_Data = LONG2BE((otag+i)->ti_Data);
+
 					if ((otag + i)->ti_Tag & OT_Indirect)
 						(otag + i)->ti_Data += (ULONG)otag;
 				}
@@ -761,24 +765,24 @@ GetFonts(struct MinList *list, STRPTR dir, BOOL addfont)
 					fo->fo_Tags = otag;
 
 					TRACE(("add font: %s, style = %ld\n", file, fo->fo_Style));
-					AddTail(&fonts, fo);
+					MyAddTail(&fonts, fo);
 				}
 
-				if (!(t = (STRPTR)GetTagData(OT_Family, NULL, otag)))
+				if (!(t = (STRPTR)GetTagData(OT_Family, 0, otag)))
 				{
 					strcpy(t = file, ap.ap_Info.fib_FileName);
 					if ((i = strlen(file)) > 5)
 						file[i - 5] = 0;
 				}
 
-				if (!(ff = (APTR)FindName(list, t)))
+				if (!(ff = (APTR)MyFindName(list, t)))
 				{
 					TRACE(("family = %s\n", t));
 
 					if (t && (ff = AllocPooled(pool, sizeof(struct FontFamily))))
 					{
 						ff->ff_Node.ln_Name = AllocString(t);
-						AddTail(list, ff);
+						MyAddTail(list, ff);
 					}
 				}
 			}
@@ -801,10 +805,10 @@ AddFontPath(STRPTR path)
 	if (!path)
 		return;
 
-	if (ln = AllocPooled(pool,sizeof(struct Node)))
+	if ((ln = AllocPooled(pool,sizeof(struct Node))) != 0)
 	{
 		ln->ln_Name = AllocString(path);
-		AddTail(&fontpaths, ln);
+		MyAddTail(&fontpaths, ln);
 	}
 }
 
@@ -814,7 +818,7 @@ SearchFonts(void)
 {
 	struct Node *ln;
 
-	NewList(&families);
+	MyNewList(&families);
 
 	if (IsListEmpty((struct List *)&fontpaths)) {
 		struct DosList *list = LockDosList(LDF_ASSIGNS | LDF_VOLUMES | LDF_READ);
@@ -832,5 +836,3 @@ SearchFonts(void)
 	foreach (&fontpaths, ln)
 		GetFonts(&families, ln->ln_Name, TRUE);
 }
-
-

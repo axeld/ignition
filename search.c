@@ -98,6 +98,7 @@ smr(UWORD sm, long cmp)
 		case SMR_GREATER: return cmp > 0;
 		case SMR_EQUALGREATER: return cmp >= 0;
 	}
+	return 0; /* suppress compiler warning */
 }
 
 
@@ -114,7 +115,7 @@ MatchString(STRPTR t, STRPTR cmp, UWORD sm)
 	{
 		if (sm & SM_WORDS)
 		{
-			for(i = 0;s = NextWord(t,i);i += mslen)
+			for (i = 0; (s = NextWord(t,i)) != 0; i += mslen)
 			{
 				msfirst = i;  mslen = strlen(s);
 				if (sm & SM_IGNORECASE && MatchPatternNoCase(cmp,s) || MatchPattern(cmp,s))
@@ -166,9 +167,9 @@ ReplaceString(struct Page *page, struct tableField *tf, struct SearchNode *sn, U
 		s = sn->sn_Text;
 	else
 	{
-		if (MatchString(t,asn->sn_Text,sm)) /* setzen von msfirst & mslen */
+		if (MatchString(t, asn->sn_Text, sm) != 0) /* setzen von msfirst & mslen */
 		{
-			if (s = AllocPooled(pool,strlen(t)-mslen+strlen(sn->sn_Text)+1))
+			if ((s = AllocPooled(pool,strlen(t)-mslen+strlen(sn->sn_Text)+1)))
 			{
 				stccpy(s,t,msfirst+1);
 				strcat(s,sn->sn_Text);
@@ -283,7 +284,7 @@ PrepareSearchReplace(struct MinList *list,UWORD sm)
 					sn->sn_Number = (sn->sn_Number & 2 ? FS_BOLD : 0) | (sn->sn_Number & 4 ? FS_ITALIC : 0) | (sn->sn_Number & 8 ? FS_UNDERLINED : 0);
 					break;
 				case SNT_FONT:
-					sn->sn_Number = (ULONG)FindName(&families,sn->sn_Text);
+					sn->sn_Number = (ULONG)MyFindName(&families, sn->sn_Text);
 					break;
 				case SNT_SIZE:
 					sn->sn_Number = (ULONG)(ConvertNumber(sn->sn_Text,CNT_POINT)*65536.0+0.5);
@@ -318,7 +319,7 @@ PrepareSearchReplace(struct MinList *list,UWORD sm)
 					break;
 				case SNT_TEXT:
 				case SNT_NOTE:
-					sn->sn_Number = NULL;
+					sn->sn_Number = 0;
 					if (sm & SM_PATTERN && sn->sn_Text && (sn->sn_Type == SNT_TEXT || sn->sn_Type == SNT_NOTE))
 					{
 						if (sm & SM_IGNORECASE)
@@ -407,7 +408,7 @@ SearchReplace(struct Page *page,UWORD sm)
 
 					changed = FALSE;
 					if (un && (stf = CopyCell(page,tf)))
-						AddTail((struct List *)&un->un_UndoList,(struct Node *)stf);
+						MyAddTail(&un->un_UndoList, stf);
 
 					for (sn = (APTR)replace.mlh_Head;sn->sn_Node.ln_Succ;sn = (APTR)sn->sn_Node.ln_Succ)
 					{
@@ -455,7 +456,7 @@ SearchReplace(struct Page *page,UWORD sm)
 																					 TAG_END);
 					}
 					if (un && (stf = CopyCell(page, tf)))
-						AddTail((struct List *)&un->un_RedoList, (struct Node *)stf);
+						MyAddTail(&un->un_RedoList, stf);
 				}
 			}
 			else
@@ -522,7 +523,7 @@ SetFindReplace(struct SearchNode *sn,struct Gadget *gad)
 			break;
 	}
 	GT_SetGadgetAttrs(GadgetAddress(win,gad->GadgetID+1),win,NULL,GTST_String,sn->sn_Text,GA_Disabled,FALSE,TAG_END);
-	if (sgad = GadgetAddress(win,gad->GadgetID+2))
+	if ((sgad = GadgetAddress(win, gad->GadgetID + 2)) != 0)
 		sgad->UserData = list;
 	wd->wd_ExtData[gad->GadgetID == 1 ? 5 : 6] = hook;
 	if (activate)
@@ -603,8 +604,8 @@ SetSearchStyle(struct SearchNode *sn, ULONG num)
 }
 
 
-void __asm
-CreateFindReplaceGadgets(reg (a0) struct winData *wd)
+void ASM
+CreateFindReplaceGadgets(REG(a0, struct winData *wd))
 {
 	static const STRPTR searchLabels[] = {"<","<=","=",">=",">",NULL};
 	long i = 0, w, buttonWidth;
@@ -722,8 +723,8 @@ CreateFindReplaceGadgets(reg (a0) struct winData *wd)
 }
 
 
-void __asm
-CloseFindReplaceWindow(reg (a0) struct Window *win, reg (d0) bool clean)
+void ASM
+CloseFindReplaceWindow(REG(a0, struct Window *win), REG(d0, bool clean))
 {
 	if (!clean)
 		return;
@@ -734,8 +735,8 @@ CloseFindReplaceWindow(reg (a0) struct Window *win, reg (d0) bool clean)
 }
 
  
-void __asm
-HandleFindReplaceIDCMP(reg (a0) struct TagItem *tag)
+void ASM
+HandleFindReplaceIDCMP(REG(a0, struct TagItem *tag))
 {
 	struct SearchNode *sn;
 	struct MinList *list;
@@ -759,7 +760,7 @@ HandleFindReplaceIDCMP(reg (a0) struct TagItem *tag)
 	switch (imsg.Class)
 	{
 		case IDCMP_GADGETDOWN:
-			if (sn && ((i = (gad = imsg.IAddress)-> GadgetID) == 3 || i == 8) && gad->UserData)
+			if (sn && ((i = (gad = imsg.IAddress)-> GadgetID) == 3 || i == 8) && gad->UserData)
 			{
 				i = PopUpList(win,GadgetAddress(win,gad->GadgetID-1),gad->UserData,POPA_CallBack,wd->wd_ExtData[i < 6 ? 5 : 6],POPA_MaxPen,~0L,wd->wd_ExtData[i < 6 ? 5 : 6] == &colorHook ? POPA_ItemHeight : TAG_IGNORE,fontheight+4,TAG_END);
 				if (i != ~0L)
@@ -826,24 +827,24 @@ HandleFindReplaceIDCMP(reg (a0) struct TagItem *tag)
 						{
 							case SNT_TEXT:
 							case SNT_NOTE:
-								if (!FindName(&history,sn->sn_Text))
+								if (!MyFindName(&history, sn->sn_Text))
 								{
-									if (ln = AllocPooled(pool,sizeof(struct Node)))
+									if ((ln = AllocPooled(pool, sizeof(struct Node))) != 0)
 									{
 										ln->ln_Name = AllocString(sn->sn_Text);
-										AddTail(&history,ln);
+										MyAddTail(&history, ln);
 									}
 								}
 								break;
 							case SNT_FONT:
-								if (!FindName(&families, sn->sn_Text))
+								if (!MyFindName(&families, sn->sn_Text))
 								{
 									DisplayBeep(NULL);
 									sn->sn_Text = AllocString(((struct Node *)families.mlh_Head)->ln_Name);
 								}
 								break;
 							case SNT_FORMAT:
-								if (!FindName(&prefs.pr_Formats, sn->sn_Text))
+								if (!MyFindName(&prefs.pr_Formats, sn->sn_Text))
 								{
 									DisplayBeep(NULL);
 									sn->sn_Text = AllocString(((struct Node *)prefs.pr_Formats.mlh_Head)->ln_Name);
@@ -851,7 +852,7 @@ HandleFindReplaceIDCMP(reg (a0) struct TagItem *tag)
 								break;
 							case SNT_APEN:
 							case SNT_BPEN:
-								if (ln = FindName(&colors,sn->sn_Text))
+								if ((ln = MyFindName(&colors, sn->sn_Text)) != 0)
 									sn->sn_Number = ((struct colorPen *)ln)->cp_ID;
 								else
 								{
@@ -899,7 +900,7 @@ HandleFindReplaceIDCMP(reg (a0) struct TagItem *tag)
 						else if (gad->GadgetID == 16)
 							searchMode |= SM_BLOCK;
 
-						if (gad = GadgetAddress(win, 12)) {
+						if ((gad = GadgetAddress(win, 12)) != 0) {
 							GT_GetGadgetAttrs(gad, win, NULL, GTCB_Checked, &i, TAG_END);
 							searchMode = i ? searchMode | SM_ASK : searchMode & ~SM_ASK;
 						}
@@ -932,19 +933,19 @@ InitSearch(void)
 	struct SearchNode *sn, *rn;
 	long i;
 
-	NewList(&search);  NewList(&replace);  NewList(&history);
+	MyNewList(&search);  MyNewList(&replace);  MyNewList(&history);
 
 	for (i = 1; i < NUM_SNT; i++)
 	{
-		if (sn = AllocPooled(pool, sizeof(struct SearchNode)))
+		if ((sn = AllocPooled(pool, sizeof(struct SearchNode))) != 0)
 		{
 			sn->sn_Node.ln_Name = GetString(&gLocaleInfo, searchNames[i - 1]);
 			sn->sn_Type = i;
-			AddTail(&search, sn);
-			if (rn = AllocPooled(pool, sizeof(struct SearchNode)))
+			MyAddTail(&search, sn);
+			if ((rn = AllocPooled(pool, sizeof(struct SearchNode))) != 0)
 			{
 				*rn = *sn;
-				AddTail(&replace, rn);
+				MyAddTail(&replace, rn);
 			}
 			if (i == SNT_TEXT)
 				sn->sn_Node.ln_Type = 1;

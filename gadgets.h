@@ -47,7 +47,7 @@ struct PageGData {
 	struct Window *pd_Window;
 	struct Gadget *pd_Gadgets;
 	ULONG  pd_Active,pd_Count;
-	void   __asm (*pd_Refresh)(reg (a0) struct Window *,reg (d0) LONG);
+	void   ASM (*pd_Refresh)(REG(a0, struct Window *), REG(d0, LONG));
 };
 
 
@@ -71,20 +71,10 @@ struct IndexGData {
 
 /*************************** Edit-Gadget ***************************/
 
-struct EditGData {
-	APTR   ed_Pool;
-	STRPTR ed_Text;
-	long   ed_Size,ed_Pos,ed_MarkPos,ed_TextLines;
-	struct MinList ed_List;
-	struct MinNode *ed_Top;
-	UWORD  ed_LineHeight,ed_Spacing,ed_MinSpace,ed_MaxSpace,ed_CharWidth;
-	UWORD  ed_Width,ed_Lines,ed_MaxSpaces,ed_TabSpaces,ed_GadWidth;
-	UBYTE  ed_APen,ed_BPen,ed_BorderH,ed_BorderV;
-	UWORD  ed_Flags;
-	long   ed_FrameType;
-	struct Gadget *ed_Scroller;
-	UBYTE  ed_ClipUnit;
-};
+/*
+	Mazze: removed struct EditGData. Must be inserted in a new header
+	which is shared with pTextEdit.gadget.
+*/
 
 #define EDJ_JUSTIFY 0       /* justified lines */
 #define EDJ_LEFT 1          /* left-aligned    */
@@ -173,7 +163,7 @@ struct gpDomain {
 struct Link {
 	struct MinNode l_Node;
 	APTR   l_Link;
-	ULONG  __asm (*l_HookFunction)(reg (a1) struct LVDrawMsg *,reg (a2) APTR);
+	ULONG  ASM (*l_HookFunction)(REG(a1, struct LVDrawMsg *), REG(a2, APTR));
 };
 
 

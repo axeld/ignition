@@ -19,7 +19,7 @@ extern STRPTR wdt_cmdstr;
 
 
 void PUBLIC
-RxMapLock(reg (a0) struct LockNode *ln, reg (a1) struct MinNode *node, reg (d0) UBYTE flags)
+RxMapLock(REG(a0, struct LockNode *ln), REG(a1, struct MinNode *node), REG(d0, UBYTE flags))
 {
     if (!rxpage)
 		CloseAppWindow(ln->ln_Data[0], TRUE);
@@ -38,8 +38,8 @@ GT_SetString(struct Gadget *gad, STRPTR *string)
 }
 
 
-void __asm
-CloseBorderWindow(reg (a0) struct Window *win, reg (d0) BOOL clean)
+void ASM
+CloseBorderWindow(REG(a0, struct Window *win), REG(d0, BOOL clean))
 {
     struct winData *wd = (struct winData *)win->UserData;
 
@@ -68,8 +68,8 @@ updateBorderGadgets(struct wdtBorder *wb)
 }
 
 
-void __asm
-HandleBorderIDCMP(reg (a0) struct TagItem *tag)
+void ASM
+HandleBorderIDCMP(REG(a0, struct TagItem *tag))
 {
     struct wdtBorder *wb;
     struct Node *ln;
@@ -243,8 +243,8 @@ HandleBorderIDCMP(reg (a0) struct TagItem *tag)
 }
 
 
-void __asm
-CloseFormelWindow(reg (a0) struct Window *win, reg (d0) BOOL clean)
+void ASM
+CloseFormelWindow(REG(a0, struct Window *win), REG(d0, BOOL clean))
 {
     struct winData *wd = (struct winData *)win->UserData;
 
@@ -253,8 +253,8 @@ CloseFormelWindow(reg (a0) struct Window *win, reg (d0) BOOL clean)
 }
 
 
-void __asm
-HandleFormelIDCMP(reg (a0) struct TagItem *tag)
+void ASM
+HandleFormelIDCMP(REG(a0, struct TagItem *tag))
 {
     struct Function *f;
     struct Node *ln;
@@ -278,7 +278,7 @@ HandleFormelIDCMP(reg (a0) struct TagItem *tag)
                 case 2:
                     for(ln = (struct Node *)fewfuncs.mlh_Head,i = 0;i < imsg.Code;i++,ln = ln->ln_Succ);
                     ((struct Gadget *)wd->wd_ExtData[1])->UserData = ln;
-                    if (f = (struct Function *)FindName(&funcs,ln->ln_Name))
+                    if ((f = (struct Function *)MyFindName(&funcs, ln->ln_Name)) != 0)
                         GT_SetGadgetAttrs(GadgetAddress(win,3),win,NULL,GTTX_Text,f->f_Help,TAG_END);
                     break;
                 case 4:
@@ -295,8 +295,8 @@ HandleFormelIDCMP(reg (a0) struct TagItem *tag)
 }
 
 
-void __asm
-HandlePageSetupIDCMP(reg (a0) struct TagItem *tag)
+void ASM
+HandlePageSetupIDCMP(REG(a0, struct TagItem *tag))
 {
     struct Mappe *mp = (struct Mappe *)wd->wd_Data;
 
@@ -376,8 +376,8 @@ HandlePageSetupIDCMP(reg (a0) struct TagItem *tag)
 }
 
 
-void __asm
-HandleDocInfoIDCMP(reg (a0) struct TagItem *tag)
+void ASM
+HandleDocInfoIDCMP(REG(a0, struct TagItem *tag))
 {
     struct Mappe *mp = wd->wd_Data;
     long   id;
@@ -405,7 +405,7 @@ HandleDocInfoIDCMP(reg (a0) struct TagItem *tag)
                 GT_SetString(GadgetAddress(win,2),&mp->mp_Version);
                 GT_SetString(GadgetAddress(win,3),&mp->mp_CatchWords);
 
-                GetAttr(EGA_Text,wd->wd_ExtData[1],(ULONG *)&note);
+                GetAttr(EGA_Text, wd->wd_ExtData[1], (IPTR *)&note);
                 if (note != NULL)
                 {
                     FreeString(mp->mp_Note);
@@ -430,8 +430,8 @@ HandleDocInfoIDCMP(reg (a0) struct TagItem *tag)
 }
 
 
-void __asm
-CloseDocumentWindow(reg (a0) struct Window *win,reg (d0) BOOL clean)
+void ASM
+CloseDocumentWindow(REG(a0, struct Window *win), REG(d0, BOOL clean))
 {
     struct winData *wd = (struct winData *)win->UserData;
     struct Node *ln;
@@ -444,7 +444,7 @@ CloseDocumentWindow(reg (a0) struct Window *win,reg (d0) BOOL clean)
     }
     if (clean)
     {
-        while(ln = RemHead(wd->wd_ExtData[3]))
+        while((ln = MyRemHead(wd->wd_ExtData[3])) != 0)
             FreePooled(pool,ln,sizeof(struct Node));
 
         FreePooled(pool,wd->wd_ExtData[3],sizeof(struct List));
@@ -498,8 +498,8 @@ UpdateEventGadgets(struct Mappe *mp, UBYTE event)
 }
 
 
-void __asm
-HandleDocumentIDCMP(reg (a0) struct TagItem *tag)
+void ASM
+HandleDocumentIDCMP(REG(a0, struct TagItem *tag))
 {
     struct Mappe *mp = (struct Mappe *)wd->wd_Data;
     struct Node *ln;
@@ -532,7 +532,7 @@ HandleDocumentIDCMP(reg (a0) struct TagItem *tag)
                                 ln = ((struct Link *)ln)->l_Link;
                             mp->mp_Events[evt].ev_Flags |= EVF_ACTIVE;
                             mp->mp_Events[evt].ev_Command = AllocString(ln->ln_Name);
-                            if (ln = FindListNumber(wd->wd_ExtData[3],evt))
+                            if ((ln = FindListNumber(wd->wd_ExtData[3],evt)) != 0)
                                 ln->ln_Type = TRUE;
                             UpdateEventGadgets(mp,evt);
                         }
@@ -561,7 +561,7 @@ HandleDocumentIDCMP(reg (a0) struct TagItem *tag)
                     if (imsg.Code == evt)
                     {
                         GT_SetGadgetAttrs(wd->wd_ExtData[4],win,NULL,GTLV_Labels,~0L,TAG_END);
-                        if (ln = FindListNumber(wd->wd_ExtData[3],evt = imsg.Code))
+                        if ((ln = FindListNumber(wd->wd_ExtData[3],evt = imsg.Code)) != 0)
                             ln->ln_Type = (!ln->ln_Type) & 1;
                         if (ln->ln_Type && mp->mp_Events[evt].ev_Command)
                             mp->mp_Events[evt].ev_Flags |= EVF_ACTIVE;
@@ -577,7 +577,7 @@ HandleDocumentIDCMP(reg (a0) struct TagItem *tag)
                     GT_GetGadgetAttrs(gad,win,NULL,GTST_String,&t,TAG_END);
                     if (!(ln = FindListNumber(wd->wd_ExtData[3],evt)))
                         break;
-                    if (mp->mp_Events[evt].ev_Command = AllocString(t))
+                    if ((mp->mp_Events[evt].ev_Command = AllocString(t)) != 0)
                     {
                         ln->ln_Type = TRUE;
                         mp->mp_Events[evt].ev_Flags |= EVF_ACTIVE;
@@ -593,7 +593,7 @@ HandleDocumentIDCMP(reg (a0) struct TagItem *tag)
                     if (evt == EVT_TIME)
                     {
                         GT_GetGadgetAttrs(gad,win,NULL,GTST_String,&t,TAG_END);
-                        if (i = ConvertTime(t) < 1)
+                        if ((i = ConvertTime(t) < 1) != 0)
                             i = 1;
                         mp->mp_Events[evt].ev_Intervall = i;
                     }
@@ -606,14 +606,14 @@ HandleDocumentIDCMP(reg (a0) struct TagItem *tag)
                 {
                     STRPTR t;
 
-                    if (t = TestPasswords(win,8))
+                    if ((t = TestPasswords(win, 8)) != 0)
                     {
                         FreeString(mp->mp_Password);
                         mp->mp_Password = AllocString(t);
                     }
                     else
                         break;
-                    if (t = TestPasswords(win,10))
+                    if ((t = TestPasswords(win, 10)) != 0)
                     {
                         FreeString(mp->mp_CellPassword);
                         mp->mp_CellPassword = AllocString(t);
@@ -645,8 +645,8 @@ HandleDocumentIDCMP(reg (a0) struct TagItem *tag)
 }
 
 
-void __asm
-HandlePageIDCMP(reg (a0) struct TagItem *tag)
+void ASM
+HandlePageIDCMP(REG(a0, struct TagItem *tag))
 {
     struct Page *page = wd->wd_Data;
     struct tableField *tf;
@@ -695,16 +695,16 @@ HandlePageIDCMP(reg (a0) struct TagItem *tag)
 
                         i = 42;
 						strcpy(s, GetString(&gLocaleInfo, MSG_PAGE_COLOR));
-                        if (ln = (APTR)GetColorPen((ULONG)wd->wd_ExtData[0]))
+                        if ((ln = (APTR)GetColorPen((ULONG)wd->wd_ExtData[0])) != 0)
 							strcat(s, ln->ln_Name);
                         else
                             strcat(s,"-");
                         strcat(s,"/");
-                        if (ln = (APTR)GetColorPen((ULONG)wd->wd_ExtData[1]))
+                        if ((ln = (APTR)GetColorPen((ULONG)wd->wd_ExtData[1])) != 0)
                             strcat(s,ln->ln_Name);
                         else
                             strcat(s,"-");
-						if (un = CreateUndo(page, UNDO_PRIVATE, s))
+						if ((un = CreateUndo(page, UNDO_PRIVATE, s)) != 0)
                         {
 							un->un_Type = UNT_CELLS_CHANGED;
                             un->un_Mode = UNM_PAGECOLORS;
@@ -721,7 +721,7 @@ HandlePageIDCMP(reg (a0) struct TagItem *tag)
                         foreach (&page->pg_Table, tf)
                         {
                             if (un && (stf = CopyCell(page, tf)))
-								AddTail((struct List *)&un->un_UndoList, (struct Node *)stf);
+								MyAddTail(&un->un_UndoList, stf);
 
                             if (tf->tf_APen == page->pg_APen)
                                 tf->tf_APen = (ULONG)wd->wd_ExtData[0];
@@ -731,7 +731,7 @@ HandlePageIDCMP(reg (a0) struct TagItem *tag)
                                 tf->tf_BPen = (ULONG)wd->wd_ExtData[1];
 
                             if (un && (stf = CopyCell(page, tf)))
-								AddTail((struct List *)&un->un_RedoList, (struct Node *)stf);
+								MyAddTail(&un->un_RedoList, stf);
                         }
                         page->pg_APen = (ULONG)wd->wd_ExtData[0];
                         page->pg_BPen = (ULONG)wd->wd_ExtData[1];
@@ -792,8 +792,8 @@ SetCellSizeGadget(struct Window *win,long gad,long mm)
 }
 
 
-void __asm
-handleCellSizeIDCMP(reg (a0) struct TagItem *tag)
+void ASM
+handleCellSizeIDCMP(REG(a0, struct TagItem *tag))
 {
     long   i,id;
 
@@ -904,15 +904,15 @@ handleCellSizeIDCMP(reg (a0) struct TagItem *tag)
 }
 
 
-void __asm
-closeNotesWin(reg (a0) struct Window *win,reg (d0) BOOL clean)
+void ASM
+closeNotesWin(REG(a0, struct Window *win), REG(d0, BOOL clean))
 {
     struct winData *wd = (struct winData *)win->UserData;
     struct wdtNote *wn;
 
     if (clean)
     {
-        while(wn = (struct wdtNote *)RemHead((struct List *)wd->wd_ExtData[0]))
+        while((wn = (struct wdtNote *)MyRemHead((struct List *)wd->wd_ExtData[0])) != 0)
         {
             FreeString(wn->wn_Node.ln_Name);
             FreeString(wn->wn_Note);
@@ -922,8 +922,8 @@ closeNotesWin(reg (a0) struct Window *win,reg (d0) BOOL clean)
 }
 
 
-void __asm
-handleNotesIDCMP(reg (a0) struct TagItem *tag)
+void ASM
+handleNotesIDCMP(REG(a0, struct TagItem *tag))
 {
     struct tableField *tf = NULL;
     char   t[256];
@@ -942,7 +942,7 @@ handleNotesIDCMP(reg (a0) struct TagItem *tag)
                     long   len;
 
                     wn = (struct wdtNote *)FindListNumber(wd->wd_ExtData[0],i);
-                    GetAttr(EGA_Text,gad = wd->wd_ExtData[1],(ULONG *)&s);
+                    GetAttr(EGA_Text, (Object*)(gad = wd->wd_ExtData[1]), (IPTR *)&s);
 
                     if (s && wn->wn_Note && (t = AllocPooled(pool,len = strlen(s)+strlen(wn->wn_Note)+1)))
                     {
@@ -970,7 +970,7 @@ handleNotesIDCMP(reg (a0) struct TagItem *tag)
                 STRPTR note = NULL;
 
                 id = wd->wd_ShortCuts[1] == id ? 1 : 2;
-                GetAttr(EGA_Text,wd->wd_ExtData[1],(ULONG *)&note);
+                GetAttr(EGA_Text, wd->wd_ExtData[1], (IPTR *)&note);
 
                 if (id == 1 && note && (i = strlen(note)))
                 {
@@ -987,7 +987,7 @@ handleNotesIDCMP(reg (a0) struct TagItem *tag)
                     id = 2;
                 }
                 BeginUndo(rxpage,UNDO_BLOCK,t);
-                while(tf = GetMarkedFields(rxpage,tf,id == 1 ? TRUE : FALSE))
+                while ((tf = GetMarkedFields(rxpage, tf, id == 1 ? TRUE : FALSE)) != 0)
                 {
                     FreeString(tf->tf_Note);
                     if (id == 1)
@@ -1013,7 +1013,7 @@ handleNotesIDCMP(reg (a0) struct TagItem *tag)
 
 
 void PUBLIC
-ZoomWindowLock(reg (a0) struct LockNode *ln,reg (a1) struct MinNode *n,reg (d0) UBYTE flags)
+ZoomWindowLock(REG(a0, struct LockNode *ln), REG(a1, struct MinNode *n), REG(d0, UBYTE flags))
 {
     char   txt[64];
 
@@ -1027,8 +1027,8 @@ ZoomWindowLock(reg (a0) struct LockNode *ln,reg (a1) struct MinNode *n,reg (d0) 
 }
 
 
-void __asm
-handleZoomIDCMP(reg (a0) struct TagItem *tag)
+void ASM
+handleZoomIDCMP(REG(a0, struct TagItem *tag))
 {
     struct Node *ln;
 	long   i, j;
@@ -1072,8 +1072,8 @@ handleZoomIDCMP(reg (a0) struct TagItem *tag)
 }
 
 
-void __asm
-closeGClassesWindow(reg (a0) struct Window *win,reg (d0) BOOL clean)
+void ASM
+closeGClassesWindow(REG(a0, struct Window *win), REG(d0, BOOL clean))
 {
     struct winData *wd = (struct winData *)win->UserData;
 
@@ -1081,8 +1081,8 @@ closeGClassesWindow(reg (a0) struct Window *win,reg (d0) BOOL clean)
 }
 
 
-void __asm
-handleGClassesIDCMP(reg (a0) struct TagItem *tag)
+void ASM
+handleGClassesIDCMP(REG(a0, struct TagItem *tag))
 {
     struct gClass *gc;
     long   i;
@@ -1228,7 +1228,7 @@ UpdateObjectGadgets(struct Window *win)
         UpdateDiagramGadgets(win);
         return;
     }
-	if (gad = GadgetAddress(win, 1))         /* Name */
+	if ((gad = GadgetAddress(win, 1)) != 0)         /* Name */
 		GT_SetGadgetAttrs(gad, win, NULL, GTST_String, go->go_Node.ln_Name, TAG_END);
 
     width = go->go_mmRight;
@@ -1239,22 +1239,22 @@ UpdateObjectGadgets(struct Window *win)
         height -= go->go_mmTop;
     }
 
-	if (gad = GadgetAddress(win, 2))         /* von links */
+	if ((gad = GadgetAddress(win, 2)) != 0)         /* von links */
     {
 		sprintf(t, "%s cm", ita(go->go_mmLeft / 10240.0, -3, FALSE));
 		GT_SetGadgetAttrs(gad, win, NULL, GTST_String, t, TAG_END);
     }
-	if (gad = GadgetAddress(win, 3))         /* von oben */
+	if ((gad = GadgetAddress(win, 3)) != 0)         /* von oben */
     {
 		sprintf(t, "%s cm", ita(go->go_mmTop / 10240.0, -3, FALSE));
 		GT_SetGadgetAttrs(gad, win, NULL, GTST_String, t, TAG_END);
     }
-	if (gad = GadgetAddress(win, 4))         /* Breite/von rechts */
+	if ((gad = GadgetAddress(win, 4)) != 0)         /* Breite/von rechts */
     {
 		sprintf(t, "%s cm", ita(width / 10240.0, -3, FALSE));
 		GT_SetGadgetAttrs(gad, win, NULL, GTST_String, t, TAG_END);
     }
-	if (gad = GadgetAddress(win, 5))         /* Höhe/von unten */
+	if ((gad = GadgetAddress(win, 5)) != 0)         /* Höhe/von unten */
     {
 		sprintf(t, "%s cm", ita(height / 10240.0, -3, FALSE));
 		GT_SetGadgetAttrs(gad, win, NULL, GTST_String, t, TAG_END);
@@ -1263,15 +1263,15 @@ UpdateObjectGadgets(struct Window *win)
 }
 
 
-void __asm
-CloseObjectWindow(reg (a0) struct Window *win, reg (d0) BOOL clean)
+void ASM
+CloseObjectWindow(REG(a0, struct Window *win), REG(d0, BOOL clean))
 {
     struct winData *wd = (struct winData *)win->UserData;
     struct gGadget *gg;
 
     ((struct gObject *)wd->wd_Data)->go_Window = NULL;
 
-	while (gg = (struct gGadget *)RemHead(wd->u.object.wd_Gadgets))
+	while ((gg = (struct gGadget *)MyRemHead(wd->u.object.wd_Gadgets)) != 0)
 		FreePooled(pool, gg, sizeof(struct gGadget));
 
     if (clean)
@@ -1398,7 +1398,7 @@ HandleGGadget(struct Page *page, struct gObject *go)
 						zstrcpy(path, name);
                         name = FilePart(name);
 
-                        if (u = PathPart(path))
+                        if ((u = PathPart(path)) != 0)
                             *u = 0;
                     }
                     else
@@ -1480,8 +1480,8 @@ HandleGGadget(struct Page *page, struct gObject *go)
 }
 
 
-void __asm
-HandleObjectIDCMP(reg (a0) struct TagItem *tag)
+void ASM
+HandleObjectIDCMP(REG(a0, struct TagItem *tag))
 {
     struct Page *page = wd->wd_ExtData[0];
     struct gObject *go = wd->wd_Data;
@@ -1512,7 +1512,7 @@ HandleObjectIDCMP(reg (a0) struct TagItem *tag)
 					GT_GetGadgetAttrs(GadgetAddress(win, 3), win, NULL, GTST_String, &t, TAG_END);
 					y = (long)(ConvertNumber(t, CNT_MM) * 1024) - go->go_mmTop;
 
-					if (un = CreateUndo(page, UNDO_PRIVATE, GetString(&gLocaleInfo, MSG_MOVE_OBJECT_UNDO)))
+					if ((un = CreateUndo(page, UNDO_PRIVATE, GetString(&gLocaleInfo, MSG_MOVE_OBJECT_UNDO))) != 0)
                     {
 						un->un_Type = UNT_OBJECTS_MOVE;
 						un->un_MoveDeltaX = x;
@@ -1551,8 +1551,8 @@ HandleObjectIDCMP(reg (a0) struct TagItem *tag)
 }
 
 
-void __asm
-handleCommandIDCMP(reg (a0) struct TagItem *tag)
+void ASM
+handleCommandIDCMP(REG(a0, struct TagItem *tag))
 {
     STRPTR t = NULL;
     struct Node *ln;
@@ -1604,8 +1604,8 @@ handleCommandIDCMP(reg (a0) struct TagItem *tag)
 }
 
 
-void __asm
-CloseFileTypeWindow(reg (a0) struct Window *win,reg (d0) BOOL clean)
+void ASM
+CloseFileTypeWindow(REG(a0, struct Window *win), REG(d0, BOOL clean))
 {
 	if (clean) {
         struct winData *wd = (struct winData *)win->UserData;
@@ -1617,10 +1617,10 @@ CloseFileTypeWindow(reg (a0) struct Window *win,reg (d0) BOOL clean)
                 io->io_ClosePrefsGUI();
         }
 
-		while (iol = (struct IOTypeLink *)RemHead(wd->wd_ExtData[1])) {
+		while ((iol = (struct IOTypeLink *)MyRemHead(wd->wd_ExtData[1])) != 0) {
             struct Node *ln;
 
-			while (ln = RemHead((APTR)&iol->iol_Description)) {
+			while ((ln = MyRemHead((APTR)&iol->iol_Description)) != 0) {
                 FreeString(ln->ln_Name);
 				FreePooled(pool, ln, sizeof(struct Node));
             }
@@ -1633,7 +1633,7 @@ CloseFileTypeWindow(reg (a0) struct Window *win,reg (d0) BOOL clean)
 
 
 void PUBLIC
-HandleFileTypeIDCMP(reg (a1) struct IntuiMessage *msg, reg (a2) struct FileRequester *fr)
+HandleFileTypeIDCMP(REG(a1, struct IntuiMessage *msg), REG(a2, struct FileRequester *fr))
 {
     struct winData *wd;
 	struct Window *typeWindow = msg->IDCMPWindow;
@@ -1685,7 +1685,7 @@ HandleFileTypeIDCMP(reg (a1) struct IntuiMessage *msg, reg (a2) struct FileReque
 extern struct Gadget *cellPages[];
 
 void PUBLIC
-CellWindowLock(reg (a0) struct LockNode *ln,reg (a1) struct MinNode *n,reg (d0) UBYTE flags)
+CellWindowLock(REG(a0, struct LockNode *ln), REG(a1, struct MinNode *n), REG(d0, UBYTE flags))
 {
     if (ln->ln_List == RXMAP)  // Lock auf aktuelle Mappe setzen
     {
@@ -1703,7 +1703,7 @@ CellWindowLock(reg (a0) struct LockNode *ln,reg (a1) struct MinNode *n,reg (d0) 
 }
 
 
-void __asm closeCellWin(reg (a0) struct Window *win,reg (d0) BOOL clean)
+void ASM closeCellWin(REG(a0, struct Window *win), REG(d0, BOOL clean))
 {
     struct winData *wd = (struct winData *)win->UserData;
 
@@ -1711,7 +1711,7 @@ void __asm closeCellWin(reg (a0) struct Window *win,reg (d0) BOOL clean)
 }
 
 
-void __asm handleCellIDCMP(reg (a0) struct TagItem *tag)
+void ASM handleCellIDCMP(REG(a0, struct TagItem *tag))
 {
     struct Node *ln;
     long   j,i = 0;
@@ -1837,7 +1837,7 @@ void __asm handleCellIDCMP(reg (a0) struct TagItem *tag)
 
                     wd->wd_ExtData[2] = (APTR)((LONG)wd->wd_ExtData[2] | 2);  // Änderungen auf Seite markieren
 
-                    while(tf = GetMarkedFields(rxpage,tf,FALSE))
+                    while ((tf = GetMarkedFields(rxpage, tf, FALSE)) != 0)
                     {
                         if (first)
                         {
@@ -2109,7 +2109,7 @@ void __asm handleCellIDCMP(reg (a0) struct TagItem *tag)
                         long   maxcol = 0;
 
                         BeginUndo(rxpage,UNDO_BLOCK,GetString(&gLocaleInfo, MSG_SET_FORMAT_UNDO));
-                        while(tf = GetMarkedFields(rxpage,tf,TRUE))
+                        while ((tf = GetMarkedFields(rxpage, tf, TRUE)) != 0)
                         {
                             FreeString(tf->tf_Format);
                             if (ln->ln_Type == FVT_NONE)
@@ -2180,8 +2180,8 @@ void __asm handleCellIDCMP(reg (a0) struct TagItem *tag)
 }
 
 
-void __asm
-handleSetNameIDCMP(reg (a0) struct TagItem *tag)
+void ASM
+handleSetNameIDCMP(REG(a0, struct TagItem *tag))
 {
 	switch (imsg.Class)
     {
@@ -2208,7 +2208,7 @@ handleSetNameIDCMP(reg (a0) struct TagItem *tag)
 }
 
 
-void __asm handleSetTitleIDCMP(reg (a0) struct TagItem *tag)
+void ASM handleSetTitleIDCMP(REG(a0, struct TagItem *tag))
 {
     switch(imsg.Class)
     {
@@ -2247,7 +2247,7 @@ SetScriptText(struct winData *wd, struct RexxScript *rxs)
     if (!rxs)
         return;
 
-	if (GetAttr(EGA_Text, wd->wd_ExtData[1], (ULONG *)&t)) {
+	if (GetAttr(EGA_Text, wd->wd_ExtData[1], (IPTR *)&t)) {
         FreeRexxScriptData(rxs);
         rxs->rxs_Data = AllocString(t);
 		rxs->rxs_DataLength = zstrlen(t) + 1;
@@ -2291,7 +2291,7 @@ UpdateScriptsGadgets(struct Window *win, struct RexxScript *rxs)
 
 
 void PUBLIC
-ScriptsWindowLock(reg (a0) struct LockNode *ln, reg (a1) struct MinNode *n, reg (d0) UBYTE flags)
+ScriptsWindowLock(REG(a0, struct LockNode *ln), REG(a1, struct MinNode *n), REG(d0, UBYTE flags))
 {
 	ListViewLock(ln, n, flags);
 
@@ -2303,8 +2303,8 @@ ScriptsWindowLock(reg (a0) struct LockNode *ln, reg (a1) struct MinNode *n, reg 
 }
 
 
-void __asm
-CloseScriptsWindow(reg (a0) struct Window *win, reg (d0) BOOL clean)
+void ASM
+CloseScriptsWindow(REG(a0, struct Window *win), REG(d0, BOOL clean))
 {
     struct winData *wd = (struct winData *)win->UserData;
 
@@ -2314,8 +2314,8 @@ CloseScriptsWindow(reg (a0) struct Window *win, reg (d0) BOOL clean)
 }
 
 
-void __asm
-HandleScriptsIDCMP(reg (a0) struct TagItem *tag)
+void ASM
+HandleScriptsIDCMP(REG(a0, struct TagItem *tag))
 {
     struct Mappe *mp = wd->wd_Data;
 	struct RexxScript *rxs = ((struct Gadget *)wd->wd_ExtData[0])->UserData;

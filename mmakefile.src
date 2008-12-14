@@ -1,0 +1,69 @@
+#
+# meta-makefile for Ignition for AROS
+#
+
+include $(TOP)/config/make.cfg
+
+#MM- contrib-ignition : contrib-ignition-bin contrib-ignition-icons contrib-ignition-config
+
+#MM contrib-ignition-bin : linklibs includes contrib-ignition-textedit \
+#MM contrib-ignition-scroller contrib-ignition-gtdrag contrib-ignition-catalogs
+
+EXE := Ignition
+
+TARGETDIR := $(AROS_CONTRIB)/Office/Ignition
+
+USER_CFLAGS :=
+USER_INCLUDES := -Ilibs/include
+
+FILES := \
+	boopsi \
+	calc \
+	cell \
+	classes \
+	clip \
+	cmd \
+	color \
+	database \
+	debug \
+	diagram \
+	edit \
+	font \
+	functions \
+	gadgets \
+    graphic \
+	handleprefs \
+	handlewindows \
+	hooks \
+	ignition \
+	images \
+	initwindows \
+	io \
+	locale \
+	lock \
+	menu \
+	objects \
+	pointer \
+	popper \
+	prefs \
+	prefsgadgets \
+	prefsio \
+	printer \
+	project \
+	reference \
+    rexx \
+	screen \
+	search \
+	support \
+	table \
+	undo \
+	windows \
+	libs/compatibility
+
+%build_prog mmake=contrib-ignition-bin progname=$(EXE) files=$(FILES) \
+    targetdir=$(TARGETDIR) uselibs="amiga arossupport arosc rexxsyslib m"
+
+%copy_dir_recursive mmake=contrib-ignition-icons src=icons dst=$(TARGETDIR)/icons
+%copy_dir_recursive mmake=contrib-ignition-config src=config dst=$(TARGETDIR)/config
+
+%common

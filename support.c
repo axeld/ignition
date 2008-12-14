@@ -22,7 +22,7 @@ Rect32ToRect(struct Rect32 *rect32, struct Rectangle *rect)
 
 
 void PUBLIC
-FreeString(reg (a0) STRPTR t)
+FreeString(REG(a0, STRPTR t))
 {
 	if (t)
 		FreePooled(pool, t, strlen(t) + 1);
@@ -30,14 +30,14 @@ FreeString(reg (a0) STRPTR t)
 
 
 STRPTR PUBLIC
-AllocString(reg (a0) STRPTR source)
+AllocString(REG(a0, CONST_STRPTR source))
 {
 	STRPTR t;
 
 	if (!source || !strlen(source))
 		return NULL;
 
-	if (t = AllocPooled(pool, strlen(source) + 1))
+	if ((t = AllocPooled(pool, strlen(source) + 1)) != 0)
 		strcpy(t, source);
 
 	return t;
@@ -45,14 +45,14 @@ AllocString(reg (a0) STRPTR source)
 
 
 STRPTR PUBLIC
-AllocStringLength(reg (a0) STRPTR source, reg (d0) long len)
+AllocStringLength(REG(a0, STRPTR source), REG(d0, long len))
 {
 	STRPTR t;
 
 	if (!source || !strlen(source))
 		return NULL;
 
-	if (t = AllocPooled(pool, len + 1))
+	if ((t = AllocPooled(pool, len + 1)) != 0)
 		strncpy(t, source, len);
 
 	return t;
@@ -112,7 +112,7 @@ cmdcmp(STRPTR *s1, STRPTR *s2)
 		if ((*c1 == '(' || *c1 == ' ' || !*c1) && (*c2 == '(' || *c2 == ' ' || !*c2))
 			return 0;
 
-		if (cmp = tolower(*c1) - tolower(*c2))
+		if ((cmp = tolower(*c1) - tolower(*c2)) != 0)
 			return cmp;
 	}
 }
@@ -249,7 +249,7 @@ InsertAt(struct MinList *l, struct Node *n, long pos)
 	long	i;
 
 	if (pos == -1)
-		AddTail(l, n);
+		MyAddTail(l, n);
 	else {
 		for (pn = (struct Node *)l, i = 0; i < pos && pn->ln_Succ; pn = pn->ln_Succ, i++);
 		Insert((struct List *)l, n, pn);
@@ -265,7 +265,7 @@ MoveTo(struct Node *n, struct MinList *l1, long pos1, struct MinList *l2, long p
 
 	if (l1 == l2 && pos1 == pos2)
 		return;
-	Remove(n);
+	MyRemove(n);
 
 	if (l1 == l2 && pos1 < pos2)
 		pos2--;
@@ -279,7 +279,7 @@ moveList(struct MinList *from, struct MinList *to)
 {
 	if (!from || IsListEmpty((struct List *)from)) {
 		if (to)
-			NewList(to);
+			MyNewList(to);
 		return;
 	}
 	to->mlh_Head = from->mlh_Head;
@@ -287,7 +287,7 @@ moveList(struct MinList *from, struct MinList *to)
 	to->mlh_TailPred = from->mlh_TailPred;
 	to->mlh_Head->mln_Pred = (struct Node *)&to->mlh_Head;
 	to->mlh_TailPred->mln_Succ = (struct Node *)&to->mlh_Tail;
-	NewList(from);
+	MyNewList(from);
 }
 
 
@@ -326,7 +326,7 @@ allocSort(struct MinList *l, ULONG *len)
 	if (IsListEmpty((struct List *)l))
 		return NULL;
 
-	if (sortBuffer = AllocPooled(pool, (*len = CountNodes(l)) * sizeof(struct Node *))) {
+	if ((sortBuffer = AllocPooled(pool, (*len = CountNodes(l)) * sizeof(struct Node *))) != 0) {
 		foreach(l, ln)
 			*(sortBuffer + i++) = ln;
 	}
@@ -340,12 +340,12 @@ SortListWith(struct MinList *l, APTR func)
 	struct Node **buffer;
 	uint32 len, i;
 
-	if (buffer = allocSort(l, &len)) {
+	if ((buffer = allocSort(l, &len)) != 0) {
 		qsort(buffer, len, sizeof(struct Node *), func);
 
-		NewList(l);
+		MyNewList(l);
 		for (i = 0; i < len; i++)
-			AddTail(l, *(buffer + i));
+			MyAddTail(l, *(buffer + i));
 
 		freeSort(buffer, len);
 	}
@@ -537,7 +537,7 @@ WriteChunkString(APTR iff, STRPTR t)
 static void
 MakeLocaleStringsA(struct MinList *list, LONG id, va_list args)
 {
-	NewList((struct List *)list);
+	MyNewList(list);
 
 	while (id != TAG_END) {
 		struct Node *node = AllocPooled(pool, sizeof(struct Node));
@@ -545,7 +545,7 @@ MakeLocaleStringsA(struct MinList *list, LONG id, va_list args)
 			break;
 
 		node->ln_Name = GetString(&gLocaleInfo, id);
-		AddTail(list, node);
+		MyAddTail(list, node);
 
 		id = va_arg(args, ULONG);
 	}
@@ -589,7 +589,7 @@ FreeStringList(struct List *list)
 	if (list == NULL)
 		return;
 
-	while ((node = RemHead(list)) != NULL) {
+	while ((node = MyRemHead(list)) != NULL) {
 		FreePooled(pool, node, sizeof(struct Node));
 	}
 	
@@ -600,7 +600,7 @@ FreeStringList(struct List *list)
 static void
 MakeStringsA(struct MinList *list, STRPTR string, va_list args)
 {
-	NewList((struct List *)list);
+	MyNewList(list);
 
 	while (string != NULL) {
 		struct Node *node = AllocPooled(pool, sizeof(struct Node));
@@ -611,7 +611,7 @@ MakeStringsA(struct MinList *list, STRPTR string, va_list args)
 		if (string && !strcmp(string, "-"))
 			node->ln_Type = POPUP_NO_SELECT_BARLABEL;
 
-		AddTail(list, node);
+		MyAddTail(list, node);
 
 		string = va_arg(args, STRPTR);
 	}
@@ -650,7 +650,7 @@ MakeStringList(const STRPTR	string, ...)
 uint32
 DoClassMethodA(Class *cl,Msg msg)
 {
-	ULONG (__asm *m)(reg (a0) Class *,reg (a2) Object *,reg (a1) Msg);
+	ULONG (ASM *m)(REG(a0, Class *), REG(a2, Object *), REG(a1, Msg));
 
 	if (!cl || !msg)
 		return FALSE;
@@ -689,9 +689,9 @@ HandleLVRawKeys(struct Gadget *lvgad,struct Window *win,struct MinList *list,lon
 
 	node = (struct Node *)lvgad->UserData;
 	if (node && !(imsg.Qualifier & (IEQUALIFIER_SHIFT | IEQUALIFIER_ALT))) {
-		if ((imsg.Code == CURSORUP) && (list->mlh_Head != node))
+		if ((imsg.Code == CURSORUP) && ((struct Node *)list->mlh_Head != node))
 			node = node->ln_Pred;
-		if ((imsg.Code == CURSORDOWN) && (list->mlh_TailPred != node))
+		if ((imsg.Code == CURSORDOWN) && ((struct Node *)list->mlh_TailPred != node))
 			node = node->ln_Succ;
 		lvgad->UserData = node;
 	} else if (node && (imsg.Qualifier & IEQUALIFIER_SHIFT)) {
@@ -737,7 +737,7 @@ WordWrapText(struct List *lh,STRPTR t,long width)
 	len = strlen(t);
 	while (len > 0) {
 		fit = TextFit(&scr->RastPort,t,len,&extent,NULL,1,width,fontheight+4);
-		if (ln = AllocPooled(pool, sizeof(struct Node))) {
+		if ((ln = AllocPooled(pool, sizeof(struct Node))) != 0) {
 			STRPTR s;
 
 			if ((s = strchr(t,'\n')) && s <= t+fit)
@@ -750,11 +750,11 @@ WordWrapText(struct List *lh,STRPTR t,long width)
 						fit++;
 				}
 			}
-			if (ln->ln_Name = AllocPooled(pool,fit+1))
+			if ((ln->ln_Name = AllocPooled(pool, fit+1)) != 0)
 				CopyMem(t,ln->ln_Name,fit);
 			while (*(t+fit) == ' ' || *(t+fit) == '\n')
 				fit++;
-			AddTail(lh, ln);
+			MyAddTail(lh, ln);
 			cols++;
 		}
 		len -= fit;  t += fit;
@@ -770,7 +770,7 @@ GetUniqueName(struct MinList *list,STRPTR base)
 	char *s;
 	long i;
 
-	if (!FindName(list,base) || !base || !list)
+	if (!MyFindName(list,base) || !base || !list)
 		return(base);
 	if (strlen(base) > 250) {
 		ErrorRequest(GetString(&gLocaleInfo, MSG_UNIQUE_NAME_ERR));
@@ -784,7 +784,7 @@ GetUniqueName(struct MinList *list,STRPTR base)
 	else
 		s = t+strlen(t)+1;
 	strcpy(s-1,"-1");  i = 1;
-	while(FindName(list,t))
+	while (MyFindName(list, t))
 		sprintf(s,"%ld",++i);
 
 	return t;
@@ -808,7 +808,7 @@ FreeListItems(struct MinList *list, APTR free)
 {
 	struct MinNode *mln;
 
-	while (mln = RemHead(list))
+	while ((mln = (struct MinNode *)MyRemHead(list)) != 0)
 		((void (*)(struct MinNode *))free)(mln);
 }
 
@@ -819,13 +819,13 @@ CopyListItems(struct MinList *from, struct MinList *to, APTR copy)
 	struct MinNode *mln,*cmln;
 
 	foreach (from,mln) {
-		if (cmln = ((struct MinNode * (*)(struct MinNode *))copy)(mln))
-			AddTail(to,cmln);
+		if ((cmln = ((struct MinNode * (*)(struct MinNode *))copy)(mln)) != 0)
+			MyAddTail(to, cmln);
 	}
 }
 
 
-long __saveds
+long SAVEDS
 LinkNameSort(struct Link **la, struct Link **lb)
 {
 	return compareNames((struct Node **)&(*la)->l_Link,(struct Node **)&(*lb)->l_Link);
@@ -873,7 +873,7 @@ FindLinkName(struct MinList *list, STRPTR name)
 {
 	struct Link *l;
 
-	if (l = FindLinkWithName(list, name))
+	if ((l = FindLinkWithName(list, name)) != 0)
 		return l->l_Link;
 
 	return NULL;
@@ -885,10 +885,10 @@ AddLink(struct MinList *list, struct MinNode *node, APTR func)
 {
 	struct Link *l;
 
-	if (l = AllocPooled(pool, sizeof(struct Link))) {
+	if ((l = AllocPooled(pool, sizeof(struct Link))) != 0) {
 		l->l_Link = node;
 		l->l_HookFunction = func;
-		AddTail(list, l);
+		MyAddTail(list, l);
 	}
 }
 
@@ -963,15 +963,15 @@ OpenClass(STRPTR secondary, STRPTR name, LONG version)
 
 	strcpy(path, CLASSES_PATH);			  // try the "classes"-directory
 	AddPart(path, name, 256);
-	if (class = OpenLibrary(path, version))
+	if ((class = OpenLibrary(path, version)) != 0)
 		return class;
 
 	strcpy(path, secondary);				 // try the secondary-directory
 	AddPart(path, name, 256);
-	if (class = OpenLibrary(path, version))
+	if ((class = OpenLibrary(path, version)) != 0)
 		return class;
 
-	if (class = OpenLibrary(name, version))  // try the name only
+	if ((class = OpenLibrary(name, version)) != 0)  // try the name only
 		return class;
 
 	return NULL;

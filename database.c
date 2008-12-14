@@ -114,16 +114,16 @@ CreateFields(struct Database *db)
 	if (!db)
 		return;
 
-	while (fi = (struct Field *)RemHead(&db->db_Fields)) {
+	while ((fi = (struct Field *)MyRemHead(&db->db_Fields)) != 0) {
 		FreeString(fi->fi_Node.ln_Name);
 		FreeString(fi->fi_Special);
 		FreePooled(pool,fi,sizeof(struct Field));
 	}
 
-	for (pos = 0; tf = GetFields(db, pos); pos++) {
-		if (fi = AllocPooled(pool, sizeof(struct Field))) {
+	for (pos = 0; (tf = GetFields(db, pos)) != 0; pos++) {
+		if ((fi = AllocPooled(pool, sizeof(struct Field))) != 0) {
 			fi->fi_Node.ln_Name = AllocFieldText(db, tf, pos);
-			AddTail(&db->db_Fields, fi);
+			MyAddTail(&db->db_Fields, fi);
 		}
 	}
 }
@@ -210,7 +210,7 @@ GetDBRefs(STRPTR t)
 		return(NULL);
 	if (refdb && ((in = refdb->db_Filter) || (in = refdb->db_Index)) && !in->in_Index)
 		in = NULL;
-	if (stack = AllocPooled(pool,size))
+	if ((stack = AllocPooled(pool, size)) != 0)
 	{
 		while(*t)
 		{
@@ -235,7 +235,7 @@ GetDBRefs(STRPTR t)
 					t++;
 				if (count*sizeof(long) > size)
 				{
-					if (temp = AllocPooled(pool,size += 4096))
+					if ((temp = AllocPooled(pool, size += 4096)) != 0)
 					{
 						CopyMem(stack,temp,size);
 						FreePooled(pool,stack,size);
@@ -274,7 +274,7 @@ long *GetDBReferences(struct Database *db,struct Database *pdb)
 	{
 		if (fi->fi_Node.ln_Type == FIT_REFERENCE && !strcmp(fi->fi_Special,db->db_Node.ln_Name))
 		{
-			if (tf = GetTableField(pdb->db_Page,pdb->db_TablePos.tp_Col+i,pdb->db_TablePos.tp_Row+pdb->db_Current))
+			if ((tf = GetTableField(pdb->db_Page, pdb->db_TablePos.tp_Col + i, pdb->db_TablePos.tp_Row + pdb->db_Current)) != 0)
 			{
 				refdb = db;
 				return(GetDBRefs(tf->tf_Text));
@@ -291,7 +291,7 @@ struct Database *GetMaskDatabase(struct Mappe *mp,STRPTR dbase,STRPTR *mask,stru
 	struct Field *fi;
 	long   len,count = 0,*refs;
 
-	if (db = (APTR)FindName(&mp->mp_Databases,dbase))
+	if ((db = (APTR)MyFindName(&mp->mp_Databases, dbase)) != 0)
 	{
 		refdb = db;
 		if (tf && (refs = GetDBRefs(tf->tf_Text)))
@@ -336,7 +336,7 @@ void FreeIndex(struct MinList *mlh)
 {
 	struct Index *in;
 
-	while(in = (APTR)RemHead(mlh))
+	while((in = (APTR)MyRemHead(mlh)) != 0)
 	{
 		if (in->in_Index)
 			FreePooled(pool,in->in_Index,in->in_Size*sizeof(ULONG));
@@ -351,7 +351,7 @@ FreePreparedIndex(struct MinList *mlh)
 {
 	struct Node *ln;
 
-	while(ln = RemHead(mlh))
+	while((ln = MyRemHead(mlh)) != 0)
 		FreePooled(pool,ln,sizeof(struct Node)+sizeof(ULONG));
 
 	FreePooled(pool,mlh,sizeof(struct MinList));
@@ -367,15 +367,15 @@ PrepareIndex(struct Database *db, struct Index *in)
 	STRPTR name,part;
 	ULONG  i;
 
-	if (list = AllocPooled(pool,sizeof(struct MinList)))
+	if ((list = AllocPooled(pool, sizeof(struct MinList))) != 0)
 	{
-		if (name = AllocString(in->in_Node.ln_Name))
+		if ((name = AllocString(in->in_Node.ln_Name)) != 0)
 		{
-			NewList(list);
+			MyNewList(list);
 			while(strlen(name))
 			{
 				part = FilePart(name);
-				if (ln = AllocPooled(pool,sizeof(struct Node)+sizeof(ULONG)))
+				if ((ln = AllocPooled(pool, sizeof(struct Node) + sizeof(ULONG))) != 0)
 				{
 					if (*part == '-')                        /* sort direction */
 						part++,  ln->ln_Type = 1;
@@ -390,7 +390,7 @@ PrepareIndex(struct Database *db, struct Index *in)
 						}
 						i++;
 					}
-					AddHead(list,ln);
+					MyAddHead(list, ln);
 				}
 				*PathPart(name) = 0;
 			}
@@ -457,7 +457,7 @@ long micmpvalue(const ULONG *a,const ULONG *b)  /* MakeIndex()-Valuesort */
 BOOL
 MakeIndex(struct Database *db,struct Index *in)
 {
-	struct tablePos __aligned tp;
+	struct tablePos ALIGNED tp;
 	struct tableField *tf;
 	struct Node *ln;
 	long   i,row;
@@ -470,11 +470,11 @@ MakeIndex(struct Database *db,struct Index *in)
 
 	CopyMem(&db->db_TablePos,&tp,sizeof(struct tablePos));
 	misize = tp.tp_Height+1;
-	if (milist = PrepareIndex(db,in))
+	if ((milist = PrepareIndex(db, in)) != 0)
 	{
-		if (mitable = AllocPooled(pool,misize*sizeof(APTR)*(micmps = CountNodes(milist))))
+		if ((mitable = AllocPooled(pool, misize * sizeof(APTR) * (micmps = CountNodes(milist)))) != 0)
 		{
-			if (in->in_Index = AllocPooled(pool,misize*sizeof(ULONG)))
+			if ((in->in_Index = AllocPooled(pool, misize * sizeof(ULONG))) != 0)
 			{
 				in->in_Size = misize;      /* index initialisation */
 				for(i = 0;i < misize;i++)
@@ -491,7 +491,7 @@ MakeIndex(struct Database *db,struct Index *in)
 					tp.tp_Col = db->db_TablePos.tp_Col+*(ULONG *)(ln+1);  /* sort column */
 					row = tp.tp_Row;
 
-					if (handle = GetCellIterator(db->db_Page,&tp,FALSE))
+					if ((handle = GetCellIterator(db->db_Page, &tp, FALSE)) != 0)
 					{
 						while((tf = NextCell(handle)) && (!tf->tf_Text));
 						FreeCellIterator(handle);
@@ -501,9 +501,9 @@ MakeIndex(struct Database *db,struct Index *in)
 							if (tf->tf_Type & TFT_TEXT)
 								mitype |= (1 << mipos);
 
-							if (handle = GetCellIterator(db->db_Page,&tp,FALSE))
+							if ((handle = GetCellIterator(db->db_Page, &tp, FALSE)) != 0)
 							{
-								for(;tf = NextCell(handle);row = tf->tf_Row)
+								for(; (tf = NextCell(handle)) != 0; row = tf->tf_Row)
 								{
 									i += tf->tf_Row-row;  /* empty cells */
 									mitable[i] = tf->tf_Type & TFT_TEXT ? (ULONG *)tf->tf_Text : (ULONG *)&tf->tf_Value;
@@ -590,7 +590,7 @@ MakeFilter(struct Database *db, struct Filter *fi)
 	calcpage = db->db_Page;  tf_col = tf_row = 0;
 	size = db->db_TablePos.tp_Height + 1;
 
-	if (dest = AllocPooled(pool, size * sizeof(ULONG))) {
+	if ((dest = AllocPooled(pool, size * sizeof(ULONG))) != 0) {
 		for (i = j = 0; i < size; i++) {
 			SetDBCurrent(db, DBC_ABS, i);
 			if (TreeValue(fi->fi_Root))      /* criteria matches */
@@ -624,27 +624,27 @@ MakeSearchFilter(struct Database *db, struct Mask *ma)
 		return;
 
 	ma->ma_Node.ln_Type = 0;
-	NewList(&list);
+	MyNewList(&list);
 
 	// collect all mask field entries
 
 	foreach (&ma->ma_Fields, mf) {
 		t = mf->mf_Node.ln_Name;
-		if (db = GetMaskDatabase(ma->ma_Page->pg_Mappe, ma->ma_Node.ln_Name, &t, NULL)) {
+		if ((db = GetMaskDatabase(ma->ma_Page->pg_Mappe, ma->ma_Node.ln_Name, &t, NULL)) != 0) {
 			if ((tf = GetTableField(ma->ma_Page, mf->mf_Col, mf->mf_Row)) && tf->tf_Text) {
 				count++;
 				for (msf = (APTR)list.lh_Head; msf->msf_Node.ln_Succ && msf->msf_Node.ln_Name != (APTR)db; msf = (APTR)msf->msf_Node.ln_Succ);
 				if (!msf->msf_Node.ln_Succ) {
-					if (msf = AllocPooled(pool, sizeof(struct MSF))) {
-						NewList(&msf->msf_List);
+					if ((msf = AllocPooled(pool, sizeof(struct MSF))) != 0) {
+						MyNewList(&msf->msf_List);
 						msf->msf_Node.ln_Name = (APTR)db;
-						AddTail(&list, msf);
+						MyAddTail(&list, msf);
 					}
 				}
 				if (msf && (ln = AllocPooled(pool, sizeof(struct Node) + sizeof(APTR)))) {
 					ln->ln_Name = AllocString(t);
 					*(STRPTR *)(ln + 1) = (APTR)tf->tf_Text;
-					AddTail(&msf->msf_List, ln);
+					MyAddTail(&msf->msf_List, ln);
 				}
 			}
 		}
@@ -663,13 +663,13 @@ MakeSearchFilter(struct Database *db, struct Mask *ma)
 		return;
 	}
 
-	while (msf = (struct MSF *)RemHead(&list)) {
+	while ((msf = (struct MSF *)MyRemHead(&list)) != 0) {
 		db = (APTR)msf->msf_Node.ln_Name;
 		memset(t, 0, 2048);
 
-		if (fi = AllocPooled(pool, sizeof(struct Filter))) {
+		if ((fi = AllocPooled(pool, sizeof(struct Filter))) != 0) {
 			fi->fi_Type = FIT_SEARCH;
-			while (ln = RemHead(&msf->msf_List)) {
+			while ((ln = MyRemHead(&msf->msf_List)) != 0) {
 				if (t[0])
 					strcat(t, " && ");
 
@@ -683,7 +683,7 @@ MakeSearchFilter(struct Database *db, struct Mask *ma)
 				FreeString(ln->ln_Name);
 			}
 
-			if (fi->fi_Filter = AllocString(t))
+			if ((fi->fi_Filter = AllocString(t)) != 0)
 				fi->fi_Root = CreateTree(db->db_Page, t);
 
 			MakeFilter(db, fi);
@@ -773,7 +773,7 @@ UpdateIndices(struct Database *db)
 
 	current = db->db_Current;
 
-	if (in = db->db_Index)
+	if ((in = db->db_Index) != 0)
 		MakeIndex(db,in);
 
 	if ((fi = db->db_Filter) && fi->fi_Type != FIT_SEARCH)
@@ -808,7 +808,7 @@ FreeFilters(struct MinList *mlh)
 {
 	struct Filter *fi;
 
-	while(fi = (APTR)RemHead(mlh))
+	while ((fi = (APTR)MyRemHead(mlh)) != 0)
 		FreeFilter(fi);
 }
 
@@ -831,7 +831,7 @@ void RefreshMaskFields(struct Mappe *mp,BOOL refresh)
 		if (ma->ma_Node.ln_Type)   /* search mode is active */
 			continue;
 		leer = FALSE;
-		if (db = (APTR)FindName(&mp->mp_Databases,ma->ma_Node.ln_Name))
+		if ((db = (APTR)MyFindName(&mp->mp_Databases, ma->ma_Node.ln_Name)) != 0)
 			leer = IsDBEmpty(db);
 
 		for(mf = (APTR)ma->ma_Fields.mlh_Head;mf->mf_Node.ln_Succ;mf = (APTR)mf->mf_Node.ln_Succ)
@@ -839,7 +839,7 @@ void RefreshMaskFields(struct Mappe *mp,BOOL refresh)
 			t = mf->mf_Node.ln_Name;
 			if (leer || (db = GetMaskDatabase(mp,ma->ma_Node.ln_Name,&t,NULL)))
 			{
-				if (tf = AllocTableField(ma->ma_Page,mf->mf_Col,mf->mf_Row))
+				if ((tf = AllocTableField(ma->ma_Page, mf->mf_Col, mf->mf_Row)) != 0)
 				{
 					if (!leer)
 						for(i = 0,fi = (APTR)db->db_Fields.mlh_Head;fi->fi_Node.ln_Succ && zstrcmp(fi->fi_Node.ln_Name,t);fi = (APTR)fi->fi_Node.ln_Succ,i++);
@@ -899,11 +899,11 @@ void UpdateMaskCell(struct Mappe *mp,struct Page *page,struct tableField *tf,str
 		if (!ma->ma_Node.ln_Type)  /* search mode is not active */
 		{
 			t = mf->mf_Node.ln_Name;
-			if (db = GetMaskDatabase(mp,ma->ma_Node.ln_Name,&t,NULL))
+			if ((db = GetMaskDatabase(mp, ma->ma_Node.ln_Name, &t, NULL)) != 0)
 			{
-				if (fi = (APTR)FindName(&db->db_Fields,t))
+				if ((fi = (APTR)MyFindName(&db->db_Fields, t)) != 0)
 				{
-					if (dbtf = AllocTableField(db->db_Page,db->db_TablePos.tp_Col+FindListEntry(&db->db_Fields,fi),db->db_TablePos.tp_Row+db->db_Current))
+					if ((dbtf = AllocTableField(db->db_Page, db->db_TablePos.tp_Col + FindListEntry(&db->db_Fields, fi), db->db_TablePos.tp_Row+db->db_Current)) != 0)
 					{
 						SetTFText(db->db_Page,dbtf,tf->tf_Original);
 						if (un)
@@ -915,14 +915,16 @@ void UpdateMaskCell(struct Mappe *mp,struct Page *page,struct tableField *tf,str
 					ErrorRequest(GetString(&gLocaleInfo, MSG_FIELD_NOT_FOUND_IN_DBASE_ERR),t,db->db_Node.ln_Name);
 			}
 		}
-	 /* if (!mf->mf_Node.ln_Succ->ln_Succ)  /* last mask field */
+#if 0
+	 /* if (!mf->mf_Node.ln_Succ->ln_Succ)  last mask field */
 		{
-			db = (struct Database *)FindName(&mp->mp_Databases,ma->ma_Node.ln_Name);
+			db = (struct Database *)MyFindName(&mp->mp_Databases,ma->ma_Node.ln_Name);
 			if (ma->ma_Node.ln_Type)
 				MakeSearchFilter(db,ma);
 			else
 				UpdateIndices(db);
-		}*/
+		}
+#endif
 	}
 }
 
@@ -979,8 +981,8 @@ void SetDBCurrent(struct Database *db,UBYTE mode,long pos)
 extern const char *gDatabaseFieldLabels[];
 
 
-void __asm
-CreateDatabaseGadgets(reg (a0) struct winData *wd)
+void ASM
+CreateDatabaseGadgets(REG(a0, struct winData *wd))
 {
 	long   w;
 
@@ -1086,8 +1088,8 @@ CreateDatabaseGadgets(reg (a0) struct winData *wd)
 }
 
 
-void __asm
-CreateMaskGadgets(reg (a0) struct winData *wd)
+void ASM
+CreateMaskGadgets(REG(a0, struct winData *wd))
 {
 	struct Database *db = wd->wd_ExtData[0];
 	long   w,h;
@@ -1192,8 +1194,8 @@ CreateMaskGadgets(reg (a0) struct winData *wd)
 }
 
 
-void __asm
-CreateIndexGadgets(reg (a0) struct winData *wd)
+void ASM
+CreateIndexGadgets(REG(a0, struct winData *wd))
 {
 	struct Database *db = wd->wd_ExtData[0];
 
@@ -1264,8 +1266,8 @@ CreateIndexGadgets(reg (a0) struct winData *wd)
 }
 
 
-void __asm
-CreateFilterGadgets(reg (a0) struct winData *wd)
+void ASM
+CreateFilterGadgets(REG(a0, struct winData *wd))
 {
 	struct Database *db = wd->wd_ExtData[0];
 
@@ -1348,8 +1350,8 @@ CreateFilterGadgets(reg (a0) struct winData *wd)
  ****************************************************************************/
 
 
-void __asm
-CloseDatabaseWindow(reg (a0) struct Window *win,reg (d0) BOOL clean)
+void ASM
+CloseDatabaseWindow(REG(a0, struct Window *win), REG(d0, BOOL clean))
 {
 	struct winData *wd = (struct winData *)win->UserData;
 	struct Database *db;
@@ -1359,9 +1361,9 @@ CloseDatabaseWindow(reg (a0) struct Window *win,reg (d0) BOOL clean)
 	{
 		if (wd->wd_ExtData[2])
 		{
-			while(db = (struct Database *)RemHead(wd->wd_ExtData[2]))
+			while((db = (struct Database *)MyRemHead(wd->wd_ExtData[2])) != 0)
 			{
-				while(fi = (struct Field *)RemHead(&db->db_Fields))
+				while((fi = (struct Field *)MyRemHead(&db->db_Fields)) != 0)
 				{
 					FreeString(fi->fi_Node.ln_Name);
 					FreeString(fi->fi_Special);
@@ -1414,8 +1416,8 @@ UpdateDatabaseGadgets(struct Mappe *mp,struct Database *db,struct Field *fi)
 }
 
 
-void __asm
-HandleDatabaseIDCMP(reg (a0) struct TagItem *tag)
+void ASM
+HandleDatabaseIDCMP(REG(a0, struct TagItem *tag))
 {
 	struct Database *db;
 	struct Field *fi;
@@ -1468,7 +1470,7 @@ HandleDatabaseIDCMP(reg (a0) struct TagItem *tag)
 					UpdateDatabaseGadgets(mp,db,NULL);
 					break;
 				case 2:  // Neu
-					if (db = AllocPooled(pool,sizeof(struct Database)))
+					if ((db = AllocPooled(pool, sizeof(struct Database))) != 0)
 					{
 						GT_SetGadgetAttrs(wd->wd_ExtData[0],win,NULL,GTLV_Labels,~0L,TAG_END);
 						db->db_Node.ln_Name = AllocString(GetString(&gLocaleInfo, MSG_NEW_DBASE_NAME));
@@ -1477,9 +1479,9 @@ HandleDatabaseIDCMP(reg (a0) struct TagItem *tag)
 							db->db_Page = rxpage;
 						else
 							db->db_Page = wd->wd_Data;
-						NewList(&db->db_Fields);
-						NewList(&db->db_Indices);
-						AddTail(wd->wd_ExtData[2],db);
+						MyNewList(&db->db_Fields);
+						MyNewList(&db->db_Indices);
+						MyAddTail(wd->wd_ExtData[2], db);
 					}
 					UpdateDatabaseGadgets(mp,db,NULL);
 					ActivateGadget(GadgetAddress(win,4),win,NULL);
@@ -1488,10 +1490,10 @@ HandleDatabaseIDCMP(reg (a0) struct TagItem *tag)
 					if (db)
 					{
 						GT_SetGadgetAttrs(wd->wd_ExtData[0],win,NULL,GTLV_Labels,~0L,TAG_END);
-						Remove(db);
+						MyRemove(db);
 						FreeString(db->db_Node.ln_Name);
 						FreeString(db->db_Content);
-						while(fi = (struct Field *)RemHead(&db->db_Fields))
+						while((fi = (struct Field *)MyRemHead(&db->db_Fields)) != 0)
 						{
 							FreeString(fi->fi_Node.ln_Name);
 							FreeString(fi->fi_Special);
@@ -1597,7 +1599,7 @@ FreeMaskFields(struct Mask *ma)
 {
 	struct MaskField *mf;
 
-	while(mf = (APTR)RemHead((struct List *)&ma->ma_Fields))
+	while((mf = (APTR)MyRemHead(&ma->ma_Fields)) != 0)
 	{
 		FreeString(mf->mf_Node.ln_Name);
 		FreePooled(pool,mf,sizeof(struct MaskField));
@@ -1620,25 +1622,25 @@ AddMaskFields(struct Mappe *mp,struct Mask *ma,struct Database *db,STRPTR pre)
 				name = "";
 			if (fi->fi_Node.ln_Type == FIT_REFERENCE)
 			{
-				if (newpre = AllocPooled(pool,(pre ? strlen(pre) : 0)+strlen(name)+2))
+				if ((newpre = AllocPooled(pool, (pre ? strlen(pre) : 0) + strlen(name) + 2)) != 0)
 				{
 					if (pre)
 						strcpy(newpre,pre);
 					strcat(newpre,name);
 					newpre[strlen(newpre)] = '.';
 				}
-				AddMaskFields(mp,ma,(APTR)FindName(&mp->mp_Databases,fi->fi_Special),newpre);
+				AddMaskFields(mp, ma, (APTR)MyFindName(&mp->mp_Databases, fi->fi_Special), newpre);
 				FreeString(newpre);
 			}
-			else if (mf = AllocPooled(pool,sizeof(struct MaskField)))
+			else if ((mf = AllocPooled(pool, sizeof(struct MaskField))) != 0)
 			{
-				if (mf->mf_Node.ln_Name = AllocPooled(pool,strlen(name)+(pre ? strlen(pre) : 0)+1))
+				if ((mf->mf_Node.ln_Name = AllocPooled(pool, strlen(name) + (pre ? strlen(pre) : 0) + 1)) != 0)
 				{
 					if (pre)
 						strcpy(mf->mf_Node.ln_Name,pre);
 					strcat(mf->mf_Node.ln_Name,name);
 				}
-				AddTail((struct List *)&ma->ma_Fields,mf);
+				MyAddTail(&ma->ma_Fields, mf);
 			}
 		}
 	}
@@ -1650,7 +1652,7 @@ GenerateMaskFields(struct Mappe *mp,struct Mask *ma)
 {
 	struct Database *db;
 
-	if (db = (APTR)FindName(&mp->mp_Databases,ma->ma_Node.ln_Name))
+	if ((db = (APTR)MyFindName(&mp->mp_Databases, ma->ma_Node.ln_Name)) != 0)
 	{
 		FreeMaskFields(ma);
 		AddMaskFields(mp,ma,db,NULL);
@@ -1672,13 +1674,13 @@ FreeMasks(struct MinList *list)
 {
 	struct Mask *ma;
 
-	while(ma = (APTR)RemHead(list))
+	while ((ma = (APTR)MyRemHead(list)) != 0)
 		FreeMask(ma);
 }
 
 
-void __asm
-CloseMaskWindow(reg (a0) struct Window *win,reg (d0) BOOL clean)
+void ASM
+CloseMaskWindow(REG(a0, struct Window *win), REG(d0, BOOL clean))
 {
 	struct winData *wd = (struct winData *)win->UserData;
 
@@ -1723,8 +1725,8 @@ UpdateMaskGadgets(struct Mask *ma,struct MaskField *mf)
 }
 
 
-void __asm
-HandleMaskIDCMP(reg (a0) struct TagItem *tag)
+void ASM
+HandleMaskIDCMP(REG(a0, struct TagItem *tag))
 {
 	struct Mask *ma = wd->wd_ExtData[0];
 	struct MaskField *mf = wd->wd_ExtData[2];
@@ -1781,7 +1783,7 @@ HandleMaskIDCMP(reg (a0) struct TagItem *tag)
 					if (ma && (mf = AllocPooled(pool,sizeof(struct MaskField)))) {
 						mf->mf_Node.ln_Name = AllocString(GetString(&gLocaleInfo, MSG_NEW_FIELD_NAME));
 						GT_SetGadgetAttrs(GadgetAddress(win,7),win,NULL,GTLV_Labels,~0L,TAG_END);
-						AddTail((struct List *)&ma->ma_Fields,mf);
+						MyAddTail(&ma->ma_Fields, mf);
 					}
 					UpdateMaskGadgets(ma,mf);
 					if (mf)
@@ -1790,7 +1792,7 @@ HandleMaskIDCMP(reg (a0) struct TagItem *tag)
 				case 9:    // delete field
 					if (ma && mf) {
 						GT_SetGadgetAttrs(GadgetAddress(win,7),win,NULL,GTLV_Labels,~0L,TAG_END);
-						Remove(mf);
+						MyRemove(mf);
 						FreeString(mf->mf_Node.ln_Name);
 						FreePooled(pool,mf,sizeof(struct MaskField));
 						UpdateMaskGadgets(ma,NULL);
@@ -1825,7 +1827,7 @@ HandleMaskIDCMP(reg (a0) struct TagItem *tag)
 					break;
 				case 10:   // Ok
 					FreeMasks(&((struct Mappe *)wd->wd_Data)->mp_Masks);
-					while (ma = (struct Mask *)RemHead(wd->wd_ExtData[1])) {
+					while ((ma = (struct Mask *)MyRemHead(wd->wd_ExtData[1])) != 0) {
 						if (ma->ma_Node.ln_Type) {
 							// create automatically
 							ma->ma_Node.ln_Type = 0;   /* proposed for search mode */
@@ -1837,13 +1839,13 @@ HandleMaskIDCMP(reg (a0) struct TagItem *tag)
 								page = rxpage;
 								ma->ma_Page = NewPage(wd->wd_Data);
 								FreeString(ma->ma_Page->pg_Node.ln_Name);
-								if (ma->ma_Page->pg_Node.ln_Name = AllocPooled(pool,strlen(ma->ma_Node.ln_Name)+strlen(GetString(&gLocaleInfo, MSG_MASK_NAME))+1)) {
+								if ((ma->ma_Page->pg_Node.ln_Name = AllocPooled(pool, strlen(ma->ma_Node.ln_Name) + strlen(GetString(&gLocaleInfo, MSG_MASK_NAME)) + 1)) != 0) {
 									strcpy(ma->ma_Page->pg_Node.ln_Name,ma->ma_Node.ln_Name);
 									strcat(ma->ma_Page->pg_Node.ln_Name,GetString(&gLocaleInfo, MSG_MASK_NAME));
 								}
 								rxpage = page;
 							}
-							AddTail(&((struct Mappe *)wd->wd_Data)->mp_Masks,ma);
+							MyAddTail(&((struct Mappe *)wd->wd_Data)->mp_Masks, ma);
 						}
 					}
 				case 11:   // Abbrechen
@@ -1857,14 +1859,14 @@ HandleMaskIDCMP(reg (a0) struct TagItem *tag)
 }
 
 
-void __asm
-CloseIndexWindow(reg (a0) struct Window *win, reg (d0) BOOL clean)
+void ASM
+CloseIndexWindow(REG(a0, struct Window *win), REG(d0, BOOL clean))
 {
 	struct winData *wd = (struct winData *)win->UserData;
 	struct Database *db;
 
 	if (clean) {
-		while (db = (APTR)RemHead(wd->wd_ExtData[1])) {
+		while ((db = (APTR)MyRemHead(wd->wd_ExtData[1])) != 0) {
 			FreeIndex(&db->db_Indices);
 			FreeString(db->db_Node.ln_Name);
 			FreePooled(pool, db, sizeof(struct Database));
@@ -1896,8 +1898,8 @@ UpdateIndexGadgets(struct Database *db, struct Index *in)
 }
 
 
-void __asm
-HandleIndexIDCMP(reg (a0) struct TagItem *tag)
+void ASM
+HandleIndexIDCMP(REG(a0, struct TagItem *tag))
 {
 	struct Database *db = wd->wd_ExtData[0];
 	struct Index *in = wd->wd_ExtData[2];
@@ -1923,7 +1925,7 @@ HandleIndexIDCMP(reg (a0) struct TagItem *tag)
 
 						for (fi = (APTR)db->db_Fields.mlh_Head;i && fi->fi_Node.ln_Succ;fi = (APTR)fi->fi_Node.ln_Succ,i--);
 						GT_SetGadgetAttrs(GadgetAddress(win,3),win,NULL,GTLV_Labels,~0L,TAG_END);
-						if (t = AllocPooled(pool, 512)) {
+						if ((t = AllocPooled(pool, 512)) != 0) {
 							if (strcmp(in->in_Node.ln_Name,GetString(&gLocaleInfo, MSG_NEW_FIELD_NAME)))
 								strcpy(t,in->in_Node.ln_Name);
 							AddPart(t,fi->fi_Node.ln_Name,512);
@@ -1960,7 +1962,7 @@ HandleIndexIDCMP(reg (a0) struct TagItem *tag)
 					if (db && (in = AllocPooled(pool,sizeof(struct Index)))) {
 						in->in_Node.ln_Name = AllocString(GetString(&gLocaleInfo, MSG_NEW_INDEX_NAME));
 						GT_SetGadgetAttrs(GadgetAddress(win,3),win,NULL,GTLV_Labels,~0L,TAG_END);
-						AddTail((struct List *)&db->db_Indices,in);
+						MyAddTail(&db->db_Indices, in);
 					}
 					UpdateIndexGadgets(db,in);
 					if (in)
@@ -1969,7 +1971,7 @@ HandleIndexIDCMP(reg (a0) struct TagItem *tag)
 				case 5:    // delete index
 					if (db && in) {
 						GT_SetGadgetAttrs(GadgetAddress(win,3),win,NULL,GTLV_Labels,~0L,TAG_END);
-						Remove(in);
+						MyRemove(in);
 						FreeString(in->in_Node.ln_Name);
 						FreePooled(pool,in,sizeof(struct Index));
 						UpdateIndexGadgets(db,NULL);
@@ -1990,19 +1992,19 @@ HandleIndexIDCMP(reg (a0) struct TagItem *tag)
 
 					SetBusy(TRUE,BT_APPLICATION);
 					foreach (wd->wd_ExtData[1], cdb) {
-						if (!(db = (APTR)FindName(&mp->mp_Databases,cdb->db_Node.ln_Name))) {
+						if (!(db = (APTR)MyFindName(&mp->mp_Databases, cdb->db_Node.ln_Name))) {
 							ErrorRequest(GetString(&gLocaleInfo, MSG_DATABASE_NOT_FOUND_ERR),cdb->db_Node.ln_Name);
 							continue;
 						}
 						FreeIndex(&db->db_Indices);
 						db->db_Index = NULL;
-						while (in = (APTR)RemHead(&cdb->db_Indices)) {
+						while ((in = (APTR)MyRemHead(&cdb->db_Indices)) != 0) {
 							if (in->in_Node.ln_Type) {
 								/* active index */
 								MakeIndex(db,in);            /* generate index data */
 								db->db_Index = in;
 							}
-							AddTail(&db->db_Indices,in);
+							MyAddTail(&db->db_Indices, in);
 						}
 					}
 					RecalcTableFields((struct Page *)mp->mp_Pages.mlh_Head);
@@ -2019,14 +2021,14 @@ HandleIndexIDCMP(reg (a0) struct TagItem *tag)
 }
 
 
-void __asm
-CloseFilterWindow(reg (a0) struct Window *win, reg (d0) BOOL clean)
+void ASM
+CloseFilterWindow(REG(a0, struct Window *win), REG(d0, BOOL clean))
 {
 	struct winData *wd = (struct winData *)win->UserData;
 	struct Database *db;
 
 	if (clean) {
-		while (db = (APTR)RemHead(wd->wd_ExtData[1])) {
+		while ((db = (APTR)MyRemHead(wd->wd_ExtData[1])) != 0) {
 			FreeFilters(&db->db_Filters);
 			FreeString(db->db_Node.ln_Name);
 			FreePooled(pool,db,sizeof(struct Database));
@@ -2059,8 +2061,8 @@ UpdateFilterGadgets(struct Database *db, struct Filter *fi)
 }
 
 
-void __asm
-HandleFilterIDCMP(reg (a0) struct TagItem *tag)
+void ASM
+HandleFilterIDCMP(REG(a0, struct TagItem *tag))
 {
 	struct Database *db = wd->wd_ExtData[0];
 	struct Filter *fi = wd->wd_ExtData[2];
@@ -2087,7 +2089,7 @@ HandleFilterIDCMP(reg (a0) struct TagItem *tag)
 
 						for (field = (APTR)db->db_Fields.mlh_Head;i && field->fi_Node.ln_Succ;field = (APTR)field->fi_Node.ln_Succ,i--);
 						GT_SetGadgetAttrs(GadgetAddress(win,3),win,NULL,GTLV_Labels,~0L,TAG_END);
-						if (t = AllocPooled(pool, 1024)) {
+						if ((t = AllocPooled(pool, 1024)) != 0) {
 							if (fi->fi_Filter)
 								strcpy(t,fi->fi_Filter);
 							FreeString(fi->fi_Filter);
@@ -2125,7 +2127,7 @@ HandleFilterIDCMP(reg (a0) struct TagItem *tag)
 					if (db && (fi = AllocPooled(pool,sizeof(struct Filter)))) {
 						fi->fi_Node.ln_Name = AllocString(GetString(&gLocaleInfo, MSG_NEW_FILTER_NAME));
 						GT_SetGadgetAttrs(GadgetAddress(win,3),win,NULL,GTLV_Labels,~0L,TAG_END);
-						AddTail((struct List *)&db->db_Filters,fi);
+						MyAddTail(&db->db_Filters, fi);
 					}
 					UpdateFilterGadgets(db, fi);
 
@@ -2136,7 +2138,7 @@ HandleFilterIDCMP(reg (a0) struct TagItem *tag)
 				case 5:    // delete filter
 					if (db && fi) {
 						GT_SetGadgetAttrs(GadgetAddress(win,3),win,NULL,GTLV_Labels,~0L,TAG_END);
-						Remove(fi);
+						MyRemove(fi);
 						FreeFilter(fi);
 						UpdateFilterGadgets(db, NULL);
 					}
@@ -2155,7 +2157,7 @@ HandleFilterIDCMP(reg (a0) struct TagItem *tag)
 						FreeString(fi->fi_Filter);
 						DeleteTree(fi->fi_Root);  fi->fi_Root = NULL;
 						fi->fi_Filter = AllocString((STRPTR)i);
-						if (fi->fi_Root = CreateTree(db->db_Page, fi->fi_Filter))
+						if ((fi->fi_Root = CreateTree(db->db_Page, fi->fi_Filter)) != 0)
 							PrepareFilter(db, fi->fi_Root);
 						else
 							ErrorRequest(GetString(&gLocaleInfo, MSG_BAD_FILTER_ERR));
@@ -2174,7 +2176,7 @@ HandleFilterIDCMP(reg (a0) struct TagItem *tag)
 					SetBusy(TRUE, BT_APPLICATION);
 
 					foreach (wd->wd_ExtData[1], cdb) {
-						if (!(db = (APTR)FindName(&mp->mp_Databases, cdb->db_Node.ln_Name))) {
+						if (!(db = (APTR)MyFindName(&mp->mp_Databases, cdb->db_Node.ln_Name))) {
 							ErrorRequest(GetString(&gLocaleInfo, MSG_DATABASE_NOT_FOUND_ERR), cdb->db_Node.ln_Name);
 							continue;
 						}
@@ -2184,10 +2186,10 @@ HandleFilterIDCMP(reg (a0) struct TagItem *tag)
 						db->db_Filter = NULL;
 						FreeFilters(&db->db_Filters);
 
-						while (fi = (APTR)RemHead(&cdb->db_Filters)) {
+						while ((fi = (APTR)MyRemHead(&cdb->db_Filters)) != 0) {
 							if (fi->fi_Node.ln_Type)	/* active filter */
 								MakeFilter(db, fi);		/* generate filter data */
-							AddTail(&db->db_Filters, fi);
+							MyAddTail(&db->db_Filters, fi);
 						}
 
 						foreach (&db->db_Filters, fi) {
@@ -2217,4 +2219,3 @@ HandleFilterIDCMP(reg (a0) struct TagItem *tag)
 			break;
 	}
 }
-
