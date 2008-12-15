@@ -163,7 +163,7 @@ struct gpDomain {
 struct Link {
 	struct MinNode l_Node;
 	APTR   l_Link;
-	ULONG  ASM (*l_HookFunction)(REG(a1, struct LVDrawMsg *), REG(a2, APTR));
+	ULONG  ASM (*l_HookFunction)(REG(a0, APTR), REG(a2, APTR), REG(a1, struct LVDrawMsg *));
 };
 
 

@@ -1466,6 +1466,8 @@ HandleDatabaseIDCMP(REG(a0, struct TagItem *tag))
 			switch(i = (gad = imsg.IAddress)->GadgetID)
 			{
 				case 1:  // Database-Liste
+					if ((WORD)imsg.Code < 0)
+						break;
 					for(i = 0,db = (APTR)((struct List *)wd->wd_ExtData[2])->lh_Head;i < imsg.Code;db = (APTR)db->db_Node.ln_Succ,i++);
 					UpdateDatabaseGadgets(mp,db,NULL);
 					break;
@@ -1566,6 +1568,8 @@ HandleDatabaseIDCMP(REG(a0, struct TagItem *tag))
 					}
 					break;
 				case 11:  // Felder-Liste
+					if ((WORD)imsg.Code < 0)
+						break;
 					if (db)
 					{
 						for(i = 0,fi = (APTR)db->db_Fields.mlh_Head;i < imsg.Code;fi = (APTR)fi->fi_Node.ln_Succ,i++);
@@ -1773,6 +1777,8 @@ HandleMaskIDCMP(REG(a0, struct TagItem *tag))
 					}
 					break;
 				case 7:    // field list
+					if ((WORD)imsg.Code < 0)
+						break;
 					if (ma) {
 						for(mf = (APTR)ma->ma_Fields.mlh_Head,i = imsg.Code;i && mf->mf_Node.ln_Succ;mf = (APTR)mf->mf_Node.ln_Succ,i--);
 						UpdateMaskGadgets(ma,mf);

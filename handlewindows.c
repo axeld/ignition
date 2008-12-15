@@ -2138,7 +2138,7 @@ void ASM handleCellIDCMP(REG(a0, struct TagItem *tag))
                     if (pages & 2) /* Farbe & Ausrichtung */
                     {
                         SetPageColor(rxpage,apen,bpen);
-                        if (pattern != 0xff)
+						if (pattern != -1)
                             SetCellPattern(rxpage,patcol,pattern);
                         if (alignH || alignV)
                         {

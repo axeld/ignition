@@ -47,6 +47,8 @@ handlePrefsIDCMP(REG(a0, struct TagItem *tag))
                 DisenablePrefsGadgets(FALSE);
             break;
         case IDCMP_GADGETUP:
+			if ((WORD)imsg.Code < 0)
+				break;
             if ((gad = imsg.IAddress)->GadgetID == 1)
             {
                 for(tn = (APTR)prefstree.tl_View.mlh_Head,i = 0;i < imsg.Code;tn = (APTR)tn->tn_Node.in_Succ,i++);
@@ -2048,6 +2050,8 @@ handlePrefNamesIDCMP(REG(a0, struct TagItem *tag))
 				switch (id)
                 {
                     case 1:  // Namen-Liste
+						if ((WORD)imsg.Code < 0)
+							break;
                         for(i = 0,nm = (APTR)((struct List *)wd->wd_ExtData[2])->lh_Head;i < imsg.Code;nm = (APTR)nm->nm_Node.ln_Succ,i++);
                         UpdateNamesGadgets(nm,TRUE);
                         break;

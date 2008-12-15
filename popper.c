@@ -309,8 +309,10 @@ PopUpTable(struct Window *win, struct Gadget *refgad, UWORD cols, UWORD rows, AP
 		px = 0;
 
 	if ((bm = AllocBitMap(pw, ph, GetBitMapAttr(rp->BitMap, BMA_DEPTH), BMF_MINPLANES, rp->BitMap)) != 0) {
+#ifndef __AROS__ /* quick fix to avoid deadlock */
 		LockLayers(&scr->LayerInfo);
 		UnlockLayer(win->RPort->Layer);
+#endif
 		BltBitMap(rp->BitMap,px,py,bm,0,0,pw,ph,0xc0,0xff,NULL);
 		EraseRect(rp,px,py,px+pw-1,py+ph-1);
 
@@ -370,8 +372,10 @@ PopUpTable(struct Window *win, struct Gadget *refgad, UWORD cols, UWORD rows, AP
 		}
 		BltBitMapRastPort(bm,0,0,rp,px,py,pw,ph,0xc0);
 		FreeBitMap(bm);
+#ifndef __AROS__ /* quick fix to avoid deadlock */
 		LockLayer(0, win->RPort->Layer);
 		UnlockLayers(&scr->LayerInfo);
+#endif
 	}
 
 	if (noreport)

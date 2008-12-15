@@ -281,7 +281,11 @@ AllocPrefsModuleData(struct Prefs *pr,UWORD type)
 				pd->pd_ToolBar = TRUE;
 				pd->pd_HelpBar = TRUE;
 				pd->pd_ShowAntis = TRUE;
+#ifdef __AROS__
+				pd->pd_AntiAttr.ta_Name = AllocString("arial.font");
+#else
 				pd->pd_AntiAttr.ta_Name = AllocString("helvetica.font");
+#endif	
 				pd->pd_AntiAttr.ta_YSize = 11;
 				UpdateAntiFont(pr);
 			}
@@ -307,7 +311,11 @@ AllocPrefsModuleData(struct Prefs *pr,UWORD type)
 				strcpy(ps->ps_PubName,"Workbench");
 				ps->ps_BackFill = TRUE;
 				ps->ps_BFColor = 1;
+#ifdef __AROS__
+				ps->ps_TextAttr.ta_Name = AllocString("arial.font");
+#else
 				ps->ps_TextAttr.ta_Name = AllocString("helvetica.font");
+#endif
 				ps->ps_TextAttr.ta_YSize = 11;
 				ps->ps_mmWidth = 340 << 10;
 				ps->ps_mmHeight = 280 << 10;

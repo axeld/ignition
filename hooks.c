@@ -605,8 +605,7 @@ ULONG PUBLIC gLinkHook(REG(a0, struct Hook *h), REG(a2, struct gLink *gl), REG(a
 ULONG PUBLIC LinkHook(REG(a0, struct Hook *h), REG(a2, struct Link *l), REG(a1, struct LVDrawMsg *msg))
 {
 	if (l->l_HookFunction)
-		return(l->l_HookFunction(msg,l->l_Link));
-
+		return(l->l_HookFunction(0, l->l_Link, msg));
 	return(LVCB_OK);
 }
 

@@ -4,10 +4,13 @@
 
 include $(TOP)/config/make.cfg
 
-#MM- contrib-ignition : contrib-ignition-bin contrib-ignition-icons contrib-ignition-config
+#MM- contrib-ignition : contrib-ignition-bin contrib-ignition-icons contrib-ignition-config \
+#MM  contrib-ignition-help contrib-ignition-rexx contrib-ignition-sheets \
+#MM  contrib-ignition-docs contrib-ignition-files
 
 #MM contrib-ignition-bin : linklibs includes contrib-ignition-textedit \
-#MM contrib-ignition-scroller contrib-ignition-gtdrag contrib-ignition-catalogs
+#MM contrib-ignition-scroller contrib-ignition-gtdrag contrib-ignition-catalogs \
+#MM contrib-ignition-gcdescr
 
 EXE := Ignition
 
@@ -65,5 +68,19 @@ FILES := \
 
 %copy_dir_recursive mmake=contrib-ignition-icons src=icons dst=$(TARGETDIR)/icons
 %copy_dir_recursive mmake=contrib-ignition-config src=config dst=$(TARGETDIR)/config
+%copy_dir_recursive mmake=contrib-ignition-docs src=docs dst=$(TARGETDIR)/docs
+%copy_dir_recursive mmake=contrib-ignition-help src=help dst=$(TARGETDIR)/help
+%copy_dir_recursive mmake=contrib-ignition-rexx src=rexx dst=$(TARGETDIR)/rexx
+%copy_dir_recursive mmake=contrib-ignition-sheets src=sheets dst=$(TARGETDIR)/sheets
+
+#MM
+contrib-ignition-gcdescr :
+FILES := $(wildcard add-ons/*.gcdescr)
+%copy_files_q files=$(FILES) src=. dst=$(TARGETDIR) maketarget=contrib-ignition-gcdescr
+
+#MM
+contrib-ignition-files :
+FILES := ignition.info LICENSE README
+%copy_files_q files=$(FILES) src=. dst=$(TARGETDIR) maketarget=contrib-ignition-files
 
 %common
