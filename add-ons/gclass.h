@@ -19,6 +19,8 @@
 #include <proto/utility.h>
 #include <proto/locale.h>
 
+#include "SDI_compiler.h"
+
 extern APTR gcBase;
 
 #ifndef CELL_H
@@ -36,8 +38,8 @@ struct gClass
   ULONG  gc_Flags;
   struct gInterface *gc_Interface;
 /*  BPTR   gc_Segment;
-  ULONG  __asm (*gc_Dispatch)(reg (a0) struct gClass *,reg (a1) APTR,reg (a2) Msg);
-  ULONG  __asm (*gc_Draw)(reg (a0) struct Page *,reg (a1) struct gObject *,reg (a2) struct RastPort *,reg (d0) long,reg (d1) long);
+  ULONG  ASM (*gc_Dispatch)(REG(a0, struct gClass *), REG(a2, APTR), REG(a1, Msg));
+  ULONG  ASM (*gc_Draw)(REG(a0, struct Page *), REG(a1, struct gObject *), REG(a2, struct RastPort *), REG(d0, long), REG(d1, long));
   ULONG  (*gc_FreeClass)(void);
   STRPTR gc_ClassName;        /* interner Zugriff (Dateiname) */*/
 };

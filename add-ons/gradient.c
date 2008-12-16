@@ -13,12 +13,6 @@
 #include "ignition_strings.h"
 
 
-#define reg(x) register __ ## x
-#define PUBLIC __saveds __asm
-
-extern void kprintf(STRPTR,...);
-#define bug kprintf
-
 const char *version = "$VER: gradient.gc 0.3 (7.8.2003)";
 
 struct Gradient {
@@ -48,7 +42,7 @@ ULONG instanceSize = sizeof(struct Gradient);
 
 
 void PUBLIC
-draw(reg (d0) struct Page *page, reg (d1) ULONG dpi, reg (a0) struct RastPort *grp, reg (a1) struct gClass *gc, reg (a2) struct gObject *go, reg (a3) struct gBounds *gb)
+draw(REG(d0, struct Page *page), REG(d1, ULONG dpi), REG(a0, struct RastPort *grp), REG(a1, struct gClass *gc), REG(a2, struct gObject *go), REG(a3, struct gBounds *gb))
 {
     struct Gradient *g = GINST_DATA(gc, go);
     long x = gb->gb_Left,y = gb->gb_Top;
@@ -134,7 +128,7 @@ set(struct Gradient *g, struct TagItem *tstate)
 
 
 ULONG PUBLIC
-dispatch(reg (a0) struct gClass *gc, reg (a1) struct gObject *go, reg (a2) Msg msg)
+dispatch(REG(a0, struct gClass *gc), REG(a2, struct gObject *go), REG(a2, Msg msg))
 {
     struct Gradient *g = GINST_DATA(gc, go);
     ULONG rc = 0L;
@@ -183,7 +177,7 @@ dispatch(reg (a0) struct gClass *gc, reg (a1) struct gObject *go, reg (a2) Msg m
 
 
 ULONG PUBLIC
-freeClass(reg (a0) struct gClass *gc)
+freeClass(REG(a0, struct gClass *gc))
 {
 	CloseCatalog(sCatalog);
     return TRUE;
@@ -191,7 +185,7 @@ freeClass(reg (a0) struct gClass *gc)
 
 
 ULONG PUBLIC
-initClass(reg (a0) struct gClass *gc)
+initClass(REG(a0, struct gClass *gc))
 {
 	sCatalog = OpenCatalog(NULL, "ignition.catalog", OC_BuiltInLanguage, "deutsch", TAG_END);
 	interface[0].gi_Label = GetCatalogStr(sCatalog, MSG_FIRST_COLOR_LABEL, "Erste Farbe:");

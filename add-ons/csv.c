@@ -31,7 +31,7 @@ closePrefsGUI(void)
 
 
 void PUBLIC
-openPrefsGUI(reg (a0) struct Screen *src)
+openPrefsGUI(REG(a0, struct Screen *src))
 {
 }
 
@@ -66,7 +66,7 @@ getPrefs(void)
 
 
 long PUBLIC
-setPrefs(reg (a0) STRPTR t)
+setPrefs(REG(a0, STRPTR t))
 {
   UBYTE  ok = TRUE;
   STRPTR s;
@@ -108,7 +108,7 @@ setPrefs(reg (a0) STRPTR t)
 }
 
 
-long PUBLIC load(reg (d0) BPTR file,reg (a0) struct Mappe *mp)
+long PUBLIC load(REG(d0, BPTR file), REG(a0, struct Mappe *mp))
 {
   char   *buffer = NULL,*s,sep;
   struct Page *page;
@@ -215,7 +215,7 @@ long PUBLIC load(reg (d0) BPTR file,reg (a0) struct Mappe *mp)
 }
 
 
-long PUBLIC save(reg (d0) BPTR dat,reg (a0) struct Mappe *mp)
+long PUBLIC save(REG(d0, BPTR dat), REG(a0, struct Mappe *mp))
 {
   struct Page *page;
   struct Cell *c;

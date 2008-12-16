@@ -30,9 +30,7 @@
 #include "cell.h"
 #endif
 
-#define reg(x) register __ ## x
-#define PUBLIC __saveds __asm
-
+#include "SDI_compiler.h"
 
 /*** Project related ***/
 

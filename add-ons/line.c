@@ -10,12 +10,6 @@
 #include "gclass_protos.h"
 #include "gclass_pragmas.h"
 
-#define reg(x) register __ ## x
-#define PUBLIC __saveds __asm
-
-extern void kprintf(STRPTR,...);
-#define bug kprintf
-
 
 const char *version = "$VER: line.gc 0.12 (2.3.2003)";
 
@@ -44,7 +38,7 @@ ULONG instanceSize = sizeof(struct gLine);
 
 
 void PUBLIC
-draw(reg (d0) struct Page *page,reg (d1) ULONG dpi,reg (a0) struct RastPort *grp,reg (a1) struct gClass *gc,reg (a2) struct gObject *go,reg (a3) struct gBounds *gb)
+draw(REG(d0, struct Page *page), REG(d1, ULONG dpi), REG(a0, struct RastPort *grp), REG(a1, struct gClass *gc), REG(a2, struct gObject *go), REG(a3, struct gBounds *gb))
 {
   struct gLine *gl = GINST_DATA(gc,go);
   struct point2d *p = go->go_Knobs;
@@ -120,7 +114,7 @@ ULONG set(struct gLine *gl,struct TagItem *tstate)
 }
 
 
-ULONG PUBLIC dispatch(reg (a0) struct gClass *gc,reg (a1) struct gObject *go,reg (a2) Msg msg)
+ULONG PUBLIC dispatch(REG(a0, struct gClass *gc), REG(a1, struct gObject *go), REG(a2, Msg msg))
 {
   struct gLine *gl = GINST_DATA(gc,go);
   ULONG  rc = 0L;
@@ -290,13 +284,13 @@ ULONG PUBLIC dispatch(reg (a0) struct gClass *gc,reg (a1) struct gObject *go,reg
 }
 
 
-ULONG PUBLIC freeClass(reg (a0) struct gClass *gc)
+ULONG PUBLIC freeClass(REG(a0, struct gClass *gc))
 {
   return(TRUE);
 }
 
 
-ULONG PUBLIC initClass(reg (a0) struct gClass *gc)
+ULONG PUBLIC initClass(REG(a0, struct gClass *gc))
 {
   return(TRUE);
 }

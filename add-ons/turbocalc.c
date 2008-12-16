@@ -72,7 +72,7 @@ ConvertTCFormula(struct Cell *c,STRPTR t,long len)
 
 
 long PUBLIC
-load(reg (d0) BPTR dat,reg (a0) struct Mappe *mp)
+load(REG(d0, BPTR dat), REG(a0, struct Mappe *mp))
 {
 	struct Cell *c;
 	struct Page *page;
@@ -322,7 +322,7 @@ load(reg (d0) BPTR dat,reg (a0) struct Mappe *mp)
 
 
 long PUBLIC
-save(reg (d0) BPTR dat,reg (a0) struct Mappe *mp)
+save(REG(d0, BPTR dat), REG(a0, struct Mappe *mp))
 {
 	return RETURN_WARN;
 }
@@ -335,7 +335,7 @@ closePrefsGUI(void)
 
 
 void PUBLIC
-openPrefsGUI(reg (a0) struct Screen *scr)
+openPrefsGUI(REG(a0, struct Screen *scr))
 {
 }
 
@@ -348,7 +348,7 @@ getPrefs(void)
 
 
 long PUBLIC
-setPrefs(reg (a0) STRPTR t)
+setPrefs(REG(a0, STRPTR t))
 {
 	return TRUE;
 }

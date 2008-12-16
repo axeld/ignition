@@ -279,7 +279,7 @@ DrawText(REG(a0, struct RastPort *rp), REG(a1, struct FontInfo *fi), REG(a2, STR
 
 #if 0
 void PUBLIC
-DrawTextWithWidth(reg (a0) struct RastPort *rp,reg (a1) struct FontInfo *fi,reg (a2) STRPTR t,reg (d0) long x,reg (d1) long y,reg (d2) long width)
+DrawTextWithWidth(REG(a0, struct RastPort *rp), REG(a1, struct FontInfo *fi), REG(a2, STRPTR t), REG(d0, long x), REG(d1, long y), REG(d2, long width))
 {
 	struct FontSize *fs;
 	struct FontChar *fc;

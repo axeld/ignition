@@ -861,8 +861,8 @@ OpenMesaLibraries(struct gDiagram3d *gd,ULONG which)
 
 
 void PUBLIC
-gDiagram3dDraw(reg (d0) struct Page *page, reg (d1) ULONG dpi, reg (a0) struct RastPort *rp, reg (a1) struct gClass *gc,
-	reg (a2) struct gDiagram3d *gd, reg (a3) struct gBounds *gb)
+gDiagram3dDraw(REG(d0, struct Page *page), REG(d1, ULONG dpi), REG(a0, struct RastPort *rp), REG(a1, struct gClass *gc),
+	REG(a2, struct gDiagram3d *gd), REG(a3, struct gBounds *gb))
 {
 	LONG x = gb->gb_Left,y = gb->gb_Top;
 	LONG w = gb->gb_Right-gb->gb_Left;
@@ -1033,8 +1033,8 @@ gDiagram3dDispatch(REG(a0, struct gClass *gc), REG(a2, struct gDiagram3d *gd), R
 
 
 void PUBLIC
-gBalken3dDraw(reg (d0) struct Page *page, reg (d1) ULONG dpi, reg (a0) struct RastPort *rp, reg (a1) struct gClass *gc,
-	reg (a2) struct gDiagram3d *gd, reg (a3) struct gBounds *gb)
+gBalken3dDraw(REG(d0, struct Page *page), REG(d1, ULONG dpi), REG(a0, struct RastPort *rp), REG(a1, struct gClass *gc),
+	REG(a2, struct gDiagram3d *gd), REG(a3, struct gBounds *gb))
 {
 	//struct point3d rectps[] = {{0.0,0.0,0.0},{6.0,0.0,0.0},{6.0,0.0,2.0}};
 	struct point3d boxps[] = {{0.3,3.0,0.5},{0.3,0.0,0.5},{1.3,0.0,0.5},{0.3,0.0,1.5}};

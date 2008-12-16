@@ -24,7 +24,7 @@ closePrefsGUI(void)
 
 
 void PUBLIC
-openPrefsGUI(reg (a0) struct Screen *src)
+openPrefsGUI(REG(a0, struct Screen *src))
 {
 }
 
@@ -37,14 +37,14 @@ getPrefs(void)
 
 
 long PUBLIC
-setPrefs(reg (a0) STRPTR t)
+setPrefs(REG(a0, STRPTR t))
 {
 	return TRUE;
 }
 
 
 long PUBLIC
-load(reg (d0) BPTR file,reg (a0) struct Mappe *mp)
+load(REG(d0, BPTR file), REG(a0, struct Mappe *mp))
 {
 	struct Page *page;
 	struct Cell *c;
@@ -67,7 +67,7 @@ load(reg (d0) BPTR file,reg (a0) struct Mappe *mp)
 
 
 long PUBLIC
-save(reg (d0) BPTR file,reg (a0) struct Mappe *mp)
+save(REG(d0, BPTR file), REG(a0, struct Mappe *mp))
 {
 	struct Page *page;
 	struct Cell *c;

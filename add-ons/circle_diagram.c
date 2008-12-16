@@ -18,11 +18,6 @@
 #include <stdio.h>
 #include <math.h>
 
-#define reg(x) register __ ## x
-#define PUBLIC __saveds __asm
-
-extern void kprintf(STRPTR,...);
-#define bug kprintf
 
 #define DEGREE_STEPS PI/128
 
@@ -117,8 +112,8 @@ drawSide(struct RastPort *rp, long x, long y, long xradius, long yradius, long h
 
 
 void PUBLIC
-draw(reg (d0) struct Page *page,reg (d1) ULONG dpi,reg (a0) struct RastPort *rp,reg (a1) struct gClass *gc,
-    reg (a2) struct gDiagram *gd,reg (a3) struct gBounds *gb)
+draw(REG(d0, struct Page *page), REG(d1, ULONG dpi), REG(a0, struct RastPort *rp), REG(a1, struct gClass *gc),
+    REG(a2, struct gDiagram *gd), REG(a3, struct gBounds *gb))
 {
     struct gCircle *this_gc = GINST_DATA(gc, gd);
     struct gLink *gl;
@@ -236,7 +231,7 @@ set(struct gDiagram *gd, struct gCircle *gc, struct TagItem *tstate)
 
 
 ULONG PUBLIC
-dispatch(reg (a0) struct gClass *gc, reg (a1) struct gDiagram *gd, reg (a2) Msg msg)
+dispatch(REG(a0, struct gClass *gc), REG(a1, struct gDiagram *gd), REG(a2, Msg msg))
 {
     struct gCircle *this_gc = GINST_DATA(gc, gd);
     ULONG  rc;
@@ -284,7 +279,7 @@ dispatch(reg (a0) struct gClass *gc, reg (a1) struct gDiagram *gd, reg (a2) Msg 
 
 
 ULONG PUBLIC
-freeClass(reg (a0) struct gClass *gc)
+freeClass(REG(a0, struct gClass *gc))
 {
 	CloseCatalog(sCatalog);
     return TRUE;
@@ -292,7 +287,7 @@ freeClass(reg (a0) struct gClass *gc)
 
 
 ULONG PUBLIC
-initClass(reg (a0) struct gClass *gc)
+initClass(REG(a0, struct gClass *gc))
 {
 	sCatalog = OpenCatalog(NULL, "ignition.catalog", OC_BuiltInLanguage, "deutsch", TAG_END);
 	interface[0].gi_Label = GetCatalogStr(sCatalog, MSG_AREA_OUTLINE_GAD, "Fl�che durch einen Rahmen begrenzen");

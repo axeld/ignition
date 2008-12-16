@@ -19,11 +19,6 @@
 #endif
 
 
-#ifndef reg
-#define reg(x) register __ ## x
-#endif
-
-
 /********************* ObjectDescription structure *********************/
 
 /* the ObjectDescription structure describes the contents of the object

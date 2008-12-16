@@ -14,12 +14,6 @@
 
 #include <string.h>
 
-#define reg(x) register __ ## x
-#define PUBLIC __saveds __asm
-
-extern void kprintf(STRPTR,...);
-#define bug kprintf
-
 const char *version = "$VER: checkbox.gc 0.3 (6.8.2003)";
 
 struct Checkbox
@@ -63,7 +57,7 @@ static struct Catalog *sCatalog;
 
 
 void PUBLIC
-draw(reg (d0) struct Page *page,reg (d1) ULONG dpi,reg (a0) struct RastPort *grp,reg (a1) struct gClass *gc,reg (a2) struct gObject *go,reg (a3) struct gBounds *gb)
+draw(REG(d0, struct Page *page), REG(d1, ULONG dpi), REG(a0, struct RastPort *grp), REG(a1, struct gClass *gc), REG(a2, struct gObject *go), REG(a3, struct gBounds *gb))
 {
   struct Checkbox *cb = GINST_DATA(gc,go);
   long bx,by,bx2,h;
@@ -248,7 +242,7 @@ ULONG set(struct Page *page,struct gObject *go,struct Checkbox *cb,struct TagIte
 }
 
 
-ULONG PUBLIC dispatch(reg (a0) struct gClass *gc,reg (a1) struct gObject *go,reg (a2) Msg msg)
+ULONG PUBLIC dispatch(REG(a0, struct gClass *gc), REG(a1, struct gObject *go), REG(a2, Msg msg))
 {
   struct Checkbox *cb = GINST_DATA(gc,go);
   ULONG rc = 0L;
@@ -357,7 +351,7 @@ ULONG PUBLIC dispatch(reg (a0) struct gClass *gc,reg (a1) struct gObject *go,reg
 
 
 ULONG PUBLIC
-freeClass(reg (a0) struct gClass *gc)
+freeClass(REG(a0, struct gClass *gc))
 {
 	CloseCatalog(sCatalog);
 	return TRUE;
@@ -365,7 +359,7 @@ freeClass(reg (a0) struct gClass *gc)
 
 
 ULONG PUBLIC
-initClass(reg (a0) struct gClass *gc)
+initClass(REG(a0, struct gClass *gc))
 {
 	sCatalog = OpenCatalog(NULL, "ignition.catalog", OC_BuiltInLanguage, "deutsch", TAG_END);
 
