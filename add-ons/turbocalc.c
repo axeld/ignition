@@ -132,7 +132,7 @@ load(REG(d0, BPTR dat), REG(a0, struct Mappe *mp))
 						col = *(UWORD *)cell, row = *(UWORD *)(cell+2), cell += 4;
 					else
 						col = *(ULONG *)cell, row = *(ULONG *)(cell+4), cell += 8;
-					if (c = NewCell(page,col+1,row+1))
+					if ((c = NewCell(page, col + 1,row + 1)) != 0)
 					{
 						b = *cell++;
 						if (b == TCT_TEXT)

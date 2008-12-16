@@ -11,10 +11,6 @@
 
 const STRPTR __version = "$VER: csv.io 0.7 (4.3.2001)";
 
-#ifdef DEBUG
-  void kprintf(STRPTR,...);
-# define bug kprintf
-#endif
 
 #define PREFS_GUESS -1L
 #define PREFS_ASK -2L
@@ -102,7 +98,7 @@ setPrefs(REG(a0, STRPTR t))
     *s = '&';
 
   if (!ok)
-    Error("Fehlerhafte Voreinstellungen.");
+    ReportError("Fehlerhafte Voreinstellungen.");
 
   return(TRUE);
 }
@@ -129,7 +125,7 @@ long PUBLIC load(REG(d0, BPTR file), REG(a0, struct Mappe *mp))
       return(RETURN_FAIL);
   }
   if (FRead(file,buffer,1,size) != size)
-    Error("Fehler beim Lesen der Datei.");
+    ReportError("Fehler beim Lesen der Datei.");
 
   if (loadprefs == PREFS_GUESS)
   {
@@ -148,11 +144,11 @@ long PUBLIC load(REG(d0, BPTR file), REG(a0, struct Mappe *mp))
     j = count[0] > count[1] ? 0 : 1;
     k = count[2] > count[3] ? 2 : 3;
     sep = count[j] > count[k] ? separator[j] : separator[k];
-    //Error("Trenner: %d.",count[j] > count);
+    //ReportError("Trenner: %d.",count[j] > count);
   }
   else if (loadprefs == PREFS_ASK)
   {
-    Error("Not yet implemented.");
+    ReportError("Not yet implemented.");
   }
   else
     sep = loadprefs;

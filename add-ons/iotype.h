@@ -426,8 +426,8 @@ struct PrefIcon
 
 /***************************** interne Funktionen *******************************/
 
-void   Error(STRPTR fmt,...);
-void   ErrorA(STRPTR fmt,APTR args);
+void   ReportError(STRPTR fmt,...);
+void   ReportErrorA(STRPTR fmt,APTR args);
 struct Page *NewPage(struct Mappe *mp);
 void   CalculatePageDPI(struct Page *page);
 struct Cell *NewCell(struct Page *page,LONG col,LONG row);
@@ -444,8 +444,8 @@ void   FreeString(STRPTR);
 STRPTR ita(double d,long komma ,UBYTE flags);
 
 #if defined(__SASC)
-#	pragma tagcall ioBase Error 5a 9802
-#	pragma libcall ioBase ErrorA 5a 9802
+#	pragma tagcall ioBase ReportError 5a 9802
+#	pragma libcall ioBase ReportErrorA 5a 9802
 #	pragma libcall ioBase NewPage 54 801
 #	pragma libcall ioBase CalculatePageDPI 4e 801
 #	pragma libcall ioBase NewCell 48 10803
