@@ -7,16 +7,16 @@
 
 #include "gclass.h"
 #include "gclass_protos.h"
-#include "gclass_pragmas.h"
+
+#if defined(__SASC)
+#	include "gclass_pragmas.h"
+#endif
 
 #define CATCOMP_NUMBERS
 #include "ignition_strings.h"
 
 #include <string.h>
 
-
-extern void kprintf(STRPTR,...);
-#define bug kprintf
 
 const char *version = "$VER: frame.gc 0.3 (7.8.2003)";
 
@@ -41,7 +41,7 @@ struct gInterface interface[] = {
 	{GFA_ShadowPen, NULL /*"Dunkle Kanten:"*/, GIT_PEN, NULL, "darkpen"},
 	{GFA_Recessed, NULL /*"Eingedrückt:"*/, GIT_CHECKBOX, NULL, "recessed"},
 	{GFA_Doubled,  NULL /*"Doppelter Rahmen:"*/, GIT_CHECKBOX, NULL, "doubled"},
-	{NULL}
+	{0}
 };
 			
 const STRPTR superClass = "root";
@@ -143,7 +143,7 @@ ULONG set(struct Page *page,struct gObject *go,struct Frame *f,struct TagItem *t
 
   if (tstate)
   {
-    while(ti = NextTagItem(&tstate))
+    while ((ti = NextTagItem(&tstate)) != 0)
     {
       switch(ti->ti_Tag)
       {
@@ -190,7 +190,7 @@ ULONG PUBLIC dispatch(REG(a0, struct gClass *gc), REG(a2, struct gObject *go), R
   switch(msg->MethodID)
   {
     case GCM_NEW:
-      if (rc = gDoSuperMethodA(gc,go,msg))
+      if ((rc = gDoSuperMethodA(gc, go, msg)) != 0)
       {
         go = (struct gObject *)rc;  f = GINST_DATA(gc,go);
 

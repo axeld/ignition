@@ -9,13 +9,17 @@
 
 #include "gclass.h"
 #include "gclass_protos.h"
-#include "gclass_pragmas.h"
+
+#if defined(__SASC)
+#	include "gclass_pragmas.h"
+#endif
 
 #define CATCOMP_NUMBERS
 #include "ignition_strings.h"
 
 #include <string.h>
 
+struct gArea;
 
 const char *version = "$VER: line_diagram.gc 0.3 (7.8.2003)";
 
@@ -33,7 +37,7 @@ const char *version = "$VER: line_diagram.gc 0.3 (7.8.2003)";
 struct gInterface interface[] = {
 //  {GAA_Frame,"Fläche durch einen Rahmen begrenzen",GIT_CHECKBOX,NULL,NULL},
 	{GAA_Pseudo3D,"Pseudo-3D",GIT_CHECKBOX,NULL,NULL},
-	{NULL,     NULL,NULL,NULL,NULL}
+	{0,           NULL,0,NULL,NULL}
 };
 
 const STRPTR superClass = "diagram";
@@ -169,7 +173,7 @@ ULONG set(struct gDiagram *gd,struct gArea *ga,struct TagItem *tstate)
 }
 
 
-ULONG PUBLIC dispatch(REG(a0, struct gClass *gc), REG(a1, struct gDiagram *gd), REG(a2, Msg msg))
+ULONG PUBLIC dispatch(REG(a0, struct gClass *gc), REG(a2, struct gDiagram *gd), REG(a1, Msg msg))
 {
 //  struct gLine *gl = GINST_DATA(gc,gd);
   ULONG  rc;
@@ -177,7 +181,7 @@ ULONG PUBLIC dispatch(REG(a0, struct gClass *gc), REG(a1, struct gDiagram *gd), 
   switch(msg->MethodID)
   {
     case GCM_NEW:
-      if (rc = gDoSuperMethodA(gc,gd,msg))
+      if ((rc = gDoSuperMethodA(gc, gd, msg)) != 0)
       {
         set((struct gDiagram *)rc,NULL /*ga*/,((struct gcpSet *)msg)->gcps_AttrList);
       }
@@ -198,7 +202,7 @@ ULONG PUBLIC dispatch(REG(a0, struct gClass *gc), REG(a1, struct gDiagram *gd), 
       }
       break;
     case GCDM_SETLINKATTR:
-      if (rc = gDoSuperMethodA(gc,gd,msg))  // something has changed
+      if ((rc = gDoSuperMethodA(gc, gd, msg)) != 0) // something has changed
       {
         struct gcpSetLinkAttr *gcps = (APTR)msg;
         ULONG  color = gcps->gcps_Color;

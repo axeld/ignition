@@ -8,7 +8,10 @@
 
 #include "gclass.h"
 #include "gclass_protos.h"
-#include "gclass_pragmas.h"
+
+#if defined(__SASC)
+#	include "gclass_pragmas.h"
+#endif
 
 
 const char *version = "$VER: line.gc 0.12 (2.3.2003)";
@@ -114,7 +117,7 @@ ULONG set(struct gLine *gl,struct TagItem *tstate)
 }
 
 
-ULONG PUBLIC dispatch(REG(a0, struct gClass *gc), REG(a1, struct gObject *go), REG(a2, Msg msg))
+ULONG PUBLIC dispatch(REG(a0, struct gClass *gc), REG(a2, struct gObject *go), REG(a1, Msg msg))
 {
   struct gLine *gl = GINST_DATA(gc,go);
   ULONG  rc = 0L;

@@ -9,17 +9,25 @@
 ** All Rights Reserved
 */
 
+#include "SDI_compiler.h"
+
+#define __DOS_STDLIBBASE__
+
 #include <exec/types.h>
 #include <exec/lists.h>
 #include <exec/nodes.h>
 #include <exec/memory.h>
 #include <dos/dos.h>
+#include <intuition/screens.h>
 
-#include <clib/exec_protos.h>
-#include <clib/dos_protos.h>
-#include <clib/alib_stdio_protos.h>
-#include <pragmas/exec_pragmas.h>
-#include <pragmas/dos_pragmas.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
+
+#if defined(__SASC)
+#	include <clib/alib_stdio_protos.h>
+#	include <pragmas/exec_pragmas.h>
+#	include <pragmas/dos_pragmas.h>
+#endif
 
 #include <string.h>
 #include <math.h>
@@ -27,10 +35,9 @@
 #define foreach(l,v) for(v = (APTR)((struct List *)l)->lh_Head;((struct Node *)v)->ln_Succ;v = (APTR)((struct Node *)v)->ln_Succ)
 
 #ifndef CELL_H
-#include "cell.h"
+#	include "cell.h"
 #endif
 
-#include "SDI_compiler.h"
 
 /*** Project related ***/
 
@@ -436,22 +443,24 @@ STRPTR AllocString(STRPTR);
 void   FreeString(STRPTR);
 STRPTR ita(double d,long komma ,UBYTE flags);
 
-#pragma tagcall ioBase Error 5a 9802
-#pragma libcall ioBase ErrorA 5a 9802
-#pragma libcall ioBase NewPage 54 801
-#pragma libcall ioBase CalculatePageDPI 4e 801
-#pragma libcall ioBase NewCell 48 10803
-#pragma libcall ioBase UpdateCellText 42 9802
-#pragma libcall ioBase SetTableSize 3c 10803
-#pragma libcall ioBase FindColorPen 36 21003
-#pragma libcall ioBase AddPen 30 210804
-#pragma libcall ioBase Coord2String 2a 321004
-#pragma libcall ioBase pixel 24 10803
-#pragma libcall ioBase mm 1e 10803
-#pragma libcall ioBase AllocStringLength 18 0802
-#pragma libcall ioBase AllocString 12 801
-#pragma libcall ioBase FreeString c 801
-#pragma libcall ioBase ita 6 32003
+#if defined(__SASC)
+#	pragma tagcall ioBase Error 5a 9802
+#	pragma libcall ioBase ErrorA 5a 9802
+#	pragma libcall ioBase NewPage 54 801
+#	pragma libcall ioBase CalculatePageDPI 4e 801
+#	pragma libcall ioBase NewCell 48 10803
+#	pragma libcall ioBase UpdateCellText 42 9802
+#	pragma libcall ioBase SetTableSize 3c 10803
+#	pragma libcall ioBase FindColorPen 36 21003
+#	pragma libcall ioBase AddPen 30 210804
+#	pragma libcall ioBase Coord2String 2a 321004
+#	pragma libcall ioBase pixel 24 10803
+#	pragma libcall ioBase mm 1e 10803
+#	pragma libcall ioBase AllocStringLength 18 0802
+#	pragma libcall ioBase AllocString 12 801
+#	pragma libcall ioBase FreeString c 801
+#	pragma libcall ioBase ita 6 32003
+#endif
 
 /********************************* Variables ************************************/
 

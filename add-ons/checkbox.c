@@ -7,7 +7,10 @@
 
 #include "gclass.h"
 #include "gclass_protos.h"
-#include "gclass_pragmas.h"
+
+#if defined(__SASC)
+#	include "gclass_pragmas.h"
+#endif
 
 #define CATCOMP_NUMBERS
 #include "ignition_strings.h"
@@ -31,7 +34,7 @@ struct Checkbox
 #define GCA_CheckPen  GOA_TagUser + 4
 #define GCA_PlaceText GOA_TagUser + 5
 
-static char *sPlaceTextLabels[3];
+static CONST_STRPTR sPlaceTextLabels[3];
 #define PLACE_TEXT_RIGHT 0
 #define PLACE_TEXT_LEFT 1
 
@@ -47,7 +50,7 @@ struct gInterface interface[] =
 	{GOA_Text,     NULL,GIT_FORMULA,NULL,NULL},
 	{GOA_Command,  NULL,GIT_TEXT,NULL,NULL},
 	{GCA_PlaceText, "Textplazierung:", GIT_CYCLE, &sPlaceTextLabels, "placetext"},
-	{NULL}
+	{0}
 };
 
 const STRPTR superClass = "root";
@@ -168,7 +171,7 @@ ULONG set(struct Page *page,struct gObject *go,struct Checkbox *cb,struct TagIte
 
   if (tstate)
   {
-    while(ti = NextTagItem(&tstate))
+    while ((ti = NextTagItem(&tstate)) != 0)
     {
       switch(ti->ti_Tag)
       {
@@ -242,7 +245,7 @@ ULONG set(struct Page *page,struct gObject *go,struct Checkbox *cb,struct TagIte
 }
 
 
-ULONG PUBLIC dispatch(REG(a0, struct gClass *gc), REG(a1, struct gObject *go), REG(a2, Msg msg))
+ULONG PUBLIC dispatch(REG(a0, struct gClass *gc), REG(a2, struct gObject *go), REG(a1, Msg msg))
 {
   struct Checkbox *cb = GINST_DATA(gc,go);
   ULONG rc = 0L;
@@ -250,7 +253,7 @@ ULONG PUBLIC dispatch(REG(a0, struct gClass *gc), REG(a1, struct gObject *go), R
   switch(msg->MethodID)
   {
     case GCM_NEW:
-      if (rc = gDoSuperMethodA(gc,go,msg))
+      if ((rc = gDoSuperMethodA(gc, go, msg)) != 0)
       {
         go = (struct gObject *)rc;  cb = GINST_DATA(gc,go);
 
@@ -274,7 +277,7 @@ ULONG PUBLIC dispatch(REG(a0, struct gClass *gc), REG(a1, struct gObject *go), R
     {
       struct gObject *cgo;
 
-      if (cgo = (struct gObject *)(rc = gDoSuperMethodA(gc,go,msg)))
+      if ((cgo = (struct gObject *)(rc = gDoSuperMethodA(gc, go, msg))) != 0)
       {
         struct Checkbox *ccb = GINST_DATA(gc,cgo);
 

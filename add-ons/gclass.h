@@ -37,11 +37,13 @@ struct gClass
   ULONG  gc_InstSize;
   ULONG  gc_Flags;
   struct gInterface *gc_Interface;
-/*  BPTR   gc_Segment;
+#if 0
+  BPTR   gc_Segment;
   ULONG  ASM (*gc_Dispatch)(REG(a0, struct gClass *), REG(a2, APTR), REG(a1, Msg));
   ULONG  ASM (*gc_Draw)(REG(a0, struct Page *), REG(a1, struct gObject *), REG(a2, struct RastPort *), REG(d0, long), REG(d1, long));
   ULONG  (*gc_FreeClass)(void);
-  STRPTR gc_ClassName;        /* interner Zugriff (Dateiname) */*/
+  STRPTR gc_ClassName;        /* interner Zugriff (Dateiname) */
+#endif
 };
 
 #define GINST_DATA(gc,go) (APTR)((UBYTE *)(go)+((struct gClass *)gc)->gc_InstOffset)
@@ -135,7 +137,7 @@ struct gcpSetLinkAttr  /* GCDM_SETLINKATTR */
 struct gInterface
 {
   ULONG  gi_Tag;         /* eigener oder vordefinierter Tag für GCM_SET/GCM_GET */
-  STRPTR gi_Label;       /* Bezeichner beim Gadget */
+  CONST_STRPTR gi_Label; /* Bezeichner beim Gadget */
   ULONG  gi_Type;        /* Typ des Gadgets (Checkbox, Cycle, String, ...) */
   APTR   gi_Special;     /* z.B. Auswahl bei Cycle-Gadgets */
   STRPTR gi_Name;        /* für REXX/Funktions-Interface */

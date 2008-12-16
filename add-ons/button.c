@@ -7,7 +7,10 @@
 
 #include "gclass.h"
 #include "gclass_protos.h"
-#include "gclass_pragmas.h"
+
+#if defined(__SASC)
+#	include "gclass_pragmas.h"
+#endif
 
 #define CATCOMP_NUMBERS
 #include "ignition_strings.h"
@@ -148,7 +151,7 @@ set(struct Page *page,struct gObject *go,struct gButton *gb,struct TagItem *tsta
 
   if (tstate)
   {
-    while(ti = NextTagItem(&tstate))
+    while ((ti = NextTagItem(&tstate)) != 0)
     {
       switch(ti->ti_Tag)
       {
@@ -210,7 +213,7 @@ set(struct Page *page,struct gObject *go,struct gButton *gb,struct TagItem *tsta
 
 
 ULONG PUBLIC
-dispatch(REG(a0, struct gClass *gc), REG(a2, struct gObject *go), REG(a2, Msg msg))
+dispatch(REG(a0, struct gClass *gc), REG(a2, struct gObject *go), REG(a1, Msg msg))
 {
   struct gButton *gb = GINST_DATA(gc,go);
   ULONG rc = 0L;
@@ -218,7 +221,7 @@ dispatch(REG(a0, struct gClass *gc), REG(a2, struct gObject *go), REG(a2, Msg ms
   switch(msg->MethodID)
   {
     case GCM_NEW:
-      if (rc = gDoSuperMethodA(gc,go,msg))
+      if ((rc = gDoSuperMethodA(gc, go, msg)) != 0)
       {
         go = (struct gObject *)rc;  gb = GINST_DATA(gc,go);
 
@@ -244,7 +247,7 @@ dispatch(REG(a0, struct gClass *gc), REG(a2, struct gObject *go), REG(a2, Msg ms
     {
       struct gObject *cgo;
 
-      if (cgo = (struct gObject *)(rc = gDoSuperMethodA(gc,go,msg)))
+      if ((cgo = (struct gObject *)(rc = gDoSuperMethodA(gc, go, msg))) != 0)
       {
         struct gButton *cgb = GINST_DATA(gc,cgo);
 

@@ -74,7 +74,7 @@ setPrefs(REG(a0, STRPTR t))
   if (!t)
     return(TRUE);
 
-  if (s = strchr(t,'&'))
+  if ((s = strchr(t,'&')) != 0)
   {
     if (*(s+1) == '&')  // überschreiben eines Strings der uns nicht gehört
       s++;
@@ -157,7 +157,7 @@ long PUBLIC load(REG(d0, BPTR file), REG(a0, struct Mappe *mp))
   else
     sep = loadprefs;
 
-  if (page = NewPage(mp))
+  if ((page = NewPage(mp)) != 0)
   {
     long col = 1,row = 1,i;
     char *a;
@@ -176,7 +176,7 @@ long PUBLIC load(REG(d0, BPTR file), REG(a0, struct Mappe *mp))
         col++;
         continue;
       }
-      if (c = NewCell(page,col,row))
+      if ((c = NewCell(page, col, row)) != 0)
       {
         a = s;
         if (*s == '"')   // cell contains special characters
@@ -187,7 +187,7 @@ long PUBLIC load(REG(d0, BPTR file), REG(a0, struct Mappe *mp))
           for(i = 0;!(*s == '"' && *(s+1) != '"');s++,i++)
             if (*s == '"')
               s++;
-          if (c->c_Text = b = AllocPooled(pool,i+1))
+          if ((c->c_Text = b = AllocPooled(pool, i+1)) != 0)
           {
             s = a;
             for(;!(*s == '"' && *(s+1) != '"');)
@@ -266,8 +266,8 @@ long PUBLIC save(REG(d0, BPTR dat), REG(a0, struct Mappe *mp))
 }
 
 
-void __stdargs _XCEXIT(long a)
+#if defined(__SASC)
+void STDARGS _XCEXIT(long a)
 {
 }
-
-
+#endif

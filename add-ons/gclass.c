@@ -11,6 +11,7 @@
 #include <exec/memory.h>
 #include <dos/dos.h>
 #include <libraries/gtdrag.h>
+#include <libraries/iffparse.h>
 
 #include <clib/exec_protos.h>
 #include <clib/dos_protos.h>
@@ -31,7 +32,7 @@ struct __gClass {
 	ULONG  gc_Flags;
 	struct gInterface *gc_Interface;
 	BPTR   gc_Segment;
-	ULONG  ASM (*gc_Dispatch)(REG(a0, struct gClass *), REG(a1, APTR), REG(a2, Msg));
+	ULONG  ASM (*gc_Dispatch)(REG(a0, struct gClass *), REG(a2, APTR), REG(a1, Msg));
 	ULONG  ASM (*gc_Draw)(REG(d0, struct Page *), REG(d1, ULONG), REG(a0, struct RastPort *), REG(a1, struct gClass *), REG(a2, struct gObject *), REG(a3, struct gBounds *));
 	ULONG  ASM (*gc_FreeClass)(REG(a0, struct gClass *));
 	STRPTR gc_ClassName;        /* internal access (filename) */
@@ -39,15 +40,16 @@ struct __gClass {
 
 struct ExecBase *SysBase;
 struct GfxBase *GfxBase;
-struct Library *UtilityBase, *LocaleBase;
+struct UtilityBase *UtilityBase;
+struct LocaleBase *LocaleBase;
 struct Library *MathIeeeDoubBasBase, *MathIeeeDoubTransBase;
 APTR   pool, gcBase;
 
 
 /* Module functions */
 
-extern ULONG PUBLIC dispatch(REG(a0, struct gClass *gc), REG(a1, APTR obj), REG(a2, Msg msg));
-extern ULONG PUBLIC draw(REG(d0, struct Page *), REG(d0, ULONG), REG(a0) struct RastPort *), REG(a1, struct gClass *), REG(a2, struct gObject *), REG(a3, struct gBounds *));
+extern ULONG PUBLIC dispatch(REG(a0, struct gClass *gc), REG(a2, APTR obj), REG(a1, Msg msg));
+extern ULONG PUBLIC draw(REG(d0, struct Page *), REG(d0, ULONG), REG(a0, struct RastPort *), REG(a1, struct gClass *), REG(a2, struct gObject *), REG(a3, struct gBounds *));
 extern ULONG PUBLIC freeClass(REG(a0, struct gClass *gc));
 extern ULONG PUBLIC initClass(REG(a0, struct gClass *gc));
 extern struct gInterface interface[];
@@ -89,4 +91,3 @@ InitGClass(REG(a6, struct ExecBase *ExecBase), REG(a0, struct __gClass *gc), REG
 
 	return TRUE;
 }
-

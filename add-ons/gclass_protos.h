@@ -14,6 +14,8 @@
 #include <exec/types.h>
 #endif
 
+struct TablePos;
+
 /**/
 /* memory */
 /**/

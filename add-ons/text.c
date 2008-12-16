@@ -7,7 +7,10 @@
 
 #include "gclass.h"
 #include "gclass_protos.h"
-#include "gclass_pragmas.h"
+
+#if defined(__SASC)
+#	include "gclass_pragmas.h"
+#endif
 
 #define CATCOMP_NUMBERS
 #include "ignition_strings.h"
@@ -28,7 +31,7 @@ struct gInterface interface[] = {
 	{GOA_Pen,      NULL/*"Textfarbe:"*/, GIT_PEN, NULL, NULL},
 	{GOA_FontInfo, NULL, GIT_FONT, NULL, NULL},
 	{GOA_Text,     NULL, GIT_FORMULA, NULL, NULL},
-	{NULL}
+	{0}
 };
 
 const STRPTR superClass = "root";
@@ -69,7 +72,7 @@ set(struct Page *page, struct gObject *go, struct gText *gt, struct TagItem *tst
 		return GCPR_NONE;
 
 
-	while (ti = NextTagItem(&tstate)) {
+	while ((ti = NextTagItem(&tstate)) != 0) {
 		switch (ti->ti_Tag) {
 			case GOA_Text:
 				// any changes to the text?
@@ -107,14 +110,14 @@ set(struct Page *page, struct gObject *go, struct gText *gt, struct TagItem *tst
 
 
 ULONG PUBLIC
-dispatch(REG(a0, struct gClass *gc), REG(a1, struct gObject *go), REG(a2, Msg msg))
+dispatch(REG(a0, struct gClass *gc), REG(a2, struct gObject *go), REG(a1, Msg msg))
 {
 	struct gText *gt = GINST_DATA(gc, go);
 	ULONG rc = 0L;
 
 	switch (msg->MethodID) {
 		case GCM_NEW:
-			if (rc = gDoSuperMethodA(gc, go, msg)) {
+			if ((rc = gDoSuperMethodA(gc, go, msg)) != 0) {
 				go = (struct gObject *)rc;  gt = GINST_DATA(gc, go);
 
 				go->go_Flags |= GOF_FRAMED;
@@ -138,7 +141,7 @@ dispatch(REG(a0, struct gClass *gc), REG(a1, struct gObject *go), REG(a2, Msg ms
 		{
 			struct gObject *cgo;
 
-			if (cgo = (struct gObject *)(rc = gDoSuperMethodA(gc, go, msg))) {
+			if ((cgo = (struct gObject *)(rc = gDoSuperMethodA(gc, go, msg))) != 0) {
 				struct gText *cgt = GINST_DATA(gc, cgo);
 
 				cgt->gt_Text = AllocString(gt->gt_Text);

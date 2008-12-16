@@ -1,0 +1,99 @@
+#
+# meta-makefile for Ignition for AROS
+#
+
+include $(TOP)/config/make.cfg
+
+#MM- contrib-ignition-addons : contrib-ignition-addon-turbocalc
+
+#MM  contrib-ignition-addon-area_diagram : includes linklibs
+#MM  contrib-ignition-addon-button : includes linklibs
+#MM  contrib-ignition-addon-checkbox : includes linklibs
+#MM  contrib-ignition-addon-circle_diagram : includes linklibs
+#MM  contrib-ignition-addon-column_diagram : includes linklibs
+#MM  contrib-ignition-addon-frame : includes linklibs
+#MM  contrib-ignition-addon-gradient : includes linklibs
+#MM  contrib-ignition-addon-line : includes linklibs
+#MM  contrib-ignition-addon-line_diagram : includes linklibs
+#MM  contrib-ignition-addon-rectangle : includes linklibs
+#MM  contrib-ignition-addon-text : includes linklibs
+
+#MM  contrib-ignition-addon-ascii : includes linklibs
+#MM  contrib-ignition-addon-csv : includes linklibs
+#MM  contrib-ignition-addon-turbocalc : includes linklibs
+
+TARGETDIR := $(AROS_CONTRIB)/Office/Ingition/add-ons
+USER_INCLUDES := -I../libs/include -I..
+
+
+#### gclass
+
+%build_module_simple mmake=contrib-ignition-addon-area_diagram \
+	modname=area_diagramm modtype=gc \
+	files="gclass area_diagram" moduledir=$(TARGETDIR) \
+	uselibs=
+
+%build_module_simple mmake=contrib-ignition-addon-button \
+	modname=button modtype=gc \
+	files="gclass button" moduledir=$(TARGETDIR) \
+	uselibs=
+
+%build_module_simple mmake=contrib-ignition-addon-checkbox \
+	modname=checkbox modtype=gc \
+	files="gclass checkbox" moduledir=$(TARGETDIR) \
+	uselibs=
+
+%build_module_simple mmake=contrib-ignition-addon-circle_diagram \
+	modname=circle_diagram modtype=gc \
+	files="gclass circle_diagram" moduledir=$(TARGETDIR) \
+	uselibs=
+
+%build_module_simple mmake=contrib-ignition-addon-column_diagram \
+	modname=column_diagram modtype=gc \
+	files="gclass column_diagram" moduledir=$(TARGETDIR) \
+	uselibs=
+
+%build_module_simple mmake=contrib-ignition-addon-frame \
+	modname=frame modtype=gc \
+	files="gclass frame" moduledir=$(TARGETDIR) \
+	uselibs=
+
+%build_module_simple mmake=contrib-ignition-addon-gradient \
+	modname=gradient modtype=gc \
+	files="gclass gradient" moduledir=$(TARGETDIR) \
+	uselibs=
+
+%build_module_simple mmake=contrib-ignition-addon-line \
+	modname=line modtype=gc \
+	files="gclass gradient" moduledir=$(TARGETDIR) \
+	uselibs=
+
+%build_module_simple mmake=contrib-ignition-addon-rectangle \
+	modname=rectangle modtype=gc \
+	files="gclass rectangle" moduledir=$(TARGETDIR) \
+	uselibs=
+
+%build_module_simple mmake=contrib-ignition-addon-text \
+	modname=text modtype=gc \
+	files="gclass text" moduledir=$(TARGETDIR) \
+	uselibs=
+
+
+#### iotype
+
+%build_module_simple mmake=contrib-ignition-addon-ascii \
+	modname=text modtype=io \
+	files="iotype ascii" moduledir=$(TARGETDIR) \
+	uselibs=
+
+%build_module_simple mmake=contrib-ignition-addon-csv \
+	modname=csv modtype=io \
+	files="iotype csv" moduledir=$(TARGETDIR) \
+	uselibs=
+
+%build_module_simple mmake=contrib-ignition-addon-turbocalc \
+	modname=turbocalc modtype=io \
+	files="iotype turbocalc" moduledir=$(TARGETDIR) \
+	uselibs=
+
+%common

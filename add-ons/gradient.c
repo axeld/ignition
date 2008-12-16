@@ -7,7 +7,10 @@
 
 #include "gclass.h"
 #include "gclass_protos.h"
-#include "gclass_pragmas.h"
+
+#if defined(__SASC)
+#	include "gclass_pragmas.h"
+#endif
 
 #define CATCOMP_NUMBERS
 #include "ignition_strings.h"
@@ -28,7 +31,7 @@ struct Gradient {
 #define GGA_Direction   (GOA_TagUser + 3)
 
 static struct Catalog *sCatalog;
-static char *sAlignmentLabels[3];
+static CONST_STRPTR sAlignmentLabels[3];
 
 struct gInterface interface[] = {
 	{GGA_FirstPen,    NULL /*"First Colour:"*/, GIT_PEN, NULL, "firstpen"},
@@ -95,7 +98,7 @@ set(struct Gradient *g, struct TagItem *tstate)
     if (!tstate)
         return GCPR_NONE;
 
-    while (ti = NextTagItem(&tstate))
+    while ((ti = NextTagItem(&tstate)) != 0)
     {
         switch (ti->ti_Tag)
         {
@@ -128,7 +131,7 @@ set(struct Gradient *g, struct TagItem *tstate)
 
 
 ULONG PUBLIC
-dispatch(REG(a0, struct gClass *gc), REG(a2, struct gObject *go), REG(a2, Msg msg))
+dispatch(REG(a0, struct gClass *gc), REG(a2, struct gObject *go), REG(a1, Msg msg))
 {
     struct Gradient *g = GINST_DATA(gc, go);
     ULONG rc = 0L;
@@ -136,7 +139,7 @@ dispatch(REG(a0, struct gClass *gc), REG(a2, struct gObject *go), REG(a2, Msg ms
     switch (msg->MethodID)
     {
         case GCM_NEW:
-            if (rc = gDoSuperMethodA(gc, go, msg))
+            if ((rc = gDoSuperMethodA(gc, go, msg)) != 0)
             {
                 go = (struct gObject *)rc;  g = GINST_DATA(gc, go);
 
@@ -201,9 +204,9 @@ initClass(REG(a0, struct gClass *gc))
 
 /** this file is linked without startup code (SAS/C specific) */
 
-void __stdargs
+#if defined(__SASC)
+void STDARGS
 _XCEXIT(void)
 {
 }
-
-
+#endif

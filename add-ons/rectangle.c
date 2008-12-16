@@ -7,7 +7,10 @@
 
 #include "gclass.h"
 #include "gclass_protos.h"
-#include "gclass_pragmas.h"
+
+#if defined(__SASC)
+#	include "gclass_pragmas.h"
+#endif
 
 const char *version = "$VER: rectangle.gc 0.6 (2.3.2003)";
 
@@ -21,7 +24,7 @@ struct gInterface interface[] =
   {GOA_FillPen,    NULL,GIT_PEN,NULL,NULL},
   {GOA_OutlinePen, NULL,GIT_PEN,NULL,NULL},
 //  {GOA_Weight,     NULL,GIT_WEIGHT,NULL,NULL},
-  {NULL,           NULL,NULL,NULL,NULL}
+  {0,              NULL,0,NULL,NULL}
 };
 
 const STRPTR superClass = "root";
@@ -65,7 +68,7 @@ ULONG set(struct Rect *r,struct TagItem *tstate)
 
   if (tstate)
   {
-    while(ti = NextTagItem(&tstate))
+    while ((ti = NextTagItem(&tstate)) != 0)
     {
       switch(ti->ti_Tag)
       {
@@ -97,7 +100,7 @@ ULONG set(struct Rect *r,struct TagItem *tstate)
 }
 
 
-ULONG PUBLIC dispatch(REG(a0, struct gClass *gc), REG(a1, struct gObject *go), REG(a2, Msg msg))
+ULONG PUBLIC dispatch(REG(a0, struct gClass *gc), REG(a2, struct gObject *go), REG(a1, Msg msg))
 {
   struct Rect *r = GINST_DATA(gc,go);
   ULONG rc = 0L;
@@ -105,7 +108,7 @@ ULONG PUBLIC dispatch(REG(a0, struct gClass *gc), REG(a1, struct gObject *go), R
   switch(msg->MethodID)
   {
     case GCM_NEW:
-      if (rc = gDoSuperMethodA(gc,go,msg))
+      if ((rc = gDoSuperMethodA(gc, go, msg)) != 0)
       {
         go = (struct gObject *)rc;  r = GINST_DATA(gc,go);
 

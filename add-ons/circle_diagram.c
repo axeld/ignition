@@ -9,7 +9,10 @@
 
 #include "gclass.h"
 #include "gclass_protos.h"
-#include "gclass_pragmas.h"
+
+#if defined (__SASC)
+#	include "gclass_pragmas.h"
+#endif
 
 #define CATCOMP_NUMBERS
 #include "ignition_strings.h"
@@ -41,7 +44,7 @@ struct gInterface interface[] = {
 	{GCA_Frame, NULL /*"Fl�che durch einen Rahmen begrenzen"*/, GIT_CHECKBOX, NULL, NULL},
 	{GCA_Pseudo3D, NULL /*"Pseudo-3D"*/, GIT_CHECKBOX, NULL, NULL},
 	{GCA_StartAngle, NULL /*"Pseudo-3D"*/, GIT_TEXT, NULL, NULL},
-	{NULL}
+	{0}
 };
 
 const STRPTR superClass = "diagram";
@@ -205,7 +208,7 @@ set(struct gDiagram *gd, struct gCircle *gc, struct TagItem *tstate)
     if (tstate == NULL)
         return GCPR_NONE;
 
-	while (ti = NextTagItem(&tstate)) {
+	while ((ti = NextTagItem(&tstate)) != 0) {
 		switch (ti->ti_Tag) {
             case GCA_Frame:
 				if (gc->gc_Frame != ti->ti_Data) {
@@ -231,14 +234,14 @@ set(struct gDiagram *gd, struct gCircle *gc, struct TagItem *tstate)
 
 
 ULONG PUBLIC
-dispatch(REG(a0, struct gClass *gc), REG(a1, struct gDiagram *gd), REG(a2, Msg msg))
+dispatch(REG(a0, struct gClass *gc), REG(a2, struct gDiagram *gd), REG(a1, Msg msg))
 {
     struct gCircle *this_gc = GINST_DATA(gc, gd);
     ULONG  rc;
 
 	switch (msg->MethodID) {
         case GCM_NEW:
-			if (rc = gDoSuperMethodA(gc, gd, msg)) {
+			if ((rc = gDoSuperMethodA(gc, gd, msg)) != 0) {
                 this_gc = GINST_DATA(gc, rc);
                 this_gc->gc_Frame = 1;
 
@@ -297,8 +300,9 @@ initClass(REG(a0, struct gClass *gc))
 	return TRUE;
 }
 
-
-void __stdargs
+#if defined(__SASC)
+void STDARGS
 _XCEXIT(void)
 {
 }
+#endif

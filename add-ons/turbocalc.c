@@ -4,6 +4,8 @@
  * Licensed under the terms of the GNU General Public License, version 3.
  */
 
+#include <stdio.h>
+
 #include "iotype.h"
 #include "turbocalc.h"
 
@@ -12,11 +14,6 @@ extern APTR ioBase;
 
 const STRPTR __version = "$VER: turbocalc.io 0.2 (4.3.2001)";
 
-/*extern sprintf(STRPTR,STRPTR,...);*/
-extern kprintf(STRPTR,...);
-
-#define bug kprintf
-#define D(x) ;
 
 STRPTR
 MapTCFuncs(UBYTE n)
@@ -41,7 +38,7 @@ ConvertTCFormula(struct Cell *c,STRPTR t,long len)
 	BYTE a,b;
 	STRPTR dest;
 
-	if (dest = AllocPooled(pool,len*2)) {
+	if ((dest = AllocPooled(pool, len * 2)) != 0) {
 		for(;i < len;i++) {
 			if (*(t+i) >= 0x08 && *(t+i) <= 0x0b) {
 				/* relative & absolute references */
@@ -215,7 +212,7 @@ load(REG(d0, BPTR dat), REG(a0, struct Mappe *mp))
 					break;*/
 				case FILE_COLOR:
 					w = *(UWORD *)(cell = buf);
-					if (cols = AllocPooled(pool,w*4+4))
+					if ((cols = AllocPooled(pool, w * 4 + 4)) != 0)
 					{
 						struct colorPen *cp;
 
@@ -226,10 +223,10 @@ load(REG(d0, BPTR dat), REG(a0, struct Mappe *mp))
 							r = ((row & 0x0f00) >> 8) | ((row & 0x0f00) >> 4);
 							g = ((row & 0x00f0) >> 4) | (row & 0x00f0);
 							b = ((row & 0x000f) << 4) | (row & 0x000f);
-							if (cp = AddPen(NULL,r,g,b))
+							if ((cp = AddPen(NULL, r, g, b)) != 0)
 								cols[col] = cp->cp_ID;
 							else
-								cols[col] = NULL;
+								cols[col] = 0;
 						}
 					}
 					break;
@@ -354,8 +351,9 @@ setPrefs(REG(a0, STRPTR t))
 }
 
 
-void __stdargs
+#if defined(__SASC)
+void STDARGS
 _XCEXIT(void)
 {
 }
-
+#endif

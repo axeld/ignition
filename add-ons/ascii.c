@@ -11,11 +11,6 @@
 
 const STRPTR __version = "$VER: ascii.io 0.1 (5.3.2001)";
 
-#ifdef DEBUG
-	void kprintf(STRPTR,...);
-#	define bug kprintf
-#endif
-
 
 void PUBLIC
 closePrefsGUI(void)
@@ -51,9 +46,9 @@ load(REG(d0, BPTR file), REG(a0, struct Mappe *mp))
 	char t[512];
 	ULONG row = 1;
 
-	if (page = NewPage(mp)) {
+	if ((page = NewPage(mp)) != 0) {
 		while (FGets(file, t, 512)) {
-			if (c = NewCell(page,1,row++)) {
+			if ((c = NewCell(page, 1, row++)) != 0) {
 				if (t[strlen(t)-1] == '\n')
 					t[strlen(t)-1] = 0;
 				c->c_Text = AllocString(t);
@@ -89,9 +84,9 @@ save(REG(d0, BPTR file), REG(a0, struct Mappe *mp))
 }
 
 
-void __stdargs
+#if defined(__SASC)
+void STDARGS
 _XCEXIT(long a)
 {
 }
-
-
+#endif

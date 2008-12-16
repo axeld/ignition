@@ -9,7 +9,10 @@
 
 #include "gclass.h"
 #include "gclass_protos.h"
-#include "gclass_pragmas.h"
+
+#if defined(__SASC)
+#	include "gclass_pragmas.h"
+#endif
 
 #define CATCOMP_NUMBERS
 #include "ignition_strings.h"
@@ -34,7 +37,7 @@ struct gInterface interface[] =
 {
 	{GBA_Frame, NULL /*"Fläche durch einen Rahmen begrenzen"*/, GIT_CHECKBOX, NULL, NULL},
 	{GAA_Pseudo3D, NULL /*"Pseudo-3D"*/, GIT_CHECKBOX, NULL, NULL},
-	{NULL}
+	{0}
 };
 
 const STRPTR superClass = "axes";
@@ -194,7 +197,7 @@ set(struct gDiagram *gd, struct gBalken *gb, struct TagItem *tstate)
 		return GCPR_NONE;
 
 
-	while (ti = NextTagItem(&tstate))
+	while ((ti = NextTagItem(&tstate)) != 0)
 	{
 		switch(ti->ti_Tag)
 		{
@@ -220,7 +223,7 @@ dispatch(REG(a0, struct gClass *gc), REG(a2, struct gDiagram *gd), REG(a1, Msg m
   switch (msg->MethodID)
   {
     case GCM_NEW:
-      if (rc = gDoSuperMethodA(gc,gd,msg))
+      if ((rc = gDoSuperMethodA(gc, gd, msg)) != 0)
       {
         gb = GINST_DATA(gc,rc);
         gb->gb_Frame = 1;

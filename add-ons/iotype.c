@@ -4,22 +4,30 @@
  * Licensed under the terms of the MIT License.
  */
 
+#define __DOS_STDLIBBASE__
 
 #include <exec/types.h>
 #include <exec/lists.h>
 #include <exec/nodes.h>
 #include <exec/memory.h>
 #include <dos/dos.h>
+#include <intuition/screens.h>
 
-#include <clib/exec_protos.h>
-#include <clib/dos_protos.h>
-#include <pragmas/exec_pragmas.h>
-#include <pragmas/dos_pragmas.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
+
+#if defined(__SASC)
+#	include <pragmas/exec_pragmas.h>
+#	include <pragmas/dos_pragmas.h>
+#endif
 
 #include <string.h>
 #include <math.h>
 /*#include <mieeedoub.h>*/
 
+struct Mappe;
+
+#include "SDI_compiler.h"
 
 // Must always be in sync with the definition in io.h !!!
 
@@ -37,7 +45,7 @@ struct IOType {
   long   ASM (*io_Save)(REG(d0, BPTR), REG(a0, struct Mappe *));
   long   ASM (*io_SetPrefs)(REG(a0, STRPTR));
   STRPTR ASM (*io_GetPrefs)(void);
-  void   ASM (*io_OpenPrefsGUI)(REG(a0) struct Screen *);
+  void   ASM (*io_OpenPrefsGUI)(REG(a0, struct Screen *));
   void   ASM (*io_ClosePrefsGUI)(void);
   STRPTR io_Short;
   STRPTR io_Prefs;
