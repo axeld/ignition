@@ -58,8 +58,8 @@ extern const STRPTR superClass;
 
 
 BOOL PUBLIC
-InitGClass(REG(a6, struct ExecBase *ExecBase), REG(a0, struct __gClass *gc), REG(a1, APTR table), REG(a2, APTR mainpool),
-	REG(a3, APTR gfxbase), REG(d0, APTR mathbase), REG(d1, APTR mathtrans), REG(d2, APTR utilitybase), REG(d3, APTR localebase),
+InitGClass(REG(a0, struct __gClass *gc), REG(a1, APTR table), REG(a2, APTR mainpool), REG(a3, APTR gfxbase),
+	REG(a6, struct ExecBase *ExecBase), REG(d0, APTR mathbase), REG(d1, APTR mathtrans), REG(d2, APTR utilitybase), REG(d3, APTR localebase),
     REG(d4, long magic))
 {
 #ifdef IGNITION_LITE_EDITION

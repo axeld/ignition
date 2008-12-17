@@ -65,7 +65,12 @@ USER_INCLUDES := -I../libs/include -I..
 
 %build_module_simple mmake=contrib-ignition-addon-line \
 	modname=line modtype=gc \
-	files="gclass gradient" moduledir=$(TARGETDIR) \
+	files="gclass line" moduledir=$(TARGETDIR) \
+	uselibs=
+
+%build_module_simple mmake=contrib-ignition-addon-line_diagram \
+	modname=line_diagram modtype=gc \
+	files="gclass line_diagram" moduledir=$(TARGETDIR) \
 	uselibs=
 
 %build_module_simple mmake=contrib-ignition-addon-rectangle \

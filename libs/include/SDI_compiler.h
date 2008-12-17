@@ -263,8 +263,6 @@
    // TODO write LIB_... macros
 #  define LIBFUNC_INIT
 #  define LIBFUNC_EXIT
-
-#  define bug kprintf
 #endif
 
 #if defined(__AROS__)

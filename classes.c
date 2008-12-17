@@ -1377,9 +1377,6 @@ MakeGClass(STRPTR name, UBYTE type, struct gClass *sgc, STRPTR label, STRPTR ima
 BOOL
 LoadGClass(struct gClass *gc)
 {
-#if defined(__AROS__)
-	return FALSE;
-#else
 	BOOL ASM (*initGCSegment)(REG(a0, APTR), REG(a1, APTR), REG(a2, APTR), REG(a3, APTR), REG(a6, APTR),
 		REG(d0, APTR), REG(d1, APTR), REG(d2, APTR), REG(d3, APTR), REG(d4, long));
 	BPTR dir,olddir,segment;
@@ -1392,7 +1389,7 @@ LoadGClass(struct gClass *gc)
 		olddir = CurrentDir(dir);
 		if ((segment = LoadSeg(gc->gc_ClassName)) != 0)
 		{
-			initGCSegment = ((segment + 1) << 2);
+			initGCSegment = MKBADDR(segment);
 			if (initGCSegment(gc, (UBYTE *)gClassFuncTable + gClassFuncTableSize, pool, GfxBase, SysBase, MathIeeeDoubBasBase,
 					MathIeeeDoubTransBase, UtilityBase, LocaleBase,
 #ifdef IGNITION_LITE_EDITION
@@ -1421,7 +1418,6 @@ LoadGClass(struct gClass *gc)
 		return FALSE;
 	}
 	return TRUE;
-#endif
 }
 
 
@@ -1543,5 +1539,3 @@ InitGClasses(void)
 
 	gEmbedDiagramInterface[0].gi_Label = GetString(&gLocaleInfo, MSG_DIAGRAM_PREFS_GAD);
 }
-
-

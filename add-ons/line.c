@@ -78,7 +78,7 @@ ULONG set(struct gLine *gl,struct TagItem *tstate)
 
   if (tstate)
   {
-    while(ti = NextTagItem(&tstate))
+    while ((ti = NextTagItem(&tstate)) != 0)
     {
       switch(ti->ti_Tag)
       {
@@ -125,7 +125,7 @@ ULONG PUBLIC dispatch(REG(a0, struct gClass *gc), REG(a2, struct gObject *go), R
   switch(msg->MethodID)
   {
     case GCM_NEW:
-      if (rc = gDoSuperMethodA(gc,go,msg))
+      if ((rc = gDoSuperMethodA(gc,go,msg)) != 0)
       {
         go = (struct gObject *)rc;  gl = GINST_DATA(gc,go);
 

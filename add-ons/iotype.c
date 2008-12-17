@@ -81,9 +81,9 @@ extern void PUBLIC closePrefsGUI(void);
 
 
 BOOL PUBLIC
-InitModule(REG(a6, struct ExecBase *execBase), REG(a0, struct IOType *io), REG(a1, APTR table), REG(a2, APTR mainpool),
-	REG(a3, APTR dosBase), REG(d0, APTR mathBase), REG(d1, APTR mathtransBase), REG(d2, long magic),
-	REG(d3, APTR utilityBase), REG(d4, APTR localeBase))
+InitModule(REG(a0, struct IOType *io), REG(a1, APTR table), REG(a2, APTR mainpool), REG(a3, APTR dosBase),
+	REG(a6, struct ExecBase *execBase), REG(d0, APTR mathBase), REG(d1, APTR mathtransBase), REG(d2, APTR utilityBase),
+	REG(d3, APTR localeBase), REG(d4, long magic))
 {
 #ifdef IGNITION_LITE_EDITION
 	if (magic != MAKE_ID('I', 'G', 'N', '\0') && magic != MAKE_ID('I', 'G', 'L', '\0'))

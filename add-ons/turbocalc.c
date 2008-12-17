@@ -14,6 +14,11 @@ extern APTR ioBase;
 
 const STRPTR __version = "$VER: turbocalc.io 0.2 (4.3.2001)";
 
+/*extern sprintf(STRPTR,STRPTR,...);*/
+extern kprintf(STRPTR,...);
+
+#define bug kprintf
+#define D(x) ;
 
 STRPTR
 MapTCFuncs(UBYTE n)

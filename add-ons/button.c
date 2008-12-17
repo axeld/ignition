@@ -39,7 +39,7 @@ struct gInterface interface[] = {
 	{GOA_Text,     NULL, GIT_FORMULA, NULL, NULL},
 	{GOA_Command,  NULL, GIT_TEXT, NULL, NULL},
 	{GOA_ContinualCommand, NULL, GIT_CHECKBOX, NULL, NULL},
-	{NULL}
+	{0}
 };
 
 const STRPTR superClass = "root";

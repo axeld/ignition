@@ -2439,10 +2439,8 @@ const struct {UWORD jsr;APTR func;} io_functable[] = {
 void
 InitIOType(struct IOType *io)
 {
-#if defined(__AROS__)
-	return;
-#else
-	BOOL * ASM (*initIOSegment)(REG(a0, APTR), REG(a1, APTR *), REG(a2, APTR), REG(a3, APTR), REG(a6, APTR), REG(d0, APTR), REG(d1, APTR), REG(d3, APTR), REG(d4, APTR), REG(d2, long));
+	BOOL * ASM (*initIOSegment)(REG(a0, APTR), REG(a1, APTR *), REG(a2, APTR), REG(a3, APTR), REG(a6, APTR),
+		REG(d0, APTR), REG(d1, APTR), REG(d2, APTR), REG(d3, APTR), REG(d4, long));
 	BPTR dir,olddir,segment;
 
 	if (io->io_Segment || !io->io_Filename)
@@ -2453,7 +2451,7 @@ InitIOType(struct IOType *io)
 		olddir = CurrentDir(dir);
 		if ((segment = LoadSeg(io->io_Filename)) != 0)
 		{
-			initIOSegment = ((segment+1) << 2);
+			initIOSegment = MKBADDR(segment);
 			if (initIOSegment(io, (APTR)((UBYTE *)io_functable + sizeof(io_functable)), pool, DOSBase,
 					SysBase, MathIeeeDoubBasBase, MathIeeeDoubTransBase, UtilityBase, LocaleBase, MAKE_ID('I','G','N',0)))
 				io->io_Segment = segment;
@@ -2465,7 +2463,6 @@ InitIOType(struct IOType *io)
 		CurrentDir(olddir);
 		UnLock(dir);
 	}
-#endif
 }
 
 

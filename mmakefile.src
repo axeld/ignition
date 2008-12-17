@@ -10,7 +10,7 @@ include $(TOP)/config/make.cfg
 
 #MM contrib-ignition-bin : linklibs includes contrib-ignition-textedit \
 #MM contrib-ignition-scroller contrib-ignition-gtdrag contrib-ignition-catalogs \
-#MM contrib-ignition-gcdescr
+#MM contrib-ignition-descr
 
 EXE := Ignition
 
@@ -64,23 +64,23 @@ FILES := \
 	libs/compatibility
 
 %build_prog mmake=contrib-ignition-bin progname=$(EXE) files=$(FILES) \
-    targetdir=$(TARGETDIR) uselibs="amiga arossupport arosc rexxsyslib m"
+    targetdir=$(TARGETDIR) uselibs="amiga arossupport arosc rexxsyslib m mathieeedoubbas mathieeedoubtrans"
 
 %copy_dir_recursive mmake=contrib-ignition-icons src=icons dst=$(TARGETDIR)/icons
 %copy_dir_recursive mmake=contrib-ignition-config src=config dst=$(TARGETDIR)/config
 %copy_dir_recursive mmake=contrib-ignition-docs src=docs dst=$(TARGETDIR)/docs
 %copy_dir_recursive mmake=contrib-ignition-help src=help dst=$(TARGETDIR)/help
 %copy_dir_recursive mmake=contrib-ignition-rexx src=rexx dst=$(TARGETDIR)/rexx
-%copy_dir_recursive mmake=contrib-ignition-sheets src=sheets dst=$(TARGETDIR)/sheets
+%copy_dir_recursive mmake=contrib-ignition-sheets src=distribution/full/sheets dst=$(TARGETDIR)/sheets
 
 #MM
-contrib-ignition-gcdescr :
-FILES := $(wildcard add-ons/*.gcdescr)
-%copy_files_q files=$(FILES) src=. dst=$(TARGETDIR) maketarget=contrib-ignition-gcdescr
+contrib-ignition-descr :
+DESCFILES := $(wildcard add-ons/*.gcdescr) $(wildcard add-ons/*.iodescr)
+%copy_files_q files=$(DESCFILES) src=$(TOP)/$(CURDIR) dst=$(TARGETDIR) maketarget=contrib-ignition-descr
 
 #MM
 contrib-ignition-files :
-FILES := ignition.info LICENSE README
-%copy_files_q files=$(FILES) src=. dst=$(TARGETDIR) maketarget=contrib-ignition-files
+CPYFILES := ignition.info LICENSE README
+%copy_files_q files=$(CPYFILES) src=. dst=$(TARGETDIR) maketarget=contrib-ignition-files
 
 %common
