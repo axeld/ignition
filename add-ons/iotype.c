@@ -27,6 +27,7 @@
 
 struct Mappe;
 
+#include "iotype.h"
 #include "SDI_compiler.h"
 
 // Must always be in sync with the definition in io.h !!!
@@ -79,9 +80,16 @@ extern void PUBLIC closePrefsGUI(void);
 
 #define MAKE_ID(a,b,c,d) ((a << 24) | (b << 16) | (c << 8) | d)
 
+#ifdef __AROS__
+// ensure that InitModule becomes 1st function in segment
+BOOL PUBLIC
+InitModule(REG(a0, struct IOType *io), REG(a1, TableEntry *table), REG(a2, APTR mainpool), REG(a3, APTR dosBase),
+	REG(a6, struct ExecBase *execBase), REG(d0, APTR mathBase), REG(d1, APTR mathtransBase), REG(d2, APTR utilityBase),
+	REG(d3, APTR localeBase), REG(d4, long magic)) __attribute__((section(".aros.startup")));
+#endif
 
 BOOL PUBLIC
-InitModule(REG(a0, struct IOType *io), REG(a1, APTR table), REG(a2, APTR mainpool), REG(a3, APTR dosBase),
+InitModule(REG(a0, struct IOType *io), REG(a1, TableEntry *table), REG(a2, APTR mainpool), REG(a3, APTR dosBase),
 	REG(a6, struct ExecBase *execBase), REG(d0, APTR mathBase), REG(d1, APTR mathtransBase), REG(d2, APTR utilityBase),
 	REG(d3, APTR localeBase), REG(d4, long magic))
 {
@@ -109,6 +117,23 @@ InitModule(REG(a0, struct IOType *io), REG(a1, APTR table), REG(a2, APTR mainpoo
 
 	ioBase = table;
 	pool = mainpool;
+
+	// Initialize function table
+	ReportErrorA = table[-15].func;
+	NewPage = table[-14].func;
+	CalculatePageDPI = table[-13].func;
+	NewCell = table[-12].func;
+	UpdateCellText = table[-11].func;
+	SetTableSize = table[-10].func;
+	FindColorPen = table[-9].func;
+	AddPen = table[-8].func;
+	Coord2String = table[-7].func;
+	pixel = table[-6].func;
+	mm = table[-5].func;
+	AllocStringLength = table[-4].func;
+	AllocString = table[-3].func;
+	FreeString = table[-2].func;
+	ita = table[-1].func;
 
 	setPrefs(io->io_Prefs);
 

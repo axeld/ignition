@@ -1389,7 +1389,7 @@ LoadGClass(struct gClass *gc)
 		olddir = CurrentDir(dir);
 		if ((segment = LoadSeg(gc->gc_ClassName)) != 0)
 		{
-			initGCSegment = MKBADDR(segment);
+			initGCSegment = MKBADDR(segment) + sizeof(APTR);
 			if (initGCSegment(gc, (UBYTE *)gClassFuncTable + gClassFuncTableSize, pool, GfxBase, SysBase, MathIeeeDoubBasBase,
 					MathIeeeDoubTransBase, UtilityBase, LocaleBase,
 #ifdef IGNITION_LITE_EDITION

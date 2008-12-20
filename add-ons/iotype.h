@@ -38,6 +38,10 @@
 #	include "cell.h"
 #endif
 
+typedef struct {
+	UWORD jsr;
+	APTR func;
+} TableEntry;
 
 /*** Project related ***/
 
@@ -426,22 +430,24 @@ struct PrefIcon
 
 /***************************** interne Funktionen *******************************/
 
-void   ReportError(STRPTR fmt,...);
-void   ReportErrorA(STRPTR fmt,APTR args);
-struct Page *NewPage(struct Mappe *mp);
-void   CalculatePageDPI(struct Page *page);
-struct Cell *NewCell(struct Page *page,LONG col,LONG row);
-void   UpdateCellText(struct Page *,struct Cell *);
-void   SetTableSize(struct Page *,LONG,LONG);
-STRPTR Coord2String(BOOL,LONG,BOOL,LONG);
-LONG   pixel(struct Page *,LONG,BOOL);
-LONG   mm(struct Page *,LONG,BOOL);
-ULONG  FindColorPen(UBYTE r,UBYTE g,UBYTE b);
-struct colorPen *AddPen(STRPTR name,UBYTE r,UBYTE g,UBYTE b);
-STRPTR AllocStringLength(STRPTR,LONG);
-STRPTR AllocString(STRPTR);
-void   FreeString(STRPTR);
-STRPTR ita(double d,long komma ,UBYTE flags);
+void   (*ReportErrorA)(STRPTR fmt,APTR args);
+struct Page * (*NewPage)(struct Mappe *mp);
+void   (*CalculatePageDPI)(struct Page *page);
+struct Cell * (*NewCell)(struct Page *page,LONG col,LONG row);
+void   (*UpdateCellText)(struct Page *,struct Cell *);
+void   (*SetTableSize)(struct Page *,LONG,LONG);
+STRPTR (*Coord2String)(BOOL,LONG,BOOL,LONG);
+LONG   (*pixel)(struct Page *,LONG,BOOL);
+LONG   (*mm)(struct Page *,LONG,BOOL);
+ULONG  (*FindColorPen)(UBYTE r,UBYTE g,UBYTE b);
+struct colorPen * (*AddPen)(STRPTR name,UBYTE r,UBYTE g,UBYTE b);
+STRPTR (*AllocStringLength)(STRPTR,LONG);
+STRPTR (*AllocString)(STRPTR);
+void   (*FreeString)(STRPTR);
+STRPTR (*ita)(double d,long komma ,UBYTE flags);
+
+// variadic functions must be real functions
+void   ReportError(STRPTR fmt, ...);
 
 #if defined(__SASC)
 #	pragma tagcall ioBase ReportError 5a 9802

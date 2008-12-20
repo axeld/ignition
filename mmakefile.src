@@ -10,7 +10,7 @@ include $(TOP)/config/make.cfg
 
 #MM contrib-ignition-bin : linklibs includes contrib-ignition-textedit \
 #MM contrib-ignition-scroller contrib-ignition-gtdrag contrib-ignition-catalogs \
-#MM contrib-ignition-descr
+#MM contrib-ignition-descr contrib-ignition-addons
 
 EXE := Ignition
 

@@ -2451,7 +2451,7 @@ InitIOType(struct IOType *io)
 		olddir = CurrentDir(dir);
 		if ((segment = LoadSeg(io->io_Filename)) != 0)
 		{
-			initIOSegment = MKBADDR(segment);
+			initIOSegment = MKBADDR(segment) + sizeof(APTR);
 			if (initIOSegment(io, (APTR)((UBYTE *)io_functable + sizeof(io_functable)), pool, DOSBase,
 					SysBase, MathIeeeDoubBasBase, MathIeeeDoubTransBase, UtilityBase, LocaleBase, MAKE_ID('I','G','N',0)))
 				io->io_Segment = segment;
