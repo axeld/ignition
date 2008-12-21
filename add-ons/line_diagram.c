@@ -98,8 +98,8 @@ draw(REG(d0, struct Page *page), REG(d1, ULONG dpi), REG(a0, struct RastPort *rp
 
         if (i != 0)
         {
-          gAreaMove(x,y);
-          gAreaDraw(x+offset,y-offset);
+          gAreaMove(rp, x, y);
+          gAreaDraw(rp, x + offset, y - offset);
 
           gAreaEnd(rp);
         }
@@ -108,8 +108,8 @@ draw(REG(d0, struct Page *page), REG(d1, ULONG dpi), REG(a0, struct RastPort *rp
 
         if (i < gd->gd_Cols-1)
         {
-          gAreaDraw(x+offset,y-offset);
-          gAreaDraw(x,y);
+          gAreaDraw(rp, x + offset, y - offset);
+          gAreaDraw(rp, x, y);
         }
         x += width;
       }

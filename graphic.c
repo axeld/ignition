@@ -38,16 +38,16 @@ gInitArea(long xmin, long ymin, long xmax, long ymax)
 
 
 void PUBLIC
-libAreaMove(REG(d0, LONG x), REG(d1, LONG y))
+libAreaMove(REG(a0, struct RastPort *rp), REG(d0, LONG x), REG(d1, LONG y))
 {
-	gAreaMove(NULL, x, y);
+	gAreaMove(rp, x, y);
 }
 
 
 void PUBLIC
-libAreaDraw(REG(d0, LONG x), REG(d1, LONG y))
+libAreaDraw(REG(a0, struct RastPort *rp), REG(d0, LONG x), REG(d1, LONG y))
 {
-	gAreaDraw(NULL, x, y);
+	gAreaDraw(rp, x, y);
 }
 
 
@@ -157,8 +157,10 @@ MakeTmpRas(long width, long height)
 
 	FreeTmpRas();
 	if ((sTempBitmap = AllocVec(bytes, MEMF_CHIP | MEMF_CLEAR)) != 0)
-		//grp->TmpRas = InitTmpRas(&sTempRaster, sTempBitmap, bytes);  FIXME: InitTmpRas is a void function
+	{
 		InitTmpRas(&sTempRaster, sTempBitmap, bytes);
+		grp->TmpRas = &sTempRaster;
+	}
 
 	gInitArea(0, 0, width - 1, height - 1);
 }

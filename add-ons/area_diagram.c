@@ -119,8 +119,8 @@ draw(REG(d0, struct Page *page), REG(d1, ULONG dpi), REG(a0, struct RastPort *rp
 
 				if (i != 0)
 				{
-					gAreaMove(x, y);
-					gAreaDraw(x + depth, y - depth);
+					gAreaMove(rp, x, y);
+					gAreaDraw(rp, x + depth, y - depth);
 
 					gAreaEnd(rp);
 				}
@@ -129,18 +129,18 @@ draw(REG(d0, struct Page *page), REG(d1, ULONG dpi), REG(a0, struct RastPort *rp
 
 				if (i < gd->gd_Cols - 1)
 				{
-					gAreaDraw(x + depth, y - depth);
-					gAreaDraw(x, y);
+					gAreaDraw(rp, x + depth, y - depth);
+					gAreaDraw(rp, x, y);
 				}
 				x += width;
 			}
 
 			// Oberflächen bei Vorzeichenwechsel
 			x -= width;
-			gAreaMove(left, zero);
-			gAreaDraw(left + depth, zero - depth);
-			gAreaDraw(x + depth, zero - depth);
-			gAreaDraw(x , zero);
+			gAreaMove(rp, left, zero);
+			gAreaDraw(rp, left + depth, zero - depth);
+			gAreaDraw(rp, x + depth, zero - depth);
+			gAreaDraw(rp, x , zero);
 			gAreaEnd(rp);
 		}
 
@@ -160,14 +160,14 @@ draw(REG(d0, struct Page *page), REG(d1, ULONG dpi), REG(a0, struct RastPort *rp
 			if (i == 0)
 			{
 				SetHighColor(rp, color = gl->gl_Color);
-				gAreaMove(x, zero);
+				gAreaMove(rp, x, zero);
 			}
-			gAreaDraw(x, y);
+			gAreaDraw(rp, x, y);
 
 			x += width;
 		}
 		x -= width;
-		gAreaDraw(x, zero);
+		gAreaDraw(rp, x, zero);
 		gAreaEnd(rp);
 
 		// rechte Seite
@@ -178,10 +178,10 @@ draw(REG(d0, struct Page *page), REG(d1, ULONG dpi), REG(a0, struct RastPort *rp
 			if (y > zero)
 				zero += offset + 1;
 
-			gAreaMove(x, zero);
-			gAreaDraw(x, y);
-			gAreaDraw(x + depth, y - depth);
-			gAreaDraw(x + depth, zero - depth);
+			gAreaMove(rp, x, zero);
+			gAreaDraw(rp, x, y);
+			gAreaDraw(rp, x + depth, y - depth);
+			gAreaDraw(rp, x + depth, zero - depth);
 			gAreaEnd(rp);
 		}
 	}

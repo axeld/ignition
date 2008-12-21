@@ -110,15 +110,15 @@ draw(REG(d0, struct Page *page), REG(d1, ULONG dpi), REG(a0, struct RastPort *gr
   }
   SetHighColor(grp,cb->cb_ShinePen);
 
-  gAreaMove(x+size,y+size);
-  gAreaDraw(x+size,y);
-  gAreaDraw(x+size-bx,y+by);
-  gAreaDraw(x+size-bx,y+size-by);
+  gAreaMove(grp, x + size, y + size);
+  gAreaDraw(grp, x + size, y);
+  gAreaDraw(grp, x + size - bx, y + by);
+  gAreaDraw(grp, x + size - bx, y + size - by);
   gAreaEnd(grp);
-  gAreaMove(x+size,y+size);
-  gAreaDraw(x,y+size);
-  gAreaDraw(x+bx,y+size-by);
-  gAreaDraw(x+size-bx,y+size-by);
+  gAreaMove(grp, x + size, y + size);
+  gAreaDraw(grp, x, y + size);
+  gAreaDraw(grp, x + bx, y + size - by);
+  gAreaDraw(grp, x + size - bx, y + size - by);
   gAreaEnd(grp);
 
   SetHighColor(grp,TintColor(cb->cb_ShinePen,1.25f));
@@ -139,16 +139,16 @@ draw(REG(d0, struct Page *page), REG(d1, ULONG dpi), REG(a0, struct RastPort *gr
 
     SetHighColor(grp,cb->cb_CheckPen);
 
-    gAreaMove(ax+s2-s4,ay+s2+s4-s10);
-    gAreaDraw(ax+s2+s4-s10,ay+s2-s4);
-    gAreaDraw(ax+s2+s4,ay+s2-s4+s10);
-    gAreaDraw(ax+s2-s4+s10,ay+s2+s4);
+    gAreaMove(grp, ax + s2 - s4, ay + s2 + s4 - s10);
+    gAreaDraw(grp, ax + s2 + s4 - s10, ay + s2 - s4);
+    gAreaDraw(grp, ax + s2 + s4, ay + s2 - s4 + s10);
+    gAreaDraw(grp, ax + s2 - s4 + s10, ay + s2 + s4);
     gAreaEnd(grp);
 
-    gAreaMove(ax+s2-s4+s10,ay+s2-s4);
-    gAreaDraw(ax+s2+s4,ay+s2+s4-s10);
-    gAreaDraw(ax+s2+s4-s10,ay+s2+s4);
-    gAreaDraw(ax+s2-s4,ay+s2-s4+s10);
+    gAreaMove(grp, ax + s2 - s4 + s10, ay + s2 - s4);
+    gAreaDraw(grp, ax + s2 + s4, ay + s2 + s4 - s10);
+    gAreaDraw(grp, ax + s2 + s4 - s10, ay + s2 + s4);
+    gAreaDraw(grp, ax + s2 - s4, ay + s2 - s4 + s10);
     gAreaEnd(grp);
 
     //RectFill(grp,x+width/3,y+size/3,x+width/2,y+size/2);

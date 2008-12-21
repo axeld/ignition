@@ -141,19 +141,19 @@ draw(REG(d0, struct Page *page), REG(d1, ULONG dpi), REG(a0, struct RastPort *rp
 				if (y < zero || y > zero + offset + depth)
                 {					 
 					// Kante am Y-Wert
-					gAreaMove(x + innerWidth + o, y);
-					gAreaDraw(x + innerWidth + o + depth, y - depth);
+					gAreaMove(rp, x + innerWidth + o, y);
+					gAreaDraw(rp, x + innerWidth + o + depth, y - depth);
 					
 					// Kante an Achse
 					if (y < zero)  // Werte größer NULL
 					{
-						gAreaDraw(x + innerWidth + o + depth, zero - depth);
-						gAreaDraw(x + innerWidth + o, zero);
+						gAreaDraw(rp, x + innerWidth + o + depth, zero - depth);
+						gAreaDraw(rp, x + innerWidth + o, zero);
 					}
 					else  // Werte kleiner NULL
 					{
-						gAreaDraw(x + innerWidth + o + depth, zero + offset + 1);
-						gAreaDraw(x + innerWidth + o, zero + offset + 1);
+						gAreaDraw(rp, x + innerWidth + o + depth, zero + offset + 1);
+						gAreaDraw(rp, x + innerWidth + o, zero + offset + 1);
 					}
 					gAreaEnd(rp);
 				}
@@ -163,9 +163,9 @@ draw(REG(d0, struct Page *page), REG(d1, ULONG dpi), REG(a0, struct RastPort *rp
 						// Steigung ist -1
 
 					// da ist nur ein Dreieck sichtbar
-					gAreaMove(x + innerWidth + o, y);
-					gAreaDraw(xAtZero, zero + offset + 1);
-					gAreaDraw(x + innerWidth + o, zero + offset + 1);
+					gAreaMove(rp, x + innerWidth + o, y);
+					gAreaDraw(rp, xAtZero, zero + offset + 1);
+					gAreaDraw(rp, x + innerWidth + o, zero + offset + 1);
 					gAreaEnd(rp);
 				}
 
@@ -174,10 +174,10 @@ draw(REG(d0, struct Page *page), REG(d1, ULONG dpi), REG(a0, struct RastPort *rp
 					y = zero;
 
 				SetHighColor(rp, TintColor(gl->gl_Color, 0.7f));
-				gAreaMove(x + o, y);
-				gAreaDraw(x + o + depth, y - depth);
-				gAreaDraw(x + innerWidth + o + depth, y - depth);
-				gAreaDraw(x + innerWidth + o, y);
+				gAreaMove(rp, x + o, y);
+				gAreaDraw(rp, x + o + depth, y - depth);
+				gAreaDraw(rp, x + innerWidth + o + depth, y - depth);
+				gAreaDraw(rp, x + innerWidth + o, y);
 				gAreaEnd(rp);
 			}
 			x += width;

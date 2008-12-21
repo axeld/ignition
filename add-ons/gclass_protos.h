@@ -16,6 +16,8 @@
 
 #include "gclass.h"
 
+struct TablePos;
+
 /**/
 /* memory */
 /**/
@@ -35,8 +37,8 @@ void (*SetColors)(struct RastPort *rp,ULONG apenID,ULONG bpenID);
 ULONG (*FindColorPen)(UBYTE red,UBYTE green,UBYTE blue);
 void (*DrawRect)(struct RastPort *rp,long x,long y,long w,long h);
 void (*DrawLine)(struct RastPort *rp,ULONG dpi,long x1,long y1,long x2,long y2,ULONG points,UWORD flags);
-void (*gAreaMove)(LONG x,LONG y);
-void (*gAreaDraw)(LONG x,LONG y);
+void (*gAreaMove)(struct RastPort *rp,LONG x,LONG y);
+void (*gAreaDraw)(struct RastPort *rp,LONG x,LONG y);
 void (*gAreaEnd)(struct RastPort *rp);
 ULONG (*GetDPI)(struct Page *page);
 LONG (*GetOffset)(struct Page *page,BOOL horiz);

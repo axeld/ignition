@@ -41,7 +41,7 @@ struct gCircle {
 #define GCA_StartAngle (GOA_TagBase + 302)
 
 struct gInterface interface[] = {
-	{GCA_Frame, NULL /*"Flï¿½che durch einen Rahmen begrenzen"*/, GIT_CHECKBOX, NULL, NULL},
+	{GCA_Frame, NULL /*"Fläche durch einen Rahmen begrenzen"*/, GIT_CHECKBOX, NULL, NULL},
 	{GCA_Pseudo3D, NULL /*"Pseudo-3D"*/, GIT_CHECKBOX, NULL, NULL},
 	{GCA_StartAngle, NULL /*"Pseudo-3D"*/, GIT_TEXT, NULL, NULL},
 	{0}
@@ -54,16 +54,16 @@ static struct Catalog *sCatalog;
 
 
 void
-gAreaArcMove(long x, long y, long xradius, long yradius, double degree)
+gAreaArcMove(struct RastPort *rp, long x, long y, long xradius, long yradius, double degree)
 {
-    gAreaDraw((long)(x + sin(degree) * xradius + 0.5), (long)(y + cos(degree) * yradius + 0.5));
+    gAreaDraw(rp, (long)(x + sin(degree) * xradius + 0.5), (long)(y + cos(degree) * yradius + 0.5));
 }
 
 
 void
-gAreaArc(long x, long y, long xradius, long yradius, double degree)
+gAreaArc(struct RastPort *rp, long x, long y, long xradius, long yradius, double degree)
 {
-    gAreaDraw((long)(x + sin(degree) * xradius + 0.5), (long)(y + cos(degree) * yradius + 0.5));
+    gAreaDraw(rp, (long)(x + sin(degree) * xradius + 0.5), (long)(y + cos(degree) * yradius + 0.5));
 }
 
 
@@ -75,14 +75,14 @@ DrawArc(struct RastPort *rp, long x, long y, long xradius, long yradius, double 
     start = start * PI / 180.0;
     end = end * PI / 180.0;
 
-    gAreaMove(x, y);
+    gAreaMove(rp, x, y);
 
 	for (degree = start; degree < end; degree += DEGREE_STEPS) {
-        gAreaArc(x, y, xradius, yradius, degree);
+        gAreaArc(rp, x, y, xradius, yradius, degree);
     }
 
     if (degree > end)
-        gAreaArc(x, y, xradius, yradius, end);
+        gAreaArc(rp, x, y, xradius, yradius, end);
 
     gAreaEnd(rp);
 }
@@ -96,19 +96,19 @@ drawSide(struct RastPort *rp, long x, long y, long xradius, long yradius, long h
     start = start * PI / 180.0;
     end = end * PI / 180.0;
 
-    gAreaArcMove(x, y + height, xradius, yradius, start);
-    gAreaArc(x, y, xradius, yradius, start);
+    gAreaArcMove(rp, x, y + height, xradius, yradius, start);
+    gAreaArc(rp, x, y, xradius, yradius, start);
 
     for (degree = start; degree < end; degree += DEGREE_STEPS)
-        gAreaArc(x, y, xradius, yradius, degree);
+        gAreaArc(rp, x, y, xradius, yradius, degree);
 
     if (degree > end)
-        gAreaArc(x, y, xradius, yradius, end);
+        gAreaArc(rp, x, y, xradius, yradius, end);
 
-    gAreaArc(x, y + height, xradius, yradius, end);
+    gAreaArc(rp, x, y + height, xradius, yradius, end);
 
     for (degree = end; degree > start; degree -= DEGREE_STEPS)
-        gAreaArc(x, y + height, xradius, yradius, degree);
+        gAreaArc(rp, x, y + height, xradius, yradius, degree);
 
     gAreaEnd(rp);
 }
@@ -293,7 +293,7 @@ ULONG PUBLIC
 initClass(REG(a0, struct gClass *gc))
 {
 	sCatalog = OpenCatalog(NULL, "ignition.catalog", OC_BuiltInLanguage, "deutsch", TAG_END);
-	interface[0].gi_Label = GetCatalogStr(sCatalog, MSG_AREA_OUTLINE_GAD, "Flï¿½che durch einen Rahmen begrenzen");
+	interface[0].gi_Label = GetCatalogStr(sCatalog, MSG_AREA_OUTLINE_GAD, "Fläche durch einen Rahmen begrenzen");
 	interface[1].gi_Label = GetCatalogStr(sCatalog, MSG_PSEUDO_3D_GAD, "Pseudo-3D");
 	interface[2].gi_Label = GetCatalogStr(sCatalog, /*ToDo!*/MSG_PSEUDO_3D_GAD, "Anfangswinkel:");
 

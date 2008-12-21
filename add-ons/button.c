@@ -90,28 +90,28 @@ draw(REG(d0, struct Page *page), REG(d1, ULONG dpi), REG(a0, struct RastPort *gr
 	SetHighColor(grp, gb->gb_ShinePen);//  SetOutlineColor(grp,TintColor(gb->gb_ShinePen,1.25f));
 	if (go->go_Flags & GOF_PRESSED)
 	{
-		gAreaMove(x+width,y+height);
-		gAreaDraw(x+width,y);
-		gAreaDraw(x+width-bx,y+by);
-		gAreaDraw(x+width-bx,y+height-by);
+		gAreaMove(grp, x + width, y + height);
+		gAreaDraw(grp, x + width, y);
+		gAreaDraw(grp, x + width - bx, y + by);
+		gAreaDraw(grp, x + width - bx, y + height - by);
 		gAreaEnd(grp);
-		gAreaMove(x+width,y+height);
-		gAreaDraw(x,y+height);
-		gAreaDraw(x+bx,y+height-by);
-		gAreaDraw(x+width-bx,y+height-by);
+		gAreaMove(grp, x + width, y + height);
+		gAreaDraw(grp, x, y + height);
+		gAreaDraw(grp, x + bx, y + height - by);
+		gAreaDraw(grp, x + width - bx, y + height - by);
 		gAreaEnd(grp);
 	}
 	else
 	{
-		gAreaMove(x,y);
-		gAreaDraw(x,y+height);
-		gAreaDraw(x+bx,y+height-by);
-		gAreaDraw(x+bx,y+by);
+		gAreaMove(grp, x, y);
+		gAreaDraw(grp, x, y + height);
+		gAreaDraw(grp, x + bx, y + height - by);
+		gAreaDraw(grp, x + bx, y + by);
 		gAreaEnd(grp);
-		gAreaMove(x,y);
-		gAreaDraw(x+width,y);
-		gAreaDraw(x+width-bx,y+by);
-		gAreaDraw(x+bx,y+by);
+		gAreaMove(grp, x, y);
+		gAreaDraw(grp, x + width, y);
+		gAreaDraw(grp, x + width - bx, y + by);
+		gAreaDraw(grp, x + bx, y + by);
 		gAreaEnd(grp);
 	}
 
