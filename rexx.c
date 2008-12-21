@@ -2525,7 +2525,7 @@ ULONG rxLoad(long *opts)
 		}
 
 		if (LoadProject(mp, type)) {
-			ErrorRequest(GetString(&gLocaleInfo, MSG_LOAD_PROJECT_ERR));
+			ErrorRequest(GetString(&gLocaleInfo, MSG_LOAD_PROJECT_ERR), mp->mp_Node.ln_Name);
 			return RC_WARN;
 		}
 

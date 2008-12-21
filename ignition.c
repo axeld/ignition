@@ -1379,7 +1379,10 @@ AddToSession(struct Mappe *mp)
     if (!mp)
         return;
 
-    strcpy(filename,mp->mp_Path);
+	filename[0] = '\0';
+	if (mp->mp_Path)
+		strcpy(filename,mp->mp_Path);
+
     AddPart(filename,mp->mp_Node.ln_Name,512);
 
     if ((s = FindSession(filename)) != 0) {
