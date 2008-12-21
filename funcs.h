@@ -36,7 +36,7 @@ extern int32 CheckSerialNumber(bool init);
 extern void UpdateGInterface(struct Window *giwin,struct MinList *list,struct gObject *go,UBYTE page);
 extern void HandleGGadget(struct Page *page,struct gObject *go);
 extern void UpdateObjectGadgets(struct Window *win);
-extern void PUBLIC HandleFileTypeIDCMP(REG(a1, struct IntuiMessage *msg),REG(a2, struct FileRequester *fr));
+extern void PUBLIC HandleFileTypeIDCMP(REG(a0, struct Hook *),REG(a2, struct FileRequester *fr),REG(a1, struct IntuiMessage *msg));
 
 // pointer.c
 extern void SetMousePointer(struct Window *win,ULONG which);

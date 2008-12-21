@@ -1633,7 +1633,7 @@ CloseFileTypeWindow(REG(a0, struct Window *win), REG(d0, BOOL clean))
 
 
 void PUBLIC
-HandleFileTypeIDCMP(REG(a1, struct IntuiMessage *msg), REG(a2, struct FileRequester *fr))
+HandleFileTypeIDCMP(REG(a0, struct Hook *h), REG(a2, struct FileRequester *fr), REG(a1, struct IntuiMessage *msg))
 {
     struct winData *wd;
 	struct Window *typeWindow = msg->IDCMPWindow;
