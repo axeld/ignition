@@ -2417,23 +2417,24 @@ OldLoadProject(REG(d0, BPTR dat), REG(a0, struct Mappe *mp))
 
 #endif  // ENABLE_OLD_FORMAT
 
-const struct {UWORD jsr;APTR func;} io_functable[] = {
-		{0x4ef9, ErrorRequestA},
-		{0x4ef9, NewPage},
-		{0x4ef9, RecalcPageDPI},
-		{0x4ef9, AllocTableField},
-		{0x4ef9, ioUpdateTFText},
-		{0x4ef9, AllocTableSize},
-		{0x4ef9, FindColorPen},
-		{0x4ef9, ioAddPen},
-		{0x4ef9, AbsCoord2String},
-		{0x4ef9, pixel},
-		{0x4ef9, mm},
-		{0x4ef9, AllocStringLength},
-		{0x4ef9, AllocString},
-		{0x4ef9, FreeString},
-		{0x4ef9, ioita},
-	};  /* to be continued */
+const APTR io_functable[] = {
+	/*  0 */ ErrorRequestA,
+	/*  1 */ NewPage,
+	/*  2 */ RecalcPageDPI,
+	/*  3 */ AllocTableField,
+	/*  4 */ ioUpdateTFText,
+	/*  5 */ AllocTableSize,
+	/*  6 */ FindColorPen,
+	/*  7 */ ioAddPen,
+	/*  8 */ AbsCoord2String,
+	/*  9 */ pixel,
+	/* 10 */ mm,
+	/* 11 */ AllocStringLength,
+	/* 12 */ AllocString,
+	/* 13 */ FreeString,
+	/* 14 */ ioita,
+	NULL
+};  /* to be continued */
 
 
 void
@@ -2452,7 +2453,7 @@ InitIOType(struct IOType *io)
 		if ((segment = LoadSeg(io->io_Filename)) != 0)
 		{
 			initIOSegment = MKBADDR(segment) + sizeof(APTR);
-			if (initIOSegment(io, (APTR)((UBYTE *)io_functable + sizeof(io_functable)), pool, DOSBase,
+			if (initIOSegment(io, io_functable, pool, DOSBase,
 					SysBase, MathIeeeDoubBasBase, MathIeeeDoubTransBase, UtilityBase, LocaleBase, MAKE_ID('I','G','N',0)))
 				io->io_Segment = segment;
 			else

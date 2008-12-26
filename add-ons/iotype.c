@@ -80,16 +80,8 @@ extern void PUBLIC closePrefsGUI(void);
 
 #define MAKE_ID(a,b,c,d) ((a << 24) | (b << 16) | (c << 8) | d)
 
-#ifdef __AROS__
-// ensure that InitModule becomes 1st function in segment
 BOOL PUBLIC
-InitModule(REG(a0, struct IOType *io), REG(a1, TableEntry *table), REG(a2, APTR mainpool), REG(a3, APTR dosBase),
-	REG(a6, struct ExecBase *execBase), REG(d0, APTR mathBase), REG(d1, APTR mathtransBase), REG(d2, APTR utilityBase),
-	REG(d3, APTR localeBase), REG(d4, long magic)) __attribute__((section(".aros.startup")));
-#endif
-
-BOOL PUBLIC
-InitModule(REG(a0, struct IOType *io), REG(a1, TableEntry *table), REG(a2, APTR mainpool), REG(a3, APTR dosBase),
+InitModule(REG(a0, struct IOType *io), REG(a1, APTR *functable), REG(a2, APTR mainpool), REG(a3, APTR dosBase),
 	REG(a6, struct ExecBase *execBase), REG(d0, APTR mathBase), REG(d1, APTR mathtransBase), REG(d2, APTR utilityBase),
 	REG(d3, APTR localeBase), REG(d4, long magic))
 {
@@ -115,25 +107,25 @@ InitModule(REG(a0, struct IOType *io), REG(a1, TableEntry *table), REG(a2, APTR 
 	io->io_OpenPrefsGUI = openPrefsGUI;
 	io->io_ClosePrefsGUI = closePrefsGUI;
 
-	ioBase = table;
+	ioBase = functable;
 	pool = mainpool;
 
 	// Initialize function table
-	ReportErrorA = table[-15].func;
-	NewPage = table[-14].func;
-	CalculatePageDPI = table[-13].func;
-	NewCell = table[-12].func;
-	UpdateCellText = table[-11].func;
-	SetTableSize = table[-10].func;
-	FindColorPen = table[-9].func;
-	AddPen = table[-8].func;
-	Coord2String = table[-7].func;
-	pixel = table[-6].func;
-	mm = table[-5].func;
-	AllocStringLength = table[-4].func;
-	AllocString = table[-3].func;
-	FreeString = table[-2].func;
-	ita = table[-1].func;
+	ReportErrorA = functable[0];
+	NewPage = functable[1];
+	CalculatePageDPI = functable[2];
+	NewCell = functable[3];
+	UpdateCellText = functable[4];
+	SetTableSize = functable[5];
+	FindColorPen = functable[6];
+	AddPen = functable[7];
+	Coord2String = functable[8];
+	pixel = functable[9];
+	mm = functable[10];
+	AllocStringLength = functable[11];
+	AllocString = functable[12];
+	FreeString = functable[13];
+	ita = functable[14];
 
 	setPrefs(io->io_Prefs);
 

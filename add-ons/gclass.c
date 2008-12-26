@@ -61,16 +61,9 @@ extern struct gInterface interface[];
 extern ULONG instanceSize;
 extern const STRPTR superClass;
 
-#ifdef __AROS__
-// ensure that InitGClass becomes 1st function in segment
-BOOL PUBLIC
-InitGClass(REG(a0, struct __gClass *gc), REG(a1, TableEntry *table), REG(a2, APTR mainpool), REG(a3, APTR gfxbase),
-	REG(a6, struct ExecBase *ExecBase), REG(d0, APTR mathbase), REG(d1, APTR mathtrans), REG(d2, APTR utilitybase), REG(d3, APTR localebase),
-    REG(d4, long magic)) __attribute__((section(".aros.startup")));
-#endif
 
 BOOL PUBLIC
-InitGClass(REG(a0, struct __gClass *gc), REG(a1, TableEntry *table), REG(a2, APTR mainpool), REG(a3, APTR gfxbase),
+InitGClass(REG(a0, struct __gClass *gc), REG(a1, APTR *functable), REG(a2, APTR mainpool), REG(a3, APTR gfxbase),
 	REG(a6, struct ExecBase *ExecBase), REG(d0, APTR mathbase), REG(d1, APTR mathtrans), REG(d2, APTR utilitybase), REG(d3, APTR localebase),
     REG(d4, long magic))
 {
@@ -95,45 +88,45 @@ InitGClass(REG(a0, struct __gClass *gc), REG(a1, TableEntry *table), REG(a2, APT
     gc->gc_Interface = interface;
 	gc->gc_InstSize = gc->gc_InstOffset + instanceSize;
 
-    gcBase = table;
+    gcBase = functable;
     pool = mainpool;
 
 	// Initialize function pointers
-	AllocStringLength = table[-1].func;
-	AllocString = table[-2].func;
-	FreeString = table[-3].func;
-	gDoMethodA = table[-4].func;
-	gDoSuperMethodA = table[-5].func;
-	SetHighColor = table[-6].func;
-	SetColors = table[-7].func;
-	FindColorPen = table[-8].func;
-	DrawRect = table[-9].func;
-	DrawLine = table[-10].func;
-	gAreaMove = table[-11].func;
-	gAreaDraw = table[-12].func;
-	gAreaEnd = table[-13].func;
-	GetDPI = table[-14].func;
-	GetOffset = table[-15].func;
-	FreeFontInfo = table[-16].func;
-	SetFontInfoA = table[-17].func;
-	CopyFontInfo = table[-18].func;
-	NewFontInfoA = table[-19].func;
-	DrawText = table[-20].func;
-	OutlineLength = table[-21].func;
-	OutlineHeight = table[-22].func;
-	pixel = table[-23].func;
-	mm = table[-24].func;
-	CreateTerm = table[-25].func;
-	DeleteTerm = table[-26].func;
-	CopyTerm = table[-27].func;
-	CalcTerm = table[-28].func;
-	gInsertRemoveCellsTablePos = table[-29].func;
-	gInsertRemoveCellsTerm = table[-30].func;
-	TintColor = table[-31].func;
-	gSuperDraw = table[-32].func;
-	gGetLink = table[-33].func;
-	SetLowColor = table[-34].func;
-	SetOutlineColor = table[-35].func;
+	AllocStringLength = functable[34];
+	AllocString = functable[33];
+	FreeString = functable[32];
+	gDoMethodA = functable[31];
+	gDoSuperMethodA = functable[30];
+	SetHighColor = functable[29];
+	SetColors = functable[28];
+	FindColorPen = functable[27];
+	DrawRect = functable[26];
+	DrawLine = functable[25];
+	gAreaMove = functable[24];
+	gAreaDraw = functable[23];
+	gAreaEnd = functable[22];
+	GetDPI = functable[21];
+	GetOffset = functable[20];
+	FreeFontInfo = functable[19];
+	SetFontInfoA = functable[18];
+	CopyFontInfo = functable[17];
+	NewFontInfoA = functable[16];
+	DrawText = functable[15];
+	OutlineLength = functable[14];
+	OutlineHeight = functable[13];
+	pixel = functable[12];
+	mm = functable[11];
+	CreateTerm = functable[10];
+	DeleteTerm = functable[9];
+	CopyTerm = functable[8];
+	CalcTerm = functable[7];
+	gInsertRemoveCellsTablePos = functable[6];
+	gInsertRemoveCellsTerm = functable[5];
+	TintColor = functable[4];
+	gSuperDraw = functable[3];
+	gGetLink = functable[2];
+	SetLowColor = functable[1];
+	SetOutlineColor = functable[0];
 
 	if (!initClass(gc))
 		return FALSE;

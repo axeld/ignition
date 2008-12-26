@@ -27,10 +27,6 @@ extern APTR gcBase;
 #include "cell.h"
 #endif
 
-typedef struct {
-	UWORD jsr;
-	APTR func;
-} TableEntry;
 
 /*** class ***/
 

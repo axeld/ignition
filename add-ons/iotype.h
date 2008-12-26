@@ -38,10 +38,6 @@
 #	include "cell.h"
 #endif
 
-typedef struct {
-	UWORD jsr;
-	APTR func;
-} TableEntry;
 
 /*** Project related ***/
 
