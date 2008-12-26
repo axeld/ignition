@@ -70,18 +70,3 @@ void dqsort(double *x, int n)
 }
 
 #endif
-
-
-#if !defined(HAVE_SAFECLIP)
-
-ULONG SafeInit (ULONG nvertmax)
-{
-	return 0;
-}
-
-
-void SafeClose (void)
-{
-}
-
-#endif

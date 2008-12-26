@@ -661,15 +661,9 @@ extern void PUBLIC SetColorPen(REG(a0, struct RastPort *rp), REG(a1, struct colo
 extern struct colorPen *AddColor(struct MinList *list, STRPTR name, UBYTE red, UBYTE green, UBYTE blue);
 
 // graphic.c
-#if defined(HAVE_SAFECLIP)
-#	define gAreaMove(rp,x,y) SafeAreaDraw(x,y)
-#	define gAreaDraw(rp,x,y) SafeAreaDraw(x,y)
-#	define gAreaEnd(rp) SafeAreaEnd(rp)
-#else
-#	define gAreaMove(rp,x,y) AreaMove(rp,x,y)
-#	define gAreaDraw(rp,x,y) AreaDraw(rp,x,y)
-#	define gAreaEnd(rp) AreaEnd(rp)
-#endif
+#define gAreaMove(rp,x,y) SafeAreaDraw(x,y)
+#define gAreaDraw(rp,x,y) SafeAreaDraw(x,y)
+#define gAreaEnd(rp) SafeAreaEnd(rp)
 
 extern ULONG SafeInit (ULONG nvertmax);
 extern void SafeClose (void);

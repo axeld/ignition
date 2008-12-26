@@ -55,6 +55,7 @@ FILES := \
 	project \
 	reference \
     rexx \
+	safeclip \
 	screen \
 	search \
 	support \

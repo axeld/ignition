@@ -8,11 +8,7 @@
 #include "types.h"
 #include "funcs.h"
 #include "classes.h"
-
-#if defined(HAVE_SAVECLIP)
-// library exits only on 68k
-#include <safeclip.h>
-#endif
+#include "safeclip.h"
 
 #define AREABUFFERS 300
 
@@ -28,12 +24,7 @@ static APTR *sAreaBuffer = NULL;
 void
 gInitArea(long xmin, long ymin, long xmax, long ymax)
 {
-#if defined(HAVE_SAFECLIP)
-	CLP_xmin = xmin;
-	CLP_ymin = ymin;
-	CLP_xmax = xmax;
-	CLP_ymax = ymax;
-#endif
+	SafeSetLimits(xmin, ymin, xmax, ymax);
 }
 
 
