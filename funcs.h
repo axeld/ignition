@@ -102,10 +102,10 @@ extern void UpdatePrinterGadgets(struct Window *win,struct winData *wd);
 extern void InitPrinter(void);
 
 // lock.c
-extern struct LockNode *FindLockNode(struct MinList *list,ULONG length,...);
+extern struct LockNode *FindLockNode(struct MinList *list,ULONG length,...) VARARG68K;
 extern void RemLockNode(struct LockNode *ln);
-extern void RemLockNodeData(struct MinList *list,ULONG length,...);
-extern struct LockNode *AddLockNode(struct MinList *list,BYTE pri,APTR func,ULONG length,...);
+extern void RemLockNodeData(struct MinList *list,ULONG length,...) VARARG68K;
+extern struct LockNode *AddLockNode(struct MinList *list,BYTE pri,APTR func,ULONG length,...) VARARG68K;
 extern struct LockNode *AddFreeLock(APTR list,struct Window *win);
 extern struct LockNode *AddListViewLock(struct MinList *list,struct Window *win,struct Gadget *gad);
 extern struct LockNode *AddTreeLock(struct MinList *list,struct Window *win,struct Gadget *gad);
@@ -154,7 +154,7 @@ extern long handleEvent(struct Page *page,BYTE type,long col,long row);
 extern void RemoveRexxPort(struct RexxPort *rxp);
 extern void FreeRexxScript(struct RexxScript *rxs);
 extern ULONG RunRexxScript(UBYTE type,STRPTR name);
-extern ULONG RexxCall(ULONG (*func)(long *opts),...);
+extern ULONG RexxCall(ULONG (*func)(long *opts),...) VARARG68K;
 extern void CloseRexx(void);
 extern void initRexx(void);
 
@@ -212,11 +212,11 @@ extern double ConvertDegreeProcent(STRPTR s);
 extern int32 ConvertTime(STRPTR s);
 extern double ConvertNumber(STRPTR s,UBYTE targettype);
 extern void WriteChunkString(APTR iff,STRPTR t);
-extern void MakeLocaleStrings(struct MinList *list, LONG id, ...);
-extern struct List *MakeLocaleStringList(LONG id, ...);
+extern void MakeLocaleStrings(struct MinList *list, LONG id, ...) VARARG68K;
+extern struct List *MakeLocaleStringList(LONG id, ...) VARARG68K;
 extern void FreeStringList(struct List *list);
-extern void MakeStrings(struct MinList *list, const STRPTR string, ...);
-extern struct List *MakeStringList(const STRPTR string, ...);
+extern void MakeStrings(struct MinList *list, const STRPTR string, ...) VARARG68K;
+extern struct List *MakeStringList(const STRPTR string, ...) VARARG68K;
 extern ULONG DoClassMethodA(Class *cl,Msg msg);
 extern BOOL IsDoubleClick(WORD entry);
 extern struct Node *HandleLVRawKeys(struct Gadget *lvgad,struct Window *win,struct MinList *list,long itemheight);
@@ -259,7 +259,7 @@ extern void SetMainPage(struct Page *page);
 extern void UpdateMapTitle(struct Mappe *mp);
 extern STRPTR GetPageTitle(struct Page *page);
 extern void SetProjectMouseReport(struct Page *page,BOOL set);
-extern void UpdatePageFont(struct Page *page,ULONG tag,...);
+extern void UpdatePageFont(struct Page *page,ULONG tag,...) VARARG68K;
 extern void UpdateProjPage(struct Window *win,struct Page *page);
 extern void ProjectToGObjects(struct Page *page,struct winData *wd);
 extern void ASM handleProjIDCMP(REG(a0, struct TagItem *tags));
@@ -274,7 +274,7 @@ extern void insertFormel(struct Page *page,STRPTR t);
 
 // ignition.c
 extern void NormalizeWindowBox(struct IBox *box);
-extern struct Window *OpenProjWindow(struct Page *,ULONG,...);
+extern struct Window *OpenProjWindow(struct Page *,ULONG,...) VARARG68K;
 extern struct Gadget *MakeProjectGadgets(struct winData *,long w,long h);
 extern void MakeMarkText(struct Page *page,STRPTR t);
 extern void DisplayTablePos(struct Page *page);

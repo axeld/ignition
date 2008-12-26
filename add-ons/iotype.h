@@ -443,7 +443,7 @@ void   (*FreeString)(STRPTR);
 STRPTR (*ita)(double d,long komma ,UBYTE flags);
 
 // variadic functions must be real functions
-void   ReportError(STRPTR fmt, ...);
+void   ReportError(STRPTR fmt, ...) VARARG68K;
 
 #if defined(__SASC)
 #	pragma tagcall ioBase ReportError 5a 9802

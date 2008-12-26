@@ -227,6 +227,8 @@
   #undef REGARGS
   #define REGARGS
 
+  #undef VARARG68K
+  #define VARARG68K __stackparm
 #endif /* __AROS__ */
 
 /*************************************************************************/

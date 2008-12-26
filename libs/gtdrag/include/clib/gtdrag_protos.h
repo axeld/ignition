@@ -29,17 +29,17 @@ struct IntuiMessage *GTD_PostFilterIMsg(struct IntuiMessage *);
 /* Handling functions */
 /**/
 int GTD_AddAppA(STRPTR t,struct TagItem *tag);
-int GTD_AddApp(STRPTR t,ULONG tag1,...);
+int GTD_AddApp(STRPTR t,ULONG tag1,...) VARARG68K;
 void GTD_RemoveApp(void);
 void GTD_AddWindowA(struct Window *win,struct TagItem *tag);
-void GTD_AddWindow(struct Window *win,ULONG tag1,...);
+void GTD_AddWindow(struct Window *win,ULONG tag1,...) VARARG68K;
 void GTD_RemoveWindow(struct Window *);
 void GTD_AddGadgetA(ULONG type,struct Gadget *gad,struct Window *win,struct TagItem *tag);
-void GTD_AddGadget(ULONG type,struct Gadget *gad,struct Window *win,ULONG tag1,...);
+void GTD_AddGadget(ULONG type,struct Gadget *gad,struct Window *win,ULONG tag1,...) VARARG68K;
 void GTD_RemoveGadget(struct Gadget *);
 void GTD_RemoveGadgets(struct Window *);
 void GTD_SetAttrsA(APTR gad,struct TagItem *tags);
-void GTD_SetAttrs(APTR gad,ULONG tag1,...);
+void GTD_SetAttrs(APTR gad,ULONG tag1,...) VARARG68K;
 BOOL GTD_GetAttr(APTR gad,ULONG tag,ULONG *storage);
 struct Hook *GTD_GetHook(ULONG type);
 STRPTR GTD_GetString(struct ObjectDescription *od,STRPTR buf,LONG len);

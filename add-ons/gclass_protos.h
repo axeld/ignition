@@ -70,8 +70,8 @@ void (*SetLowColor)(struct RastPort *rp,ULONG color);
 void (*SetOutlineColor)(struct RastPort *rp,ULONG color);
 
 /* variadic functions must be real functions */
-ULONG gDoMethod(APTR go,LONG data,...);
-ULONG gDoSuperMethod(struct gClass *gc,APTR go,LONG data,...);
-struct FontInfo *SetFontInfo(struct FontInfo *fi,ULONG dpi,ULONG tag1,...);
+ULONG gDoMethod(APTR go,LONG data,...) VARARG68K;
+ULONG gDoSuperMethod(struct gClass *gc,APTR go,LONG data,...) VARARG68K;
+struct FontInfo *SetFontInfo(struct FontInfo *fi,ULONG dpi,ULONG tag1,...) VARARG68K;
 
 #endif  /* CLIB_GCLASS_PROTOS_H */
