@@ -2195,7 +2195,8 @@ HandleDiagramIDCMP(REG(a0, struct TagItem *tag))
 				case 33:
 				{
 					// don't let CloseDiagramWindow() free this object
-					gd->gd_Object.go_Window = NULL;
+					if (gd)
+						gd->gd_Object.go_Window = NULL;
 					wd->u.diagram.wd_CurrentDiagram = NULL;
 					CloseAppWindow(win, TRUE);
 
