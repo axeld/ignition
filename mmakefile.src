@@ -74,10 +74,13 @@ FILES := \
 %copy_dir_recursive mmake=contrib-ignition-rexx src=rexx dst=$(TARGETDIR)/rexx
 %copy_dir_recursive mmake=contrib-ignition-sheets src=distribution/full/sheets dst=$(TARGETDIR)/sheets
 
+
+DESCFILES := $(wildcard add-ons/*.gcdescr) $(wildcard add-ons/*.iodescr)
+
 #MM
 contrib-ignition-descr :
-DESCFILES := $(wildcard add-ons/*.gcdescr) $(wildcard add-ons/*.iodescr)
-%copy_files_q files=$(DESCFILES) src=$(TOP)/$(CURDIR) dst=$(TARGETDIR) maketarget=contrib-ignition-descr
+	$(MKDIR) $(TARGETDIR)/add-ons
+	$(CP) $(DESCFILES) $(TARGETDIR)/add-ons
 
 #MM
 contrib-ignition-files :
