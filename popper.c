@@ -8,6 +8,8 @@
 #include "types.h"
 #include "funcs.h"
 
+#include "textedit/TextEdit_private.h"
+
 
 extern struct Window *popwin;
 
@@ -508,10 +510,11 @@ ClosePopUpText(void)
 void
 ShowPopUpText(STRPTR t, long wx, long wy)
 {
-	static struct EditGData ed = {NULL};     /* use a function of editgclass */
+	static struct EditGData ed;     /* use a function of editgclass */
+
 	struct EditLine *el;
 	struct MinNode *mln;
-	long   height,tw,x,y,bpen;
+	long height, tw, x, y, bpen;
 
 	if (!t)
 		return;

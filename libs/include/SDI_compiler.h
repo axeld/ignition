@@ -210,11 +210,13 @@
 #if !defined(DEPRECATED)
   #define DEPRECATED
 #endif
+#if !defined(ALIGNED)
+  #define ALIGNED
+#endif
 
 /*************************************************************************/
 
 #ifdef __AROS__
-
   #undef REG
   #define REG(reg, arg) arg
 
@@ -227,10 +229,14 @@
   #undef REGARGS
   #define REGARGS
 
-  #undef VARARG68K
-  #define VARARG68K __stackparm
+  #undef VARARGS68K
+  #define VARARGS68K __stackparm
+#else
+  #ifndef CONST_STRPTR
+	#define CONST_STRPTR UBYTE const *
+  #endif
 #endif /* __AROS__ */
-
+ 
 /*************************************************************************/
 
 /* Ignition support */

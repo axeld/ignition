@@ -5,7 +5,7 @@
 **
 ** ignition IO-module definitions
 **
-** Copyright ©2001-2008 pinc Software
+** Copyright 2001-2009 pinc Software
 ** All Rights Reserved
 */
 
@@ -24,7 +24,6 @@
 #include <proto/dos.h>
 
 #if defined(__SASC)
-#	include <clib/alib_stdio_protos.h>
 #	include <pragmas/exec_pragmas.h>
 #	include <pragmas/dos_pragmas.h>
 #endif
@@ -62,7 +61,7 @@ struct Event
 #define EVT_RBUTTON 7
 #define NUM_EVENTS 8
 
-#define PG_DINA3 0      // Seitengrößen
+#define PG_DINA3 0      /* Page sizes */
 #define PG_DINA4 1
 #define PG_DINA5 2
 #define PG_USLETTER 3
@@ -74,9 +73,9 @@ struct Mappe
   long   mp_Flags;
   STRPTR mp_Path;
   struct MinList mp_Pages;
-  ULONG  mp_mmWidth,mp_mmHeight;
-  ULONG  mp_MediumWidth,mp_MediumHeight;
-  ULONG  mp_mmMediumWidth,mp_mmMediumHeight;
+  ULONG  mp_mmWidth, mp_mmHeight;
+  ULONG  mp_MediumWidth, mp_MediumHeight;
+  ULONG  mp_mmMediumWidth, mp_mmMediumHeight;
   struct MinList mp_Projects;
   struct Page *mp_actPage;
   struct Window *mp_Window;
@@ -101,17 +100,17 @@ struct Page
   struct Node pg_Node;
   struct Window *pg_Window;
   struct Mappe *pg_Mappe;
-  long   pg_Width,pg_Height;
+  long   pg_Width, pg_Height;
   BYTE   pg_Flags;
-  long   pg_Cols,pg_Rows;
+  long   pg_Cols, pg_Rows;
   struct MinList pg_Table;
-  struct tableSize *pg_tfWidth,*pg_tfHeight;
-  UWORD  pg_wTabX,pg_wTabY,pg_wTabW,pg_wTabH;
-  long   pg_MarkCol,pg_MarkRow,pg_MarkWidth,pg_MarkHeight;
-  long   pg_MarkX1,pg_MarkY1,pg_MarkX2,pg_MarkY2;
-  long   pg_SelectCol,pg_SelectRow,pg_SelectWidth,pg_SelectHeight;
+  struct tableSize *pg_tfWidth, *pg_tfHeight;
+  UWORD  pg_wTabX, pg_wTabY, pg_wTabW, pg_wTabH;
+  long   pg_MarkCol, pg_MarkRow, pg_MarkWidth, pg_MarkHeight;
+  long   pg_MarkX1, pg_MarkY1, pg_MarkX2, pg_MarkY2;
+  long   pg_SelectCol, pg_SelectRow, pg_SelectWidth, pg_SelectHeight;
   struct Rect32 pg_Select;
-  WORD   pg_SelectPos,pg_SelectLength;
+  WORD   pg_SelectPos, pg_SelectLength;
   struct Node *pg_Family;
   ULONG  pg_DPI;
   ULONG  pg_PointHeight;
@@ -123,13 +122,13 @@ struct Page
            struct tableField *tf;
            STRPTR Undo;
          } pg_Gad;
-  long   pg_TabW,pg_TabH;     /* scroller gadgets */
-  long   pg_TabX,pg_TabY;
-  ULONG  pg_APen,pg_BPen;
+  long   pg_TabW, pg_TabH;     /* scroller gadgets */
+  long   pg_TabX, pg_TabY;
+  ULONG  pg_APen, pg_BPen;
   UWORD  pg_Zoom;             /* in percent */
-  UWORD  pg_StdWidth,pg_StdHeight;
-  ULONG  pg_mmStdWidth,pg_mmStdHeight;
-  double pg_PropFactorX,pg_PropFactorY;
+  UWORD  pg_StdWidth, pg_StdHeight;
+  ULONG  pg_mmStdWidth, pg_mmStdHeight;
+  double pg_PropFactorX, pg_PropFactorY;
   struct MinList pg_gFrames;
   UBYTE  pg_FrameAction;
   UBYTE  pg_HotSpot;
@@ -435,15 +434,15 @@ void   (*SetTableSize)(struct Page *,LONG,LONG);
 STRPTR (*Coord2String)(BOOL,LONG,BOOL,LONG);
 LONG   (*pixel)(struct Page *,LONG,BOOL);
 LONG   (*mm)(struct Page *,LONG,BOOL);
-ULONG  (*FindColorPen)(UBYTE r,UBYTE g,UBYTE b);
-struct colorPen * (*AddPen)(STRPTR name,UBYTE r,UBYTE g,UBYTE b);
-STRPTR (*AllocStringLength)(STRPTR,LONG);
+ULONG  (*FindColorPen)(UBYTE r, UBYTE g, UBYTE b);
+struct colorPen *(*AddPen)(STRPTR name, UBYTE r, UBYTE g, UBYTE b);
+STRPTR (*AllocStringLength)(STRPTR, LONG);
 STRPTR (*AllocString)(STRPTR);
 void   (*FreeString)(STRPTR);
-STRPTR (*ita)(double d,long komma ,UBYTE flags);
+STRPTR (*ita)(double d, long comma, UBYTE flags);
 
 // variadic functions must be real functions
-void   ReportError(STRPTR fmt, ...) VARARG68K;
+void   ReportError(STRPTR fmt, ...) VARARGS68K;
 
 #if defined(__SASC)
 #	pragma tagcall ioBase ReportError 5a 9802
@@ -466,7 +465,9 @@ void   ReportError(STRPTR fmt, ...) VARARG68K;
 
 /********************************* Variables ************************************/
 
-extern APTR pool,ioBase;
+extern APTR pool, ioBase;
+#ifndef __SASC
 extern struct Library *DOSBase;
+#endif
 
 #endif  /* IOTYPE_H */

@@ -1,6 +1,6 @@
 /* ignition TurboCalc-I/O-Module
  *
- * Copyright ©1996-2008 pinc Software. All Rights Reserved.
+ * Copyright 1996-2009 pinc Software. All Rights Reserved.
  * Licensed under the terms of the GNU General Public License, version 3.
  */
 
@@ -8,6 +8,7 @@
 
 #include "iotype.h"
 #include "turbocalc.h"
+
 
 extern APTR ioBase;
 

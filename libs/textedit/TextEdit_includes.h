@@ -20,6 +20,8 @@
 
 #define ConsoleDevice ((struct Library *)cb->cb_Console.io_Device)
 
+#include "TextEdit_private.h"
+
 #include "SDI_compiler.h"
 
 #include <exec/execbase.h>

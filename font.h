@@ -1,5 +1,5 @@
 /*
- * Copyright ©1996-2008 pinc Software. All Rights Reserved.
+ * Copyright ©1996-2009 pinc Software. All Rights Reserved.
  * Licensed under the terms of the GNU General Public License, version 3.
  */
 #ifndef IGN_FONT_H
@@ -99,9 +99,9 @@ extern ULONG PUBLIC OutlineLength(REG(a0, struct FontInfo *fi),REG(a1, STRPTR te
 extern ULONG PUBLIC OutlineHeight(REG(a0, struct FontInfo *fi),REG(a1, STRPTR text),REG(d0, long len));
 extern void PUBLIC FreeFontInfo(REG(a0, struct FontInfo *fi));
 extern struct FontInfo * PUBLIC NewFontInfoA(REG(a0, struct FontInfo *fi),REG(d0, ULONG dpi),REG(a1, struct TagItem *ti));
-extern struct FontInfo *NewFontInfo(struct FontInfo *fi,ULONG dpi,ULONG tag,...) VARARG68K;
+extern struct FontInfo *NewFontInfo(struct FontInfo *fi,ULONG dpi,ULONG tag,...) VARARGS68K;
 extern struct FontInfo * PUBLIC SetFontInfoA(REG(a0, struct FontInfo *fi),REG(d0, ULONG dpi),REG(a1, struct TagItem *ti));
-extern struct FontInfo *SetFontInfo(struct FontInfo *fi,ULONG dpi,ULONG tag,...) VARARG68K;
+extern struct FontInfo *SetFontInfo(struct FontInfo *fi,ULONG dpi,ULONG tag,...) VARARGS68K;
 extern struct FontInfo * PUBLIC CopyFontInfo(REG(a0, struct FontInfo *fi));
 
 #endif   /* IGN_FONT_H */

@@ -1,6 +1,6 @@
 /* ignition I/O-Module-Linkfile
  *
- * Copyright �1996-2008 pinc Software. All Rights Reserved.
+ * Copyright 1996-2009 pinc Software. All Rights Reserved.
  * Licensed under the terms of the MIT License.
  */
 
@@ -63,7 +63,9 @@ struct IOType {
 
 
 struct ExecBase *SysBase;
+#ifndef __SASC
 struct Library *DOSBase;
+#endif
 struct Library *MathIeeeDoubBasBase, *MathIeeeDoubTransBase;
 struct Library *UtilityBase, *LocaleBase;
 APTR   pool, ioBase;

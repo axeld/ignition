@@ -1,5 +1,5 @@
 /*
- * Copyright ©1996-2008 pinc Software. All Rights Reserved.
+ * Copyright ©1996-2009 pinc Software. All Rights Reserved.
  * Licensed under the terms of the GNU General Public License, version 3.
  */
 #ifndef IGN_GRAPHIC_H
@@ -710,9 +710,9 @@ extern void RefreshGFrames(struct Page *page);
 extern struct gObject *gMakeRefObject(struct Page *page, struct gClass *gc, struct gObject *go, const STRPTR undoText);
 extern ULONG GetGObjectAttr(struct gObject *go,ULONG tag,ULONG *data);
 extern void gSetObjectAttrsA(struct Page *page,struct gObject *go,struct TagItem *tags);
-extern void gSetObjectAttrs(struct Page *page,struct gObject *go,ULONG tag1,...) VARARG68K;
+extern void gSetObjectAttrs(struct Page *page,struct gObject *go,ULONG tag1,...) VARARGS68K;
 extern void SetGObjectAttrsA(struct Page *page,struct gObject *go,struct TagItem *tag);
-extern void SetGObjectAttrs(struct Page *page,struct gObject *go,ULONG tag1,...) VARARG68K;
+extern void SetGObjectAttrs(struct Page *page,struct gObject *go,ULONG tag1,...) VARARGS68K;
 extern void RefreshGObjectBounds(struct Page *page,struct gObject *go);
 extern void RemoveGObject(struct Page *page,struct gObject *go,BYTE draw);
 extern void AddGObject(struct Page *page,struct gGroup *gg,struct gObject *go,BYTE draw);
@@ -728,9 +728,9 @@ extern struct gGroup *MouseGGroup(struct Page *page,LONG *pos);
 extern BOOL HandleGObjects(struct Page *page);
 extern void PrepareCreateObject(struct Page *page,struct gClass *gc,BOOL more);
 extern ULONG gDoClassMethodA(struct gClass *gc,APTR go,Msg msg);
-extern ULONG gDoClassMethod(struct gClass *gc,APTR go,ULONG id,...) VARARG68K;
+extern ULONG gDoClassMethod(struct gClass *gc,APTR go,ULONG id,...) VARARGS68K;
 extern ULONG PUBLIC gDoMethodA(REG(a0, APTR go),REG(a1, Msg msg));
-extern ULONG gDoMethod(APTR go,ULONG id,...) VARARG68K;
+extern ULONG gDoMethod(APTR go,ULONG id,...) VARARGS68K;
 extern ULONG PUBLIC gDoSuperMethodA(REG(a0, struct gClass *gc),REG(a1, APTR go),REG(a2, Msg msg));
 extern BOOL PUBLIC gIsSubclassFrom(REG(a0, struct gClass *gc),REG(a1, struct gClass *supergc));
 extern void PUBLIC gSuperDraw(REG(d0, struct Page *page),REG(d1, ULONG dpi),REG(a0, struct RastPort *rp),REG(a1, struct gClass *gc),REG(a2, struct gObject *go),REG(a3, struct gBounds *gb));

@@ -44,7 +44,7 @@ struct WBStartup *sm;
 BPTR   shelldir;
 APTR   gAmigaGuide, appicon;
 struct DiskObject *appdo;
-struct IntuiText itext = {1,0,1,0,0,NULL,NULL,NULL};
+struct IntuiText itext = {1, 0, 1, 0, 0, NULL, NULL, NULL};
 WORD   fontheight, barheight, boxwidth, itemheight, itemwidth;
 WORD   bborder, lborder, rborder, linelen;
 struct Gadget *gad;
@@ -499,18 +499,18 @@ DrawHelpText(struct Window *win, struct Gadget *gad, CONST_STRPTR t)
 
 
 void
-DrawHelpBar(struct Prefs *pr,struct Window *win, struct winData *wd)
+DrawHelpBar(struct Prefs *pr, struct Window *win, struct winData *wd)
 {
-    SetAPen(win->RPort,1);
-    Move(win->RPort,win->BorderLeft,wd->wd_HelpY);
-    Draw(win->RPort,win->Width-1-win->BorderRight,wd->wd_HelpY);
-    Move(win->RPort,win->Width-win->BorderRight-wd_StatusWidth-2,wd->wd_HelpY+2);
-    Draw(win->RPort,win->Width-win->BorderRight-wd_StatusWidth-2,win->Height-1-win->BorderBottom);
-    SetAPen(win->RPort,2);
-    Move(win->RPort,win->BorderLeft,wd->wd_HelpY+1);
-    Draw(win->RPort,win->Width-1-win->BorderRight,wd->wd_HelpY+1);
-    Move(win->RPort,win->Width-win->BorderRight-wd_StatusWidth-1,wd->wd_HelpY+2);
-    Draw(win->RPort,win->Width-win->BorderRight-wd_StatusWidth-1,win->Height-1-win->BorderBottom);
+	SetAPen(win->RPort, 1);
+	Move(win->RPort, win->BorderLeft,wd->wd_HelpY);
+	Draw(win->RPort, win->Width-1-win->BorderRight,wd->wd_HelpY);
+	Move(win->RPort, win->Width-win->BorderRight-wd_StatusWidth-2,wd->wd_HelpY+2);
+	Draw(win->RPort, win->Width-win->BorderRight-wd_StatusWidth-2,win->Height-1-win->BorderBottom);
+	SetAPen(win->RPort, 2);
+	Move(win->RPort, win->BorderLeft,wd->wd_HelpY+1);
+	Draw(win->RPort, win->Width-1-win->BorderRight,wd->wd_HelpY+1);
+	Move(win->RPort, win->Width-win->BorderRight-wd_StatusWidth-1,wd->wd_HelpY+2);
+	Draw(win->RPort, win->Width-win->BorderRight-wd_StatusWidth-1,win->Height-1-win->BorderBottom);
     DrawStatusFlags(((struct Page *)wd->wd_Data)->pg_Mappe,win);
 }
 

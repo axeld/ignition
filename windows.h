@@ -1,10 +1,11 @@
 /*
- * Copyright ©1996-2008 pinc Software. All Rights Reserved.
+ * Copyright ©1996-2009 pinc Software. All Rights Reserved.
  * Licensed under the terms of the GNU General Public License, version 3.
  */
 #ifndef IGN_WINDOWS_H
 #define IGN_WINDOWS_H
 
+#include "types.h"
 #include "wdt.h"
 
 struct gInterface;
@@ -231,8 +232,8 @@ extern void SetPattern(struct RastPort *rp,UBYTE pattern,UBYTE x,UBYTE y);
 extern void PUBLIC PatternPopper(REG(a0, struct RastPort *rp),REG(d0, UWORD x),REG(d1, UWORD y),REG(d2, UWORD cols),REG(d3, UWORD rows));
 extern void PUBLIC ColorPopper(REG(a0, struct RastPort *rp),REG(d0, UWORD x),REG(d1, UWORD y),REG(d2, UWORD cols),REG(d3, UWORD rows));
 extern long PopColors(struct Window *win,struct Gadget *gad);
-extern long PopUpTable(struct Window *win,struct Gadget *refgad,UWORD cols,UWORD rows,APTR func,ULONG tag1,...) VARARG68K;
-extern long PopUpList(struct Window *,struct Gadget *,struct MinList *,ULONG tag1,...) VARARG68K;
+extern long PopUpTable(struct Window *win,struct Gadget *refgad,UWORD cols,UWORD rows,APTR func,ULONG tag1,...) VARARGS68K;
+extern long PopUpList(struct Window *,struct Gadget *,struct MinList *,ULONG tag1,...) VARARGS68K;
 extern void ClosePopUpText(void);
 extern void ShowPopUpText(STRPTR t,long wx,long wy);
 
@@ -244,12 +245,12 @@ extern struct Screen *OpenAppScreen(void);
 extern void CloseAppScreen(struct Screen *scr);
  
 // windows.c
-extern long DoRequest(CONST_STRPTR t,CONST_STRPTR gads,...) VARARG68K;
-extern void ErrorRequest(CONST_STRPTR t,...) VARARG68K;
+extern long DoRequest(CONST_STRPTR t,CONST_STRPTR gads,...) VARARGS68K;
+extern void ErrorRequest(CONST_STRPTR t,...) VARARGS68K;
 extern void PUBLIC ErrorRequestA(REG(a0, CONST_STRPTR t),REG(a1, APTR args));
 extern void ErrorOpenLibrary(STRPTR lib,STRPTR paket);
-extern void MakeLocaleLabels(const char *labels[], ULONG id, ...) VARARG68K;
-extern void MakeShortCutString(STRPTR shortCuts, ULONG ids, ...) VARARG68K;
+extern void MakeLocaleLabels(const char *labels[], ULONG id, ...) VARARGS68K;
+extern void MakeShortCutString(STRPTR shortCuts, ULONG ids, ...) VARARGS68K;
 extern void SetBusy(BOOL set,BYTE type);
 extern void DisposeProgressBar(struct ProgressBar *pb);
 extern struct ProgressBar *NewProgressBar(struct Window *win,long x,long y,long w,long h);
@@ -258,11 +259,11 @@ extern struct TextFont *OpenBitmapFont(struct TextAttr *textAttr);
 extern void StandardNewSize(void (*create)(struct winData *,long,long));
 extern BOOL WindowIsProjectDependent(long type);
 extern void RefreshAppWindow(struct Window *win,struct winData *wd);
-extern struct Window *OpenAppWindow(long type,ULONG tag1,...) VARARG68K;
+extern struct Window *OpenAppWindow(long type,ULONG tag1,...) VARARGS68K;
 extern void CloseAppWindow(struct Window *win,BOOL);
 extern void DisableGadget(struct Gadget *gad,struct Window *win,BOOL disable);
 extern long CountGadToolGads(struct Window *win);
-extern APTR NewObj(struct winData *,short type,APTR,STRPTR,ULONG tag1,...) VARARG68K;
+extern APTR NewObj(struct winData *,short type,APTR,STRPTR,ULONG tag1,...) VARARGS68K;
 extern void DrawDithRect(struct RastPort *rp,long x1,long y1,long x2,long y2);
 extern void DrawGroupBorder(struct RastPort *rp, CONST_STRPTR t,long x, long y, long w, long h);
 extern void PUBLIC DrawRect(REG(a0, struct RastPort *rp),REG(d0, long x),REG(d1, long y),REG(d2, long w),REG(d3, long h));

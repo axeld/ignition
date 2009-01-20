@@ -1,17 +1,17 @@
 ## ignition-Modules-Makefile
 ##
-## Copyright �1996-2008 pinc Software. All Rights Reserved.
+## Copyright 1996-2009 pinc Software. All Rights Reserved.
 ## Licensed under the terms of the GNU General Public License, version 3.
 
 .c.o:
 	@echo "compiling $*.c"
-	@sc $(OPTIMIZE) $(CFLAGS) $(DEFINES) $(DEBUG) gst=$(GST) cpu=$(CPU) idir=/ $*.c
+	@sc $(OPTIMIZE) $(CFLAGS) $(INCLUDES) $(DEFINES) $(DEBUG) gst=$(GST) cpu=$(CPU) idir=/ $*.c
 
 .c.oo:
-	sc $(CFLAGS) $(DEFINES) $(DEBUG) cpu=$(CPU) gst=$(GST) objname=$*.oo $*.c
+	sc $(CFLAGS) $(INCLUDES) $(DEFINES) $(DEBUG) cpu=$(CPU) gst=$(GST) objname=$*.oo $*.c
 
 .c.ooo:
-	sc $(OPTIMIZE) $(CFLAGS) $(DEBUG) gst=$(GST) cpu=any objname=$*.ooo $*.c
+	sc $(OPTIMIZE) $(CFLAGS) $(INCLUDES) $(DEBUG) gst=$(GST) cpu=any objname=$*.ooo $*.c
 
 .asm.o:
 	asm -D -DCPU_$(CPU) -u $*.asm
@@ -25,6 +25,7 @@ LFLAGS			= sc sd noicons
 OPTIMIZE		= noopt
 CPU				= 68040
 #CPU			= 68020
+INCLUDES		= idir=/libs/include idir=/libs
 #DEFINES		= def=IGNITION_LITE_EDITION
 DEFINES			=
 DEBUG			= dbg=l def=DEBUG

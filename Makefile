@@ -1,6 +1,6 @@
 ## ignition-Makefile
 ##
-## Copyright �1996-2008 pinc Software. All Rights Reserved.
+## Copyright 1996-2009 pinc Software. All Rights Reserved.
 ## Licensed under the terms of the GNU General Public License, version 3.
 
 #CFLAGS         = nostkchk afp math=i ign=147
@@ -13,13 +13,12 @@ OPTIMIZE        = noopt
 CPU             = 68020
 #CPU            = any
 DEFINES	        =
-#DEFINES	     = def=IGNITION_DEMO
-#DEFINES		 = def=IGNITION_LITE_EDITION
-DEBUG           = dbg=l def=DEBUG def=GDEBUG
-#DEBUG          = dbg=l def=DEBUG
-#DEBUG          = nodbg
-LIBS            = lib:scmieee.lib lib:scnb.lib lib:amiga.lib lib:debug.lib lib:clip.o lib/safeclip.o
-GST             = include:allnb.gst
+INCLUDES		= idir=libs/include idir=libs
+DEBUG			= dbg=l def=DEBUG def=GDEBUG
+#DEBUG			= dbg=l def=DEBUG
+#DEBUG			= nodbg
+LIBS			= lib:scmieee.lib lib:scnb.lib lib:amiga.lib lib:debug.lib lib:clip.o lib/safeclip.o
+GST				= include:allnb.gst
 
 all:              ignition addons guides
 
@@ -52,11 +51,12 @@ catalogs:
 clean:
 	delete \#?.o
 
-OBJS            = ignition.o prefs.o prefsio.o edit.o table.o cell.o calc.o font.o functions.o \
-				  handlewindows.o gadgets.o initwindows.o images.o windows.o objects.o debug.o \
-                  rexx.o support.o project.o io.o classes.o handleprefs.o color.o reference.o \
-				  prefsgadgets.o graphic.o clip.o undo.o hooks.o database.o pointer.o ignition_strings.o \
-				  boopsi.o diagram.o printer.o lock.o cmd.o menu.o popper.o screen.o search.o
+OBJS =	ignition.o prefs.o prefsio.o edit.o table.o cell.o calc.o font.o \
+		functions.o handlewindows.o gadgets.o initwindows.o images.o windows.o \
+		objects.o debug.o rexx.o support.o project.o io.o classes.o \
+		handleprefs.o color.o reference.o prefsgadgets.o graphic.o clip.o \
+		undo.o hooks.o database.o pointer.o ignition_strings.o boopsi.o \
+		diagram.o printer.o lock.o cmd.o menu.o popper.o screen.o search.o
 
 windows.o:        windows.c windefs.h version.h
 screen.o:         version.h types.h
@@ -73,13 +73,13 @@ ignition:         ignition_strings.h $(OBJS)
 
 .c.o:
 	@echo "compiling $*.c"
-	@sc $(OPTIMIZE) $(CFLAGS) $(DEFINES) $(DEBUG) gst=$(GST) cpu=$(CPU) $*.c
+	@sc $(OPTIMIZE) $(CFLAGS) $(INCLUDES) $(DEFINES) $(DEBUG) gst=$(GST) cpu=$(CPU) $*.c
 
 .c.oo:
-	sc $(CFLAGS) $(DEBUG) cpu=$(CPU) gst=$(GST) objname=$*.oo $*.c
+	sc $(CFLAGS) $(INCLUDES) $(DEBUG) cpu=$(CPU) gst=$(GST) objname=$*.oo $*.c
 
 .c.ooo:
-	sc $(OPTIMIZE) $(CFLAGS) $(DEBUG) gst=$(GST) cpu=any objname=$*.ooo $*.c
+	sc $(OPTIMIZE) $(CFLAGS) $(INCLUDES) $(DEBUG) gst=$(GST) cpu=any objname=$*.ooo $*.c
 
 .asm.o:
 	asm -D -DCPU_$(CPU) -u $*.asm
