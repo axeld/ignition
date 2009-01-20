@@ -1,7 +1,7 @@
 /* Several graphics base classes
  *
- * Copyright ©1996-2007 pinc Software. All Rights Reserved.
- * Licensed under the terms of the GNU General Public License, version 2.
+ * Copyright 1996-2007 pinc Software. All Rights Reserved.
+ * Licensed under the terms of the GNU General Public License, version 3.
  */
 
 
@@ -761,7 +761,7 @@ gRootDispatch(REG(a0, struct gClass *gc), REG(a2, struct gObject *go), REG(a1, M
 			rc = TRUE;
 			break;
 		case GCM_COMMAND:
-			/* Befehl ausführen */
+			/* Execute command */
 			ProcessAppCmd(go->go_Page,go->go_Command);
 			break;
 		case GCM_SAVE:
@@ -779,7 +779,7 @@ gRootDispatch(REG(a0, struct gClass *gc), REG(a2, struct gObject *go), REG(a1, M
 }
 
 
-/*************************************** embedded object ***************************************/
+/******************************* embedded object *****************************/
 
 
 struct gInterface gEmbeddedInterface[] = {

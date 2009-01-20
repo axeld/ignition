@@ -1,6 +1,6 @@
 /* windows related routines
  *
- * Copyright ©1996-2008 pinc Software. All Rights Reserved.
+ * Copyright 1996-2009 pinc Software. All Rights Reserved.
  * Licensed under the terms of the GNU General Public License, version 3.
  */
 
@@ -1040,17 +1040,14 @@ CreateInfo(struct Window *win)
 void
 SetNamePosition(long *x, long *y)
 {
-	long hei = barheight+fontheight+12;
+	long hei = barheight + fontheight + 12;
 
-	if (wd->wd_Type == WDT_PROJECT && imsg.Class != IDCMP_MENUPICK)
-	{
-		*x = imsg.MouseX+win->LeftEdge-(scr->Width >> 2);
-		*y = imsg.MouseY+win->TopEdge-(hei >> 1);
-	}
-	else
-	{
+	if (wd->wd_Type == WDT_PROJECT && imsg.Class != IDCMP_MENUPICK) {
+		*x = imsg.MouseX + win->LeftEdge - (scr->Width >> 2);
+		*y = imsg.MouseY + win->TopEdge - (hei >> 1);
+	} else {
 		*x = scr->Width >> 2;
-		*y = (scr->Height-hei) >> 1;
+		*y = (scr->Height - hei) >> 1;
 	}
 }
 
@@ -1061,8 +1058,7 @@ RefreshAppWindow(struct Window *win, struct winData *wd)
 	struct RastPort *rp = win->RPort;
 	long   x,y;
 
-	switch (wd->wd_Type)
-	{
+	switch (wd->wd_Type) {
 		case WDT_PREFSCREEN:
 			DrawGroupBorder(rp,GetString(&gLocaleInfo, MSG_SCREEN_BORDER),lborder,win->BorderTop+3,win->Width-lborder-rborder,fontheight*4+25);
 			DrawGroupBorder(rp,GetString(&gLocaleInfo, MSG_MONITOR_BORDER),lborder,win->BorderTop+30+fontheight*4,win->Width-lborder-rborder,fontheight*2+11);
@@ -1075,20 +1071,23 @@ RefreshAppWindow(struct Window *win, struct winData *wd)
 			break;
 		case WDT_PREFFORMAT:
 			x = ((struct Gadget *)wd->wd_ExtData[0])->Width + 6 + lborder;
-			DrawGroupBorder(rp, GetString(&gLocaleInfo, MSG_PROPERTIES_BORDER), x, win->BorderTop + fontheight + 9, win->Width - x - rborder, fontheight * 6 + 33);
-			if ((gad = GadgetAddress(win, 9)) != 0)
-			{
-				ULONG komma;
+			DrawGroupBorder(rp, GetString(&gLocaleInfo, MSG_PROPERTIES_BORDER),
+				x, win->BorderTop + fontheight + 9, win->Width - x - rborder,
+				fontheight * 6 + 33);
+			if ((gad = GadgetAddress(win, 9)) != 0) {
+				ULONG comma;
 
-				GT_GetGadgetAttrs(gad,win,NULL,GTSL_Level,&komma,TAG_END);
-				DrawPointSliderValue(rp,gad,komma);
+				GT_GetGadgetAttrs(gad, win, NULL, GTSL_Level, &comma, TAG_END);
+				DrawPointSliderValue(rp, gad, comma);
 			}
-			if ((gad = GadgetAddress(win, 11)) != 0)
-			{
+			if ((gad = GadgetAddress(win, 11)) != 0) {
 				x = gad->LeftEdge - 6;
-				DrawGroupBorder(rp, GetString(&gLocaleInfo, MSG_MARKED_BORDER), x, gad->TopEdge-fontheight - 2, win->Width - x - rborder, fontheight * 4 + 25);
+				DrawGroupBorder(rp, GetString(&gLocaleInfo, MSG_MARKED_BORDER),
+					x, gad->TopEdge-fontheight - 2, win->Width - x - rborder,
+					fontheight * 4 + 25);
 				/*itext.IText = "Negative Werte:";*/
-				DrawColorField(rp,GadgetAddress(win,12),FindColorPen(0,0,0),TRUE);
+				DrawColorField(rp, GadgetAddress(win, 12),
+					FindColorPen(0, 0, 0), TRUE);
 			}
 			break;
 		case WDT_PREFFILE:
@@ -1101,27 +1100,40 @@ RefreshAppWindow(struct Window *win, struct winData *wd)
 			DrawGroupBorder(rp,GetString(&gLocaleInfo, MSG_MISC_BORDER),lborder,win->BorderTop+fontheight*6+43,win->Width-lborder-rborder,fontheight*4+25);
 			break;
 		case WDT_PREFCOLORS:
-			if ((gad = GadgetAddress(win,2)) != 0)
-			{
+			if ((gad = GadgetAddress(win, 2)) != 0) {
 				DrawGroupBorder(rp,GetString(&gLocaleInfo, MSG_COLOR_BORDER),lborder,win->BorderTop+3,gad->LeftEdge-20-win->BorderLeft,gad->Height+fontheight*4+22);
 				DrawGroupBorder(rp,GetString(&gLocaleInfo, MSG_PALETTE_BORDER),gad->LeftEdge-10,win->BorderTop+3,win->Width-gad->LeftEdge+10-rborder,gad->Height+fontheight*4+22);
 				showPrefColorsMode(win,0);
 			}
 			break;
 		case WDT_DEFINECMD:
-			DrawGroupBorder(rp,NULL,lborder,win->BorderTop+3,win->Width-lborder-rborder,fontheight*3+25);
-			DrawGroupBorder(rp,GetString(&gLocaleInfo, MSG_COMMANDS_BORDER),lborder,win->BorderTop+30+fontheight*3,win->Width-lborder-rborder,fontheight*8+15);
-			DrawGroupBorder(rp,GetString(&gLocaleInfo, MSG_OUTPUT_BORDER),lborder,win->BorderTop+47+fontheight*11,win->Width-lborder-rborder,fontheight*4+25);
-			DrawBevelBox(rp,TLn(GetString(&gLocaleInfo, MSG_NAME_GAD))+16+lborder,barheight+15+fontheight,boxwidth*2,fontheight*2+8,GT_VisualInfo,vi,GTBB_Recessed,TRUE,TAG_END);
+			DrawGroupBorder(rp, NULL, lborder, win->BorderTop + 3,
+				win->Width - lborder - rborder, fontheight * 3 + 25);
+			DrawGroupBorder(rp, GetString(&gLocaleInfo, MSG_COMMANDS_BORDER),
+				lborder, win->BorderTop + 30 + fontheight * 3,
+				win->Width - lborder - rborder, fontheight * 8 + 15);
+			DrawGroupBorder(rp, GetString(&gLocaleInfo, MSG_OUTPUT_BORDER),
+				lborder, win->BorderTop + 47 + fontheight * 11,
+				win->Width - lborder - rborder, fontheight * 4 + 25);
+			DrawBevelBox(rp, TLn(GetString(&gLocaleInfo, MSG_NAME_GAD)) + 16
+					+ lborder,
+				barheight + 15 + fontheight, boxwidth * 2, fontheight * 2 + 8,
+				GT_VisualInfo, vi, GTBB_Recessed, TRUE, TAG_END);
 			itext.IText = GetString(&gLocaleInfo, MSG_ICON_LABEL);
-			PrintIText(rp,&itext,8+lborder,barheight+(3*fontheight)/2+18);
-			if (wd->wd_Data)
-			{
-				x = TLn(GetString(&gLocaleInfo, MSG_NAME_GAD))+18+lborder;
-				if (((struct AppCmd *)wd->wd_Data)->ac_Node.in_Image)
-				{
-					makeClip(win,x,barheight+16+fontheight,boxwidth*2-5,fontheight*2+5);
-					DrawImage(rp,((struct AppCmd *)wd->wd_Data)->ac_Node.in_Image,x-2-(((struct AppCmd *)wd->wd_Data)->ac_Node.in_Image->Width >> 1)+boxwidth,barheight+19+2*fontheight-(((struct AppCmd *)wd->wd_Data)->ac_Node.in_Image->Height >> 1));
+			PrintIText(rp, &itext, 8 + lborder,
+				barheight + (3 * fontheight) / 2 + 18);
+			if (wd->wd_Data) {
+				x = TLn(GetString(&gLocaleInfo, MSG_NAME_GAD)) + 18 + lborder;
+				if (((struct AppCmd *)wd->wd_Data)->ac_Node.in_Image) {
+					makeClip(win, x, barheight + 16 + fontheight,
+						boxwidth * 2 - 5, fontheight * 2 + 5);
+					DrawImage(rp,
+						((struct AppCmd *)wd->wd_Data)->ac_Node.in_Image,
+						x - 2 - (((struct AppCmd *)wd->wd_Data)
+							->ac_Node.in_Image->Width >> 1) + boxwidth,
+						barheight + 19 + 2 * fontheight
+							- (((struct AppCmd *)wd->wd_Data)->ac_Node.in_Image
+								->Height >> 1));
 					freeClip(win);
 				}
 			}
@@ -1129,24 +1141,30 @@ RefreshAppWindow(struct Window *win, struct winData *wd)
 		case WDT_OBJECT:
 		{
 			struct gGadget *gg;
-			long   lines = max((long)wd->wd_ExtData[2],4);
+			long lines = max((long)wd->wd_ExtData[2], 4);
 
-			DrawGroupBorder(rp,GetString(&gLocaleInfo, MSG_POSITION_BORDER),lborder,y = barheight+fontheight+10,(x = (long)wd->wd_ExtData[3])-4-lborder,fontheight+4+(fontheight+7)*lines);
-			if (wd->wd_ExtData[2])
-				DrawGroupBorder(rp,GetString(&gLocaleInfo, MSG_MISC_BORDER),x,y,win->Width-x-rborder,fontheight+4+(fontheight+7)*lines);
+			DrawGroupBorder(rp,GetString(&gLocaleInfo, MSG_POSITION_BORDER),
+				lborder, y = barheight + fontheightÂ + 10,
+				(x = (long)wd->wd_ExtData[3]) - 4 - lborder,
+				fontheight + 4 + (fontheight + 7) * lines);
+			if (wd->wd_ExtData[2]) {
+				DrawGroupBorder(rp, GetString(&gLocaleInfo, MSG_MISC_BORDER),
+					x, y, win->Width - x - rborder,
+					fontheight + 4 + (fontheight + 7) * lines);
+			}
 
-			for(gg = (APTR)((struct List *)wd->wd_ExtData[4])->lh_Head;gg->gg_Node.mln_Succ;gg = (APTR)gg->gg_Node.mln_Succ)
-			{
-				if (gg->gg_Type == GIT_PEN)
-				{
+			for (gg = (APTR)((struct List *)wd->wd_ExtData[4])->lh_Head;
+					gg->gg_Node.mln_Succ; gg = (APTR)gg->gg_Node.mln_Succ) {
+				if (gg->gg_Type == GIT_PEN) {
 					struct gInterface *gi;
 
-					for(gi = ((struct gObject *)wd->wd_Data)->go_Class->gc_Interface;gi && gi->gi_Tag;gi++)
-					{
-						if (gg->gg_Tag == gi->gi_Tag)
-						{
+					for (gi = ((struct gObject *)wd->wd_Data)->go_Class
+							->gc_Interface; gi && gi->gi_Tag; gi++) {
+						if (gg->gg_Tag == gi->gi_Tag) {
 							itext.IText = GetGLabel(gi);
-							PrintIText(rp,&itext,gg->gg_Gadget->LeftEdge-8-2*boxwidth-IntuiTextLength(&itext),gg->gg_Gadget->TopEdge+3);
+							PrintIText(rp, &itext, gg->gg_Gadget->LeftEdge - 8
+									- 2 * boxwidth - IntuiTextLength(&itext),
+								gg->gg_Gadget->TopEdge + 3);
 						}
 					}
 				}
@@ -1158,13 +1176,15 @@ RefreshAppWindow(struct Window *win, struct winData *wd)
 			struct gObject *go = wd->wd_ExtData[0];
 			struct gClass *gc;
 
-			SetAPen(rp, FindColor(scr->ViewPort.ColorMap, 0xffffffff, 0xffffffff, 0xffffffff, -1));
-			RectFill(rp, win->BorderLeft, win->BorderTop, x = win->Width - 2 - win->BorderRight, y = win->Height - 2 - win->BorderBottom);
+			SetAPen(rp, FindColor(scr->ViewPort.ColorMap,
+				0xffffffff, 0xffffffff, 0xffffffff, -1));
+			RectFill(rp, win->BorderLeft, win->BorderTop,
+				x = win->Width - 2 - win->BorderRight,
+				y = win->Height - 2 - win->BorderBottom);
 			EraseRect(rp, x + 1, win->BorderTop, x + 1, y);
 			EraseRect(rp, win->BorderLeft, y + 1, x, y + 1);
 
-			if (go && (gc = go->go_Class)->gc_Draw)
-			{
+			if (go && (gc = go->go_Class)->gc_Draw) {
 				struct gBounds gb;
 
 				SetGRastPort(rp);
@@ -1180,8 +1200,7 @@ RefreshAppWindow(struct Window *win, struct winData *wd)
 			break;
 		}
 		case WDT_BORDER:
-			if ((gad = GadgetAddress(win, 1)) != 0)
-			{
+			if ((gad = GadgetAddress(win, 1)) != 0) {
 				DrawGroupBorder(rp, GetString(&gLocaleInfo, MSG_PRESETS_BORDER), lborder, win->BorderTop + 3, win->Width - lborder - rborder, gad->TopEdge - win->BorderTop - 6);
 				DrawBevelBox(rp, lborder, gad->TopEdge + 4 + fontheight, win->Width - lborder - rborder, fontheight*2 + 19, GT_VisualInfo, vi, GTBB_Recessed, TRUE, TAG_END);
 			}
@@ -1277,8 +1296,7 @@ RefreshAppWindow(struct Window *win, struct winData *wd)
 bool
 WindowIsProjectDependent(long type)
 {
-	switch (type)
-	{
+	switch (type) {
 		case WDT_PAGE:
 		case WDT_DOCUMENT:
 		case WDT_DIAGRAM:
@@ -1301,15 +1319,14 @@ TestOpenAppWindow(struct Window **rwin, long type, struct TagItem *ti)
 	APTR   data = (APTR)GetTagData(WA_Data, 0, ti);
 
 	*rwin = NULL;
-	switch (type)
-	{
+	switch (type) {
 		case WDT_PROJECT:
 		case WDT_DEFINECMD:
 			break;
 		case WDT_OBJECT:
-			for (win = scr->FirstWindow;win;win = win->NextWindow)
-			{
-				if (win->UserPort == iport && ((struct winData *)win->UserData)->wd_Type == type
+			for (win = scr->FirstWindow;win;win = win->NextWindow) {
+				if (win->UserPort == iport
+					&& ((struct winData *)win->UserData)->wd_Type == type
 					&& ((struct winData *)win->UserData)->wd_Data == data)
 					break;
 			}
@@ -1318,35 +1335,38 @@ TestOpenAppWindow(struct Window **rwin, long type, struct TagItem *ti)
 		{
 			struct gDiagram *current = (APTR)GetTagData(WA_CurrentDiagram, 0, ti);
 
-			for (win = scr->FirstWindow; win; win = win->NextWindow)
-			{
+			for (win = scr->FirstWindow; win; win = win->NextWindow) {
 				struct winData *wd = (APTR)win->UserData;
 
-				if (win->UserPort == iport && wd->wd_Type == type && wd->u.diagram.wd_CurrentDiagram == current)
+				if (win->UserPort == iport && wd->wd_Type == type
+					&& wd->u.diagram.wd_CurrentDiagram == current)
 					break;
 			}
 			break;
 		}
 		default:
-			if (type != WDT_PREFS && IsPrefsWindow(type))
-			{
-				for (win = scr->FirstWindow;win;win = win->NextWindow)
-				{
-					if (win->UserPort == iport && ((struct winData *)win->UserData)->wd_Type == type && ((struct winData *)win->UserData)->wd_Data == data)
+			if (type != WDT_PREFS && IsPrefsWindow(type)) {
+				for (win = scr->FirstWindow; win != NULL;
+						win = win->NextWindow) {
+					if (win->UserPort == iport
+						&& ((struct winData *)win->UserData)->wd_Type == type
+						&& ((struct winData *)win->UserData)->wd_Data == data)
 						break;
 				}
-			}
-			else
+			} else
 				win = GetAppWindow(type);
+			break;
 	}
-	if (win)
-	{
+
+	if (win) {
 		long active;
 
 		wd = (struct winData *)win->UserData;
 		active = GetTagData(WA_Page, ~0L, ti);
-		if (active != ~0L && wd->wd_PageHandlingGadget)
-			SetGadgetAttrs(wd->wd_PageHandlingGadget, win, NULL, PAGEGA_Active, active, TAG_END);
+		if (active != ~0L && wd->wd_PageHandlingGadget) {
+			SetGadgetAttrs(wd->wd_PageHandlingGadget, win, NULL,
+				PAGEGA_Active, active, TAG_END);
+		}
 
 		WindowToFront(win);
 		ActivateWindow(win);
@@ -1354,20 +1374,18 @@ TestOpenAppWindow(struct Window **rwin, long type, struct TagItem *ti)
 		*rwin = win;
 		return FALSE;
 	}
-	if (WindowIsProjectDependent(type))
-	{
-		if (!rxpage)
-		{
+	if (WindowIsProjectDependent(type)) {
+		if (!rxpage) {
 			ErrorRequest(GetString(&gLocaleInfo, MSG_NO_PROJECT_ERR));
 			return FALSE ;
 		}
-		switch (type)
-		{
+
+		switch (type) {
 			case WDT_MASK:
 			case WDT_FILTER:
 			case WDT_INDEX:
-				if (IsListEmpty((struct List *)&rxpage->pg_Mappe->mp_Databases))
-				{
+				if (IsListEmpty((struct List *)&rxpage->pg_Mappe
+						->mp_Databases)) {
 					ErrorRequest(GetString(&gLocaleInfo, MSG_NO_DATABASE_ERR));
 					return FALSE;
 				}
@@ -1389,18 +1407,18 @@ OpenAppWindow(long type, ULONG tag1, ...)
 {
 	struct Window *win;
 	struct winData *wd;
-	bool   error = false, reopened = false;
-	int32  idcmp, flags, x, y, minWidth = -1L, minHeight = -1L;
+	bool error = false, reopened = false;
+	int32 idcmp, flags, x, y, minWidth = -1L, minHeight = -1L;
 	CONST_STRPTR title;
 
 	ObtainSemaphore(&gWindowSemaphore);
 
-	if (!TestOpenAppWindow(&win, type, (struct TagItem *)&tag1))
-	{
+	if (!TestOpenAppWindow(&win, type, (struct TagItem *)&tag1)) {
 		ReleaseSemaphore(&gWindowSemaphore);
 		return win;
 	}
-	title = (STRPTR)GetTagData(WA_Title, (ULONG)GetString(&gLocaleInfo, MSG_IGNITION_REQUEST_TITLE), (struct TagItem *)&tag1);
+	title = (STRPTR)GetTagData(WA_Title, (ULONG)GetString(&gLocaleInfo,
+		MSG_IGNITION_REQUEST_TITLE), (struct TagItem *)&tag1);
 
 	if ((wd = (struct winData *)GetTagData(WA_WinData, 0, (struct TagItem *)&tag1)) != 0)
 		reopened = true;

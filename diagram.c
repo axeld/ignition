@@ -1,6 +1,6 @@
 /* 3D and diagram functions
  *
- * Copyright ©1996-2008 pinc Software. All Rights Reserved.
+ * Copyright 1996-2009 pinc Software. All Rights Reserved.
  * Licensed under the terms of the GNU General Public License, version 3.
  */
 
@@ -190,7 +190,7 @@ SetObjectColor(struct object3d *ob, LONG apen, LONG open)
 #endif
  
 
-long gtfcol,gtfrow;
+long gtfcol, gtfrow;
 
 /** Gibt die Zellen einer Tabelle in der für Diagramme richtigen
  *  Reihenfolge zurück.
@@ -1813,16 +1813,15 @@ RefreshDiagram(struct gDiagram *gd)
 }
 
 
-/** Setzt Parameter eines Diagramms und stellt Änderungen im Aussehen
- *  im Vorschaufenster oder auf der Seite an.
- *  Zusätzlich werden alle Gadgets des Diagramm-Fensters auf den
- *  aktuellen Stand gebracht.
- *
- *  @param win Fenster des Diagramms (WDT_DIAGRAM)
- *  @param gd das Diagramm
- *  @param ti die zu ändernden Attribute
- */
+/*!	Sets the attributes of a diagram, and makes the changes of the diagram
+	visible on either the preview window or directly the page.
+	Additionally, all gadgets in the diagram window are updated to the current
+	values.
 
+	@param win the diagram window (WDT_DIAGRAM)
+	@param gd the diagram
+	@param ti the attributes to change
+*/
 void
 SetDiagramAttrsA(struct Window *win, struct gDiagram *gd, struct TagItem *ti)
 {
@@ -1832,16 +1831,14 @@ SetDiagramAttrsA(struct Window *win, struct gDiagram *gd, struct TagItem *ti)
 	if (!win || !gd)
 		return;
 
-	if (wd->u.diagram.wd_OldDiagram != NULL)
-	{
+	if (wd->u.diagram.wd_OldDiagram != NULL) {
 		// If we are only altering an existing diagram, we direct the changes
 		// to the standard call which will generate an UndoNode for us
 		SetGObjectAttrsA(gd->gd_Object.go_Page, gd, ti);
 		return;
 	}
 
-	if ((rc = gDoMethod(gd, GCM_SET, ti)) && rc & GCPR_REDRAW)
-	{
+	if ((rc = gDoMethod(gd, GCM_SET, ti)) && rc & GCPR_REDRAW) {
 		RefreshGObjectBounds(wd->wd_Data, gd);
 		RefreshDiagram(gd);
 	}
