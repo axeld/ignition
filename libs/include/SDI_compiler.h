@@ -210,9 +210,6 @@
 #if !defined(DEPRECATED)
   #define DEPRECATED
 #endif
-#if !defined(ALIGNED)
-  #define ALIGNED
-#endif
 
 /*************************************************************************/
 
@@ -271,6 +268,11 @@
    // TODO write LIB_... macros
 #  define LIBFUNC_INIT
 #  define LIBFUNC_EXIT
+
+#  if !defined(ALIGNED)
+#    define ALIGNED
+#  endif
+
 #endif
 
 #if defined(__AROS__)
