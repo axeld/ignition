@@ -28,11 +28,4 @@
 #define EGA_Scroller       TAG_USER+60
 #define EGA_AutoIndent     TAG_USER+61
 
-/*
-  Forward declaration, because it's defined in TextEdit_private.h,
-  but some Library functions need it as parameter.
-*/
-
-struct EditGData;
-
 #endif   // GADGETS_TEXTEDIT_H

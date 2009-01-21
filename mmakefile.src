@@ -17,7 +17,7 @@ EXE := Ignition
 TARGETDIR := $(AROS_CONTRIB)/Office/Ignition
 
 USER_CFLAGS :=
-USER_INCLUDES := -Ilibs/include -Ilib/safeclip/gcc-all -Ilibs
+USER_INCLUDES := -Ilibs/include -Ilib/safeclip/gcc-generic -Ilibs
 
 FILES := \
 	boopsi \
@@ -55,7 +55,7 @@ FILES := \
 	project \
 	reference \
 	rexx \
-	lib/safeclip/gcc-all/safeclip \
+	lib/safeclip/generic/safeclip \
 	screen \
 	search \
 	support \
