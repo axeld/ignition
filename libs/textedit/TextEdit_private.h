@@ -1,5 +1,5 @@
 /*
- * Copyright Â©1999-2008 pinc Software. All Rights Reserved.
+ * Copyright ©1999-2009 pinc Software. All Rights Reserved.
  * Licensed under the terms of the MIT License.
  */
 #ifndef TEXTEDIT_PRIVATE_H

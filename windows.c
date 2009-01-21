@@ -1144,7 +1144,7 @@ RefreshAppWindow(struct Window *win, struct winData *wd)
 			long lines = max((long)wd->wd_ExtData[2], 4);
 
 			DrawGroupBorder(rp,GetString(&gLocaleInfo, MSG_POSITION_BORDER),
-				lborder, y = barheight + fontheight + 10,
+				lborder, y = barheight + fontheight + 10,
 				(x = (long)wd->wd_ExtData[3]) - 4 - lborder,
 				fontheight + 4 + (fontheight + 7) * lines);
 			if (wd->wd_ExtData[2]) {

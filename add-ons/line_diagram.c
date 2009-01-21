@@ -18,6 +18,7 @@
 #include "ignition_strings.h"
 
 #include <string.h>
+#include <stdbool.h>
 
 struct gArea;
 
@@ -27,7 +28,7 @@ const char *version = "$VER: line_diagram.gc 0.3 (7.8.2003)";
 
 struct gInterface interface[] = {
 	{GAA_Pseudo3D, "Pseudo-3D", GIT_CHECKBOX, NULL, NULL},
-	{0, NULL, 0, NULL, NULL}
+	{0, NULL, 0, NULL, NULL}
 };
 
 const STRPTR superClass = "diagram";
