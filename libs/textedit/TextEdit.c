@@ -255,10 +255,10 @@ long PRIVATE GetEditCursorPos(struct ClassBase *cb,struct RastPort *rp,struct Ed
       break;
     i += el->el_Width;
   }
-  if (!el->el_Word)  /* last character */
-    return((--el)->el_Length-1+el->el_Word-ed->ed_Text);
-  else               /* character in word */
-  {
+  if (!el->el_Word) { /* last character */
+    --el;
+    return --el->el_Length - 1 + el->el_Word-ed->ed_Text;
+  } else {             /* character in word */
     struct TextExtent extent;
     ULONG  fit;
 
