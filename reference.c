@@ -497,6 +497,9 @@ AddReferences(struct Reference *r, struct Term *t)
 		{
 			struct Function *f = t->t_Function;
 
+			if (f == (APTR)~0L)
+				break;
+
 			if (f && f != (APTR)~0L && f->f_Code)
 			{
 				struct FuncArg *fa;
