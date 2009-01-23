@@ -13,7 +13,7 @@ ULONG gDoMethod(APTR go, LONG data, ...)
 
 ULONG gDoSuperMethod(struct gClass *gc, APTR go, LONG data, ...)
 {
-	return gDoSuperMethod(gc, go, &data);
+	return gDoSuperMethodA(gc, go, &data);
 }
 
 struct FontInfo *SetFontInfo(struct FontInfo *fi, ULONG dpi, ULONG tag1, ...)
