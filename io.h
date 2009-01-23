@@ -65,7 +65,7 @@ struct IOType {
 /*************************** NumberLink ***************************/
 
 struct NumberLink {
-	struct MinNode nl_Node;
+	struct Node nl_Node;
 	UWORD  nl_Number;
 	APTR   nl_Link;
 };
