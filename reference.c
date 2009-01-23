@@ -1,6 +1,6 @@
 /* References for the automatic computations
  *
- * Copyright ©1996-2008 pinc Software. All Rights Reserved.
+ * Copyright 1996-2009 pinc Software. All Rights Reserved.
  * Licensed under the terms of the GNU General Public License, version 3.
  */
 
@@ -497,25 +497,25 @@ AddReferences(struct Reference *r, struct Term *t)
 		{
 			struct Function *f = t->t_Function;
 
-			if (f == (APTR)~0L)
+			if (f == (APTR)~0L || f == NULL)
 				break;
 
-			if (f && f != (APTR)~0L && f->f_Code)
-			{
+			if (f->f_Code) {
 				struct FuncArg *fa;
 
 				foreach (&t->t_Args, fa)
 					AddReferences(r, fa->fa_Root);
 			}
-			/* Sonderbehandlung von Verweisen und jetzt()/heute() */
+			
+			/* Special treatment of references and today()/now() */
 
-			switch (f->f_ID)
-			{
-				case MAKE_ID('t','d','y','\0'):  // heute()
-				case MAKE_ID('n','o','w','\0'):  // jetzt()
+			switch (f->f_ID) {
+				case MAKE_ID('t','d','y','\0'):  // today()
+				case MAKE_ID('n','o','w','\0'):  // now()
 					if ((r->r_Type & RTYPE_TIMED) == 0) {
-						// only add the timed reference, if it hasn't been added already
-						// (there might be more than one timed reference per object)
+						// only add the timed reference, if it hasn't been added
+						// already (there might be more than one timed reference
+						// per object)
 						D(bug("** time reference detected (0x%08lx)!\n", r));
 						AddToArrayList(&gTimedRefs, r);
 						r->r_Type |= RTYPE_TIMED;
@@ -524,17 +524,17 @@ AddReferences(struct Reference *r, struct Term *t)
 				case MAKE_ID('e','x','t','\0'):  // extern()
 					D(bug("not implemented reference: extern()\n"));
 					break;
-				case MAKE_ID('p','a','g','\0'):  // seite()
-					D(bug("not implemented reference: seite()\n"));
+				case MAKE_ID('p','a','g','\0'):  // page()
+					D(bug("not implemented reference: page()\n"));
 					break;
-				case MAKE_ID('r','e','f','\0'):  // bezug()
-					D(bug("not implemented reference: bezug()\n"));
+				case MAKE_ID('r','e','f','\0'):  // reference()
+					D(bug("not implemented reference: reference()\n"));
 					break;
-				case MAKE_ID('c','o','l','\0'):  // spalte()
-					D(bug("not implemented reference: spalte()\n"));
+				case MAKE_ID('c','o','l','\0'):  // column()
+					D(bug("not implemented reference: column()\n"));
 					break;
-				case MAKE_ID('r','o','w','\0'):  // reihe()
-					D(bug("not implemented reference: reihe()\n"));
+				case MAKE_ID('r','o','w','\0'):  // row()
+					D(bug("not implemented reference: row()\n"));
 					break;
 			}
 			break;
