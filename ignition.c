@@ -1441,15 +1441,15 @@ SaveSession(STRPTR name)
         FPuts(file,"[recent functions]\n");
         count = 0;
 
-	foreach(&usedfuncs, ln) {
-		if (ln->ln_Name != (APTR)-1L) {
-			FPuts(file, (char *)&((struct Function *)ln->ln_Name)->f_ID);
-			FPutC(file, '\n');
+		foreach(&usedfuncs, ln) {
+			if (ln->ln_Name != (APTR)-1L) {
+				FPuts(file, (char *)&((struct Function *)ln->ln_Name)->f_ID);
+				FPutC(file, '\n');
 
-			if (++count > MAX_RECENTFUNCS)
-				break;
+				if (++count > MAX_RECENTFUNCS)
+					break;
+			}
 		}
-	}
 
         /** write font sizes **/
 
