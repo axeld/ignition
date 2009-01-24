@@ -1,6 +1,6 @@
 /* Structures, definitions, etc.
  *
- * Copyright ©1996-2008 pinc Software. All Rights Reserved.
+ * Copyright 1996-2009 pinc Software. All Rights Reserved.
  * Licensed under the terms of the GNU General Public License, version 3.
  */
 #ifndef IGN_TYPES_H
@@ -680,8 +680,4 @@ extern struct ExecBase *SysBase;
 extern struct LocaleInfo gLocaleInfo;
 extern bool   noabout;
 
-#ifdef IGNITION_LITE_EDITION
-extern char gSerial[];
-#endif
- 
 #endif  /* IGN_TYPES_H */

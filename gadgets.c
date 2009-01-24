@@ -1,6 +1,6 @@
 /* Create gadget routines for ignition
  *
- * Copyright 1996-2008 pinc Software. All Rights Reserved.
+ * Copyright 1996-2009 pinc Software. All Rights Reserved.
  * Licensed under the terms of the GNU General Public License, version 3.
  */
 
@@ -1416,9 +1416,6 @@ CreateDocumentGadgets(REG(a0, struct winData *wd))
 	gad = CreateGadget(CHECKBOX_KIND, gad, &ngad,
 			GTCB_Scaled,	TRUE,
 			GTCB_Checked,	mp->mp_Flags & MPF_SCRIPTS,
-#ifdef IGNITION_LITE_EDITION
-			GA_Disabled,		TRUE,
-#endif
             TAG_END);
 
     ngad.ng_TopEdge += fontheight+7;
@@ -1493,9 +1490,6 @@ CreateDocumentGadgets(REG(a0, struct winData *wd))
 			GTLV_Labels,		wd->wd_ExtData[3],
 			GTLV_ShowSelected,	NULL,
 			GTLV_CallBack,		&selectHook,
-#ifdef IGNITION_LITE_EDITION
-			GA_Disabled,		TRUE,
-#endif
             TAG_END);
 
     i = (ngad.ng_LeftEdge += 6+ngad.ng_Width);

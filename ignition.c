@@ -1,6 +1,6 @@
 /* Main application
  *
- * Copyright ©1996-2008 pinc Software. All Rights Reserved.
+ * Copyright 1996-2009 pinc Software. All Rights Reserved.
  * Licensed under the terms of the GNU General Public License, version 3.
  */
 
@@ -539,7 +539,8 @@ DrawBars(struct Window *win)
 }
 
 
-uint32 IsOverProjSpecial(struct Window *win,int32 x,int32 y)
+uint32
+IsOverProjSpecial(struct Window *win, int32 x, int32 y)
 {
     struct winData *wd;
     struct Prefs *pr;
@@ -563,30 +564,23 @@ uint32 IsOverProjSpecial(struct Window *win,int32 x,int32 y)
 void
 UpdateInteractive(struct Mappe *mp, bool refresh)
 {
-    struct Node *ln;
-
-#ifdef IGNITION_LITE_EDITION
-	// lite edition doesn't have the interactive mode
-	mp->mp_Flags &= ~MPF_SCRIPTS;
-#endif
- 
-    if (mp->mp_Flags & MPF_SCRIPTS)
-    {
-        foreach(&mp->mp_Pages,ln)
-        {
+	struct Node *ln;
+	
+	if ((mp->mp_Flags & MPF_SCRIPTS) != 0) {
+		foreach(&mp->mp_Pages, ln) {
 			SetMark((struct Page *)ln, -1, 0, 0, 0);
-            DeselectGObjects((struct Page *)ln);
-        }
+			DeselectGObjects((struct Page *)ln);
+		}
 		RefreshMaskFields(mp, refresh);
-    }
-    if (mp->mp_Window)
-    {
-        if (mp->mp_Flags & MPF_SCRIPTS)
-            mp->mp_Window->Flags |= WFLG_RMBTRAP;
-        else
-            mp->mp_Window->Flags &= ~WFLG_RMBTRAP;
+	}
+
+	if (mp->mp_Window) {
+		if (mp->mp_Flags & MPF_SCRIPTS)
+			mp->mp_Window->Flags |= WFLG_RMBTRAP;
+		else
+			mp->mp_Window->Flags &= ~WFLG_RMBTRAP;
 		DrawStatusFlags(mp, mp->mp_Window);
-    }
+	}
 }
 
 
@@ -906,20 +900,18 @@ MakeIconGads(struct Prefs *pr,struct winData *wd,struct Gadget *gad,long w,long 
 void
 FreeWinIconObjs(struct Window *win,struct winData *wd)
 {
-    struct winObj *wo,*swo;
+	struct winObj *wo, *swo;
 
-    for(wo = (APTR)wd->wd_Objs.mlh_Head;wo->wo_Node.mln_Succ;)
-    {
-        swo = (struct winObj *)wo->wo_Node.mln_Succ;
-        if (wo->wo_Type == WOT_GADGET || wo->wo_Type == WOT_ICONIMG)
-        {
-            MyRemove(wo);
-            DisposeObject(wo->wo_Obj);
-            FreePooled(pool,wo,sizeof(struct winObj));
-        }
-        wo = swo;
-    }
-    wd->wd_ExtData[0] = NULL;
+	for (wo = (APTR)wd->wd_Objs.mlh_Head; wo->wo_Node.mln_Succ;) {
+		swo = (struct winObj *)wo->wo_Node.mln_Succ;
+		if (wo->wo_Type == WOT_GADGET || wo->wo_Type == WOT_ICONIMG) {
+			MyRemove(wo);
+			DisposeObject(wo->wo_Obj);
+			FreePooled(pool, wo, sizeof(struct winObj));
+		}
+		wo = swo;
+	}
+	wd->wd_ExtData[0] = NULL;
 }
 
 

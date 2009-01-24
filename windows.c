@@ -143,18 +143,6 @@ ErrorOpenLibrary(STRPTR lib, STRPTR paket)
 }
 
 
-#ifdef IGNITION_DEMO
-void
-NotAvailableInDemo(void)
-{
-	DisplayBeep(NULL);
-
-	ErrorRequest("Diese Funktion ist in der Demo-Version leider nicht verfügbar.\n\n"
-		"Sorry, this function is not available in demo mode.");
-}
-#endif
-
-
 void
 MakeLocaleLabels(const char *labels[], ULONG id, ...)
 {
@@ -994,15 +982,7 @@ CreateInfo(struct Window *win)
 		itext.ITextFont = &ta;
 
 	itext.FrontPen = 2;  itext.BackPen = 1;
-#ifdef IGNITION_LITE_EDITION
-	strcpy(buffer, "Lite Edition ");
-	sprintf(buffer + strlen(buffer), GetString(&gLocaleInfo, MSG_VERSION_INFO), VERSION);
-#elif defined(IGNITION_DEMO)
-	strcpy(buffer, "Demo ");
-	sprintf(buffer + strlen(buffer), GetString(&gLocaleInfo, MSG_VERSION_INFO), VERSION);
-#else
 	sprintf(buffer, GetString(&gLocaleInfo, MSG_VERSION_INFO), VERSION);
-#endif
 	itext.IText = buffer;  PrintIText(win->RPort, &itext, border - 5 - lborder - IntuiTextLength(&itext), barheight + 55);
 	itext.IText = INFODATE;  PrintIText(win->RPort, &itext, border - 5 - lborder - IntuiTextLength(&itext), barheight + 66);
 	itext.FrontPen = 0;
@@ -1012,24 +992,8 @@ CreateInfo(struct Window *win)
 	itext.IText = "http://www.pinc-software.de";  PrintIText(win->RPort,&itext,16+lborder,barheight+129);
 	itext.IText = "eMail: info@pinc-software.de";  PrintIText(win->RPort,&itext,16+lborder,barheight+141);
 
-#ifdef IGNITION_LITE_EDITION
-	itext.IText = GetString(&gLocaleInfo, MSG_SERIAL_NUMBER_LABEL);  PrintIText(win->RPort, &itext, 6 + lborder, barheight + 186);
-	if (gSerial[0])
-		itext.IText = gSerial;
-	else
-		itext.IText = GetString(&gLocaleInfo, MSG_UNREGISTERED);
-	PrintIText(win->RPort, &itext, 6 + lborder, barheight + 197);
-#elif defined(IGNITION_DEMO)
-	itext.IText = "Demo version for evaluation purposes only";  PrintIText(win->RPort, &itext, 6 + lborder, barheight + 214);
-#else
-	//itext.IText = "Martin \"Mason\" Merz's persönliche Version";  PrintIText(win->RPort, &itext, 6 + lborder, barheight + 213);
-	//itext.IText = "Axel Knabes persönliche Version";  PrintIText(win->RPort, &itext, 6 + lborder, barheight + 213);
-	itext.IText = "Vorabvorführversion :-)";  PrintIText(win->RPort, &itext, 6 + lborder, barheight + 194);
-#endif
-	/*itext.IText = "Lizensiert für:";  PrintIText(win->RPort,&itext,14,fontheight+175);
-	itext.IText = "Donald Duck";  PrintIText(win->RPort,&itext,189-IntuiTextLength(&itext),fontheight+175);
-	itext.IText = "Schnatgang 42";  PrintIText(win->RPort,&itext,189-IntuiTextLength(&itext),fontheight+186);
-	itext.IText = "12345 Entenhausen";  PrintIText(win->RPort,&itext,189-IntuiTextLength(&itext),fontheight+197);*/
+	itext.IText = "Open Source Version";
+	PrintIText(win->RPort, &itext, 6 + lborder, barheight + 194);
 
 	CloseFont(tf);
 	itext.FrontPen = 1;  itext.BackPen = 0;

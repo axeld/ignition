@@ -846,14 +846,6 @@ HandleTabGadget(struct Page *page)
 			return;
 		}
 
-#ifdef IGNITION_LITE_EDITION
-		// the maximum table size is 30 x 50
-		if (col > 30)
-			col = 30;
-		if (row > 50)
-			row = 50;
-#endif
-
 		if (changed)
 			page->pg_Gad.DispPos = 0;
 		if (changed || col != page->pg_Gad.cp.cp_Col
@@ -888,14 +880,6 @@ CreateTabGadget(struct Page *page, long col, long row, BOOL makevisible)
 
 	if (page->pg_Gad.DispPos != PGS_NONE)
 		FreeTabGadget(page);
-
-#ifdef IGNITION_LITE_EDITION
-		// the maximum table size is 30 x 50
-		if (col > 30)
-			col = 30;
-		if (row > 50)
-			row = 50;
-#endif
 
 	DeselectGObjects(page);
 	cp = &page->pg_Gad.cp;

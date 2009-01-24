@@ -1,6 +1,6 @@
 /* I/O routines and the standard file format implementation (old and current)
  *
- * Copyright ©1996-2008 pinc Software. All Rights Reserved.
+ * Copyright 1996-2009 pinc Software. All Rights Reserved.
  * Licensed under the terms of the GNU General Public License, version 3.
  */
 
@@ -2587,9 +2587,6 @@ LoadProject(struct Mappe *mp, struct IOType *type)
 					calcflags = (calcflags & ~CF_REQUESTER) | CF_SUSPEND; /* setzt Berechnung der Zellen aus */
 
 					if (!(rc = io->io_Load(dat, mp))) {
-#ifdef IGNITION_LITE_EDITION
-						mp->mp_Flags &= ~MPF_SCRIPTS;
-#endif
 						// initialize format template preferences
 						if (!IsListEmpty((struct List *)&mp->mp_Prefs.pr_Formats))
 						{
@@ -2637,28 +2634,6 @@ LoadProject(struct Mappe *mp, struct IOType *type)
 									gDoMethod(go, GCM_INITAFTERLOAD);
 							}
 
-#ifdef IGNITION_LITE_EDITION
-							{
-								struct tableField *next;
-								bool any = false;
-
-								// the lite edition does only support a limited sheet size of 30x50
-								tf = (struct tableField *)page->pg_Table.mlh_Head;
-								while (tf->tf_Node.mln_Succ) {
-									next = (struct tableField *)tf->tf_Node.mln_Succ;
-
-									if (tf->tf_Row > 50 || tf->tf_Col > 30) {
-										RemoveCell(page, tf, true);
-										FreeTableField(tf);
-										any = true;
-									}
-
-									tf = next;
-								}
-								if (any)
-									ErrorRequest(GetString(&gLocaleInfo, MSG_LITE_EDITION_CELL_LIMIT));
-							}
-#endif
 							foreach (&page->pg_Table, tf)
 							{
 								// Gespeichert werden nur die internen kurzen Funktionsnamen
@@ -2800,10 +2775,6 @@ AddNumberLink(struct MinList *list, APTR link)
 int32
 SaveProject(struct Mappe *mp, struct IOType *io, bool confirmOverwrite)
 {
-#ifdef IGNITION_DEMO
-	NotAvailableInDemo();
-	return 0;
-#else
 	struct tableField *tf;
 	struct Page *page;
 	struct Node *ln;
@@ -2971,7 +2942,6 @@ SaveProject(struct Mappe *mp, struct IOType *io, bool confirmOverwrite)
 		return rc;
 	}
 	return RC_WARN;
-#endif	// !IGNITION_DEMO
 }
 
 

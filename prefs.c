@@ -1,6 +1,6 @@
 /* Preferences management and related functionality
  *
- * Copyright ©1996-2008 pinc Software. All Rights Reserved.
+ * Copyright 1996-2009 pinc Software. All Rights Reserved.
  * Licensed under the terms of the GNU General Public License, version 3.
  */
 
@@ -489,20 +489,15 @@ AddPrefsModule(struct Prefs *pr, CONST_STRPTR t, STRPTR iname, UWORD type, UBYTE
 
 
 void
-AddPrefsModuleToTree(struct Prefs *pr, struct PrefsModule *pm, struct MinList *tree)
+AddPrefsModuleToTree(struct Prefs *pr, struct PrefsModule *pm,
+	struct MinList *tree)
 {
 	struct TreeNode *tn;
-	long   flags;
+	long flags;
 					
 	// In beginner mode, not all preferences are available
 	if (!pm || (gIsBeginner && (pm->pm_Type == WDT_PREFCMDS || pm->pm_Type == WDT_PREFMENU || pm->pm_Type == WDT_PREFCONTEXT || pm->pm_Type == WDT_PREFKEYS)))
 		return;
-
-#ifdef IGNITION_LITE_EDITION
-	// in the lite edition, some modules are missing as well
-	if (pm->pm_Type == WDT_PREFMENU || pm->pm_Type == WDT_PREFCONTEXT)
-		return;
-#endif
 
 	flags = TNF_SORT;
 	if (pr != &prefs && pr != &recycledprefs && pm->pm_Flags & (PMF_ADD | PMF_REPLACE))

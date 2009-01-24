@@ -1,6 +1,6 @@
 /* Print support implementation
  *
- * Copyright ©1996-2008 pinc Software. All Rights Reserved.
+ * Copyright 1996-2009 pinc Software. All Rights Reserved.
  * Licensed under the terms of the GNU General Public License, version 3.
  */
 
@@ -1235,10 +1235,6 @@ AsyncPrint(void)
 void
 PrintProject(struct List *list, struct wdtPrinter *wp, WORD unit, ULONG flags)
 {
-#ifdef IGNITION_DEMO
-	NotAvailableInDemo();
-	return;
-#else
 	STRPTR error = NULL;
 
 	{
@@ -1313,7 +1309,6 @@ PrintProject(struct List *list, struct wdtPrinter *wp, WORD unit, ULONG flags)
 		ClosePrintWindow(wps);
 	}
 	SetBusy(FALSE, BT_APPLICATION);
-#endif	// !IGNITION_DEMO
 }
 
 

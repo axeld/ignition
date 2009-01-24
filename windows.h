@@ -1,5 +1,5 @@
 /*
- * Copyright ©1996-2009 pinc Software. All Rights Reserved.
+ * Copyright 1996-2009 pinc Software. All Rights Reserved.
  * Licensed under the terms of the GNU General Public License, version 3.
  */
 #ifndef IGN_WINDOWS_H
@@ -286,8 +286,4 @@ extern struct Gadget *CreateToolGadget(struct winData *wd,long id,struct Gadget 
 extern struct Gadget *CreatePopGadget(struct winData *wd,struct Gadget *gad,BOOL disabled);
 extern void FreeBorderGadgets(struct Gadget *gad,struct Window *win);
 
-#ifdef IGNITION_DEMO
-extern void NotAvailableInDemo(void);
-#endif
- 
 #endif  /* IGN_WINDOWS_H */

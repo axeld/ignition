@@ -1,6 +1,6 @@
 /* ARexx interface and implementation of exported functions
  *
- * Copyright ©1996-2008 pinc Software. All Rights Reserved.
+ * Copyright 1996-2009 pinc Software. All Rights Reserved.
  * Licensed under the terms of the GNU General Public License, version 3.
  */
 
@@ -2680,7 +2680,7 @@ rxSave(long *opts)
 ULONG
 rxPrefs(long *opts)
 {
-	long   flags = 0,i;
+	long flags = 0,i;
 
 	for(i = 0;i < PREFS_REQ;i++)
 		flags |= (opts[i] & 1) << i;
@@ -2688,24 +2688,17 @@ rxPrefs(long *opts)
 	if (opts[PREFS_LOAD])
 		flags |= (opts[PREFS_ADD] ? PRF_ADDCONTENTS : 0) | (opts[PREFS_KEEP] ? PRF_KEEPOLDCONTENTS : 0);
 
-	if (opts[PREFS_REQ])
-	{
+	if (opts[PREFS_REQ]) {
 		struct Mappe *mp = NULL;
-		long   type;
+		long type;
 
 		if (!opts[PREFS_GLOBAL] && rxpage)
 			mp = rxpage->pg_Mappe;
 
-		for (i = 0x10000; i; i >>= 1)
-		{
+		for (i = 0x10000; i; i >>= 1) {
 			if ((flags & i) == 0 || (type = GetPrefsModuleType(i)) == 0)
 				continue;
 
-#ifdef IGNITION_LITE_EDITION
-			// the lite edition doesn't contain all configuration possibilities
-			if (type == WDT_PREFMENU)
-				continue;
-#endif
 			OpenAppWindow(type, WA_Data, mp, TAG_END);
 		}
 
@@ -2715,43 +2708,39 @@ rxPrefs(long *opts)
 	if (!(flags & PRF_ALL))
 		flags |= PRF_ALL;
 
-	if (opts[PREFS_LOAD] || opts[PREFS_SAVE])
-	{
+	if (opts[PREFS_LOAD] || opts[PREFS_SAVE]) {
 		char dest[256], doit = FALSE;
 
-		if (!opts[PREFS_REQ])
-		{
+		if (!opts[PREFS_REQ]) {
 			if (!opts[PREFS_NAME])
 				strcpy(dest, CONFIG_PATH "/ignition.prefs");
 			else
 				strcpy(dest, (STRPTR)opts[PREFS_NAME]);
 
 			doit = TRUE;
-		}
-		else if (AslRequestTags(fileReq, ASLFR_Window,		scr->FirstWindow,
-										 ASLFR_TitleText,	 opts[PREFS_LOAD] ? GetString(&gLocaleInfo, MSG_LOAD_PREFERENCES_TITLE) : GetString(&gLocaleInfo, MSG_SAVE_PREFERENCES_TITLE),
-										 ASLFR_InitialDrawer, CONFIG_PATH,
-										 ASLFR_InitialFile,   "ignition.prefs",
-										 ASLFR_InitialPattern,"#?.prefs",
-										 ASLFR_DoSaveMode,	opts[PREFS_SAVE],
-										 ASLFR_DoPatterns,	TRUE,
-										 ASLFR_DrawersOnly,   FALSE,
-										 TAG_END))
-		{
+		} else if (AslRequestTags(fileReq,
+				ASLFR_Window,			scr->FirstWindow,
+				ASLFR_TitleText,		opts[PREFS_LOAD]
+					? GetString(&gLocaleInfo, MSG_LOAD_PREFERENCES_TITLE)
+					: GetString(&gLocaleInfo, MSG_SAVE_PREFERENCES_TITLE),
+				ASLFR_InitialDrawer,	CONFIG_PATH,
+				ASLFR_InitialFile,  	"ignition.prefs",
+				ASLFR_InitialPattern,	"#?.prefs",
+				ASLFR_DoSaveMode,		opts[PREFS_SAVE],
+				ASLFR_DoPatterns,		TRUE,
+				ASLFR_DrawersOnly,   	FALSE,
+				TAG_END)) {
 			strcpy(dest, fileReq->fr_Drawer);
 			AddPart(dest, fileReq->fr_File, 255);
 
 			doit = TRUE;
 		}
 
-		if (doit)
-		{
-			if (opts[PREFS_LOAD])
-			{
+		if (doit) {
+			if (opts[PREFS_LOAD]) {
 				LoadPrefs(&prefs,dest,NULL,flags);
 //		RefreshPrefsModules(&prefs,flags);
-			}
-			else
+			} else
 				SavePrefs(&prefs,dest,flags);
 		}
 	}
@@ -3580,12 +3569,10 @@ initRexx(void)
 	AddIntCmd(rxCopy,		  ICF_PAGE,  "COPY POS,UNIT/N/K");
 	AddIntCmd(rxCurrent,	   ICF_NONE,  "CURRENT MAP=WINDOW/K,PAGE,NEXT/S,PREV/S,SHOW/S,NUM/N/K");
 	AddIntCmd(rxCut,		   ICF_PAGE,  "CUT POS,TEXTONLY/S,UNIT/N/K");
-#ifndef IGNITION_LITE_EDITION
 	AddIntCmd(rxDatabase,	  ICF_NONE,  "DATABASE REQ/S");
 	AddIntCmd(rxDbCurrent,	 ICF_PAGE,  "DBCURRENT NAME/A,NEXT/S,PREV/S,FIRST/S,LAST/S,PARENT,NUM/N/K");
 	AddIntCmd(rxDbNew,		 ICF_PAGE,  "DBNEW NAME,PARENT,NOREFS/S");
 	AddIntCmd(rxDbSearch,	  ICF_PAGE,  "DBSEARCH NAME,FILTER/K,INPUT/S,START/S,STOP/S,TOGGLE/S");
-#endif
 	AddIntCmd(rxDelete,		ICF_PAGE,  "DELETE POS,TEXTONLY/S");
 	AddIntCmd(rxDeletePage,	ICF_PAGE,  "DELETEPAGE NAME");
 	AddIntCmd(rxDiagram,	   ICF_NONE,  "DIAGRAM NAME,REQ/S");
@@ -3608,9 +3595,7 @@ initRexx(void)
 	AddIntCmd(rxIndex,		 ICF_NONE,  "INDEX REQ/S");
 	AddIntCmd(rxInsertFormula, ICF_PAGE,  "INSERTFORMULA POS,NAME,TYPE/N/K,REQ/S");
 	AddIntCmd(rxInsertObject,  ICF_NONE,  "INSERTOBJECT TYPE,REQ/S");
-#ifndef IGNITION_LITE_EDITION
 	AddIntCmd(rxInteractive,   ICF_PAGE,  "INTERACTIVE SET/S,TOGGLE/S,NONE/S");
-#endif
 	AddIntCmd(rxLastError,	 ICF_MSG,   "LASTERROR VAR");
 	AddIntCmd(rxLoad,		  ICF_NONE,  "LOAD NAME,REQ/S,NEW/S,TYPE/K,TYPEREQ/S,OLDPATH/S");
 	AddIntCmd(rxLoadPicture,   ICF_PAGE,  "LOADPICTURE NAME,REQ/S");
@@ -3641,9 +3626,7 @@ initRexx(void)
 	AddIntCmd(rxRequestString, ICF_MSG,   "REQUESTSTRING PROMPT,DEFAULT/K,VAR");
 	AddIntCmd(rxRequestNumber, ICF_MSG,   "REQUESTNUMBER PROMPT,DEFAULT/K/N,VAR");
 	AddIntCmd(rxSave,		  ICF_PAGE,  "SAVE NAME,REQ/S,TYPEREQ/S");
-#ifndef IGNITION_LITE_EDITION
 	AddIntCmd(rxScript,		ICF_PAGE,  "SCRIPT NAME,EXTERN/S,NEW/S,EDIT/S,DELETE/S,REQ/S");
-#endif
 	AddIntCmd(rxSearch,		ICF_NONE,  "SEARCH REQ/S,NEXT/S");
 	AddIntCmd(rxSelect,		ICF_PAGE,  "SELECT POS,LEFT/S,RIGHT/S,ABOVE/S,BELOW/S,BLOCK/S");
 	AddIntCmd(rxSeparator,	 ICF_PAGE,  "SEPARATOR POS,SET/S,TOGGLE/S,NONE/S");
@@ -3755,7 +3738,6 @@ FreeRexxScript(struct RexxScript *rxs)
 ULONG
 RunRexxScript(UBYTE type, STRPTR name)
 {
-#ifndef IGNITION_LITE_EDITION
 	struct MsgPort *hostPort;
 	struct RexxScript *rxs = NULL;
 	struct RexxPort *rxp;
@@ -3764,34 +3746,27 @@ RunRexxScript(UBYTE type, STRPTR name)
 	if (!name)
 		return(RC_WARN);
 
-	if (type == RXS_INTERN)
-	{
-		if (!(rxs = (APTR)FindTag(&rxpage->pg_Mappe->mp_RexxScripts,name)))
-		{
+	if (type == RXS_INTERN) {
+		if (!(rxs = (APTR)FindTag(&rxpage->pg_Mappe->mp_RexxScripts,name))) {
 			ErrorRequest(GetString(&gLocaleInfo, MSG_INTERNAL_SCRIPT_NOT_FOUND_ERR),name);
 			return(RC_WARN);
 		}
 	}
-	if (!(rxp = MakeRexxPort()))
-	{
+	if (!(rxp = MakeRexxPort())) {
 		ErrorRequest(GetString(&gLocaleInfo, MSG_CREATE_SCRIPT_ENVIRONMENT_ERR));
 		return(RC_FAIL);
 	}
 	sendmsg = rxp->rxp_Message;
 
-	if (rxs)
-	{
+	if (rxs) {
 		sendmsg->rm_Args[0] = CreateArgstring(rxs->rxs_Data,strlen(rxs->rxs_Data));
 		sendmsg->rm_Action = RXCOMM | RXFF_STRING;
-	}
-	else
-	{
+	} else {
 		sendmsg->rm_Args[0] = CreateArgstring(name,strlen(name));
 		sendmsg->rm_Action = RXCOMM;
 	}
 	Forbid();
-	if (!(hostPort = FindPort("REXX")) && !FindTask("RexxMaster"))
-	{
+	if (!(hostPort = FindPort("REXX")) && !FindTask("RexxMaster")) {
 		Execute("SYS:System/RexxMast >Nil:", NULL, NULL);
 		hostPort = FindPort("REXX");
 	}
@@ -3799,12 +3774,11 @@ RunRexxScript(UBYTE type, STRPTR name)
 		PutMsg(hostPort, (struct Message *)sendmsg);
 	Permit();
 
-	if (!hostPort)
-	{
+	if (!hostPort) {
 		ErrorRequest(GetString(&gLocaleInfo, MSG_REXX_PORT_NOT_FOUND_ERR));
 		return RC_FAIL;
 	}
-#endif
+
 	return RC_OK;
 }
 
@@ -3812,64 +3786,33 @@ RunRexxScript(UBYTE type, STRPTR name)
 long
 handleEvent(struct Page *page,BYTE type,long col,long row)
 {
-#ifndef IGNITION_LITE_EDITION
 	struct Mappe *mp;
-	char   /*name[256],*/button[10];
+	char /*name[256],*/button[10];
 
 	ignoreEvent = FALSE;
 	if (!page || !((mp = page->pg_Mappe)->mp_Flags & MPF_SCRIPTS) || !mp->mp_Events[type].ev_Command || !(mp->mp_Events[type].ev_Flags & EVF_ACTIVE))
 		return 0;
 
-	if (type == EVT_LBUTTON || type == EVT_RBUTTON)
-	{
+	if (type == EVT_LBUTTON || type == EVT_RBUTTON) {
 		if (imsg.Code & IECODE_UP_PREFIX)
 			strcpy(button,"up ");
 		else
 			strcpy(button,"down ");
-	}
-	else
+	} else
 		strcpy(button,"");
 
 	ProcessAppCmd(page,mp->mp_Events[type].ev_Command);
 							
-#endif
 	return (long)ignoreEvent;
 }
 
 		
-#ifdef IGNITION_LITE_EDITION
-static bool
-AllowedLiteEditionRexxCommand(STRPTR t)
-{
-	const char *allowed[] = {"load", "save", "close", "new", "print", "quit", NULL};
-	int length = cmdlen(t);
-	int i;
-	
-	for (i = 0; allowed[i]; i++) {
-		if (!strnicmp(t, allowed[i], length))
-			return true;
-	}
-	
-	return false;
-}
-#endif
-
-
 void
 handleRexx(struct RexxMsg *rxmsg)
 {
 	D(bug("handleRexx() - %s\n  action: %lx - port: %s - ext: %s\n",rxmsg->rm_Args[0],rxmsg->rm_Action,rxmsg->rm_CommAddr,rxmsg->rm_FileExt));
 	D(bug("  task: %lx - replyport: %lx\n", rxmsg->rm_TaskBlock, rxmsg->rm_Node.mn_ReplyPort));
 
-#ifdef IGNITION_LITE_EDITION
-	// The lite edition does not have a full ARexx port
-	if (strcmp(rxmsg->rm_FileExt, "guide")) {
-		// accept some commands
-		if (!AllowedLiteEditionRexxCommand(rxmsg->rm_Args[0]))
-			return;
-	}
-#endif
- 
 	rxmsg->rm_Result1 = processIntCmd(rxmsg->rm_Args[0]);
 
 	if (rxmsg->rm_Action & RXFF_RESULT && !rxmsg->rm_Result1 && !rxmsg->rm_Result2)

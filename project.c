@@ -1,6 +1,6 @@
 /* Project related functions
  *
- * Copyright ©1996-2008 pinc Software. All Rights Reserved.
+ * Copyright 1996-2008 pinc Software. All Rights Reserved.
  * Licensed under the terms of the GNU General Public License, version 3.
  */
 
@@ -355,11 +355,10 @@ UpdatePageFont(struct Page *page, ULONG tag,...)
 	if (ff != (APTR)~0L)
 		page->pg_Family = ff;		/* Auswahl für folgende übernehmen */
 	if (height != ~0L) {
-#ifndef IGNITION_LITE_EDITION
 		// limit maximal font size to 128 pt
 		if (height > (128L << 16)) {
 			height = 128L << 16;
-#else
+#if 0
 		// limit maximal font size to 72 pt (because of MorphOS broken ft2.library)
 		if (height > (72L << 16)) {
 			height = 72L << 16;

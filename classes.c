@@ -1336,16 +1336,16 @@ FreeGClass(struct gClass *gc)
 
 
 struct gClass *
-MakeGClass(STRPTR name, UBYTE type, struct gClass *sgc, STRPTR label, STRPTR image, APTR dispatch,
-	APTR draw, struct gInterface *gi, ULONG objsize)
+MakeGClass(STRPTR name, UBYTE type, struct gClass *sgc, STRPTR label,
+	STRPTR image, APTR dispatch, APTR draw, struct gInterface *gi,
+	ULONG objsize)
 {
 	struct gClass *gc;
 
 	if (!(type & GCT_ROOT) && !sgc)
 		return NULL;
 
-	if ((gc = AllocPooled(pool, sizeof(struct gClass))) != 0)
-	{
+	if ((gc = AllocPooled(pool, sizeof(struct gClass))) != NULL) {
 		gc->gc_Node.in_Name = label;
 		gc->gc_Node.in_Type = type;
 		gc->gc_Node.in_Image = LoadImage(image);
@@ -1377,41 +1377,37 @@ MakeGClass(STRPTR name, UBYTE type, struct gClass *sgc, STRPTR label, STRPTR ima
 BOOL
 LoadGClass(struct gClass *gc)
 {
-	BOOL ASM (*initGCSegment)(REG(a0, APTR), REG(a1, APTR *), REG(a2, APTR), REG(a3, APTR), REG(a6, APTR),
-		REG(d0, APTR), REG(d1, APTR), REG(d2, APTR), REG(d3, APTR), REG(d4, long));
-	BPTR dir,olddir,segment;
+	BOOL ASM (*initGCSegment)(REG(a0, APTR), REG(a1, APTR *), REG(a2, APTR),
+		REG(a3, APTR), REG(a6, APTR), REG(d0, APTR), REG(d1, APTR),
+		REG(d2, APTR), REG(d3, APTR), REG(d4, long));
+	BPTR dir, olddir, segment;
 
 	if (gc->gc_Segment || !gc->gc_ClassName)
 		return TRUE;
 
-	if ((dir = Lock(CLASSES_PATH, ACCESS_READ)) != 0)
-	{
+	if ((dir = Lock(CLASSES_PATH, ACCESS_READ)) != 0) {
 		olddir = CurrentDir(dir);
-		if ((segment = LoadSeg(gc->gc_ClassName)) != 0)
-		{
+		if ((segment = LoadSeg(gc->gc_ClassName)) != 0) {
 			initGCSegment = MKBADDR(segment) + sizeof(APTR);
-			if (initGCSegment(gc, gClassFuncTable, pool, GfxBase, SysBase, MathIeeeDoubBasBase,
-					MathIeeeDoubTransBase, UtilityBase, LocaleBase,
-#ifdef IGNITION_LITE_EDITION
-					MAKE_ID('I','G','L',0)))
-#else
-					MAKE_ID('I','G','N',0)))
-#endif
+			if (initGCSegment(gc, gClassFuncTable, pool, GfxBase, SysBase,
+					MathIeeeDoubBasBase, MathIeeeDoubTransBase, UtilityBase,
+					LocaleBase, MAKE_ID('I','G','N',0)))
 				gc->gc_Segment = segment;
-			else
-			{
-				ErrorRequest(GetString(&gLocaleInfo, MSG_INIT_CLASS_ERR), gc->gc_ClassName);
+			else {
+				ErrorRequest(GetString(&gLocaleInfo, MSG_INIT_CLASS_ERR),
+					gc->gc_ClassName);
 				UnLoadSeg(segment);
 			}
+		} else {
+			ErrorRequest(GetString(&gLocaleInfo, MSG_CLASS_NOT_FOUND_ERR),
+				gc->gc_ClassName);
 		}
-		else
-			ErrorRequest(GetString(&gLocaleInfo, MSG_CLASS_NOT_FOUND_ERR),gc->gc_ClassName);
 
 		CurrentDir(olddir);
 		UnLock(dir);
 	}
-	if (!gc->gc_Segment)  // Klasse entfernen
-	{
+	if (!gc->gc_Segment) {
+		// remove class
 		RemoveLocked((struct Node *)gc);
 		FreeGClass(gc);
 
@@ -1438,7 +1434,7 @@ FreeGClasses(void)
 void
 InitGClasses(void)
 {
-	struct gClass *gc,*dgc;
+	struct gClass *gc, *dgc;
 	struct AnchorPath ALIGNED ap;
 	BPTR dir, olddir, dat;
 	char t[512];
@@ -1448,7 +1444,7 @@ InitGClasses(void)
 	MyNewList(&gdiagrams);
 	MyNewList(&intclasses);
 
-	/*** initialize internal classes ***/
+	/* initialize internal classes */
 
 	if ((gc = MakeGClass("root", GCT_ROOT | GCT_INTERNAL, NULL, NULL, NULL, gRootDispatch, NULL, gRootInterface, sizeof(struct gObject))) != 0) {
 		if ((dgc = MakeGClass("diagram", GCT_ROOT | GCT_INTERNAL, gc, NULL, NULL, gDiagramDispatch, NULL, gDiagramInterface,
@@ -1465,7 +1461,7 @@ InitGClasses(void)
 			MakeGClass(gcNames[i], gcTypes[i] | GCT_INTERNAL, FindGClass(gcSuper[i]), gcLabels[i], gcImages[i], gcDispatch[i], gcDraw[i], gcInterface[i], gcObjSize[i]);
 	}
 
-	/*** externe Klassenbeschreibungen laden ***/
+	/* load external class descriptions */
 
 	if ((dir = Lock(CLASSES_PATH, ACCESS_READ)) != 0) {
 		olddir = CurrentDir(dir);
