@@ -14,10 +14,11 @@ include $(TOP)/config/make.cfg
 
 EXE := Ignition
 
-TARGETDIR := $(AROS_CONTRIB)/Office/Ignition
+TARGETDIR := $(AROS_CONTRIB)/Applications/Ignition
+RELEASEDIR := $(TOP)/releases/Ignition
 
 USER_CFLAGS :=
-USER_INCLUDES := -Ilibs/include -Ilib/safeclip/gcc-generic -Ilibs
+USER_INCLUDES := -Ilibs/include -Ilib/safeclip/generic -Ilibs
 
 FILES := \
 	boopsi \
@@ -86,5 +87,20 @@ contrib-ignition-descr :
 contrib-ignition-files :
 CPYFILES := ignition.info LICENSE README
 %copy_files_q files=$(CPYFILES) src=. dst=$(TARGETDIR) maketarget=contrib-ignition-files
+
+#MM contrib-ignition-release : contrib-ignition
+
+#MM
+contrib-ignition-release :
+	$(RM) $(RELEASEDIR)
+	$(MKDIR) $(TOP)/releases
+	$(CP) -r $(TARGETDIR) $(RELEASEDIR)
+	$(CP) $(AROS_LIBS)/gtdrag.library $(RELEASEDIR)
+	$(CP) $(AROS_GADGETS)/pScroller.gadget $(RELEASEDIR)
+	$(CP) $(AROS_GADGETS)/pTextEdit.gadget $(RELEASEDIR)
+	$(TARGET_STRIP) $(RELEASEDIR)/Ignition
+	$(TARGET_STRIP) $(RELEASEDIR)/gtdrag.library
+	$(TARGET_STRIP) $(RELEASEDIR)/pScroller.gadget
+	$(TARGET_STRIP) $(RELEASEDIR)/pTextEdit.gadget
 
 %common
