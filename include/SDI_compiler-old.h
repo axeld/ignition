@@ -4,8 +4,8 @@
 /* Includeheader
 
         Name:           SDI_compiler.h
-        Versionstring:  $VER: SDI_compiler.h 1.34 (26.07.2010)
-        Author:         Dirk Stoecker & Jens Langner
+        Versionstring:  $VER: SDI_compiler.h 1.26 (14.10.2007)
+        Author:         Dirk Stöcker & Jens Langner
         Distribution:   PD
         Project page:   http://www.sf.net/projects/sditools/
         Description:    defines to hide compiler stuff
@@ -46,19 +46,7 @@
  1.25  21.06.07 : added NEAR to be usable for __near specification for SAS/C
  1.26  14.10.07 : added DEPRECATED macro which defaults to __attribute__((deprecated))
                   for GCC compiles.
- 1.27  20.03.09 : applied some changes and fixes to get the header more usable
-                  for an AROS compilation. (Pavel Fedin)
- 1.28  25.03.09 : added missing IPTR definition to make SDI_compiler.h more compatible
-                  to AROS. (Pavel Fedin)
- 1.29  25.03.09 : fixed the IPTR definition and also the use of the __M68000__ define.
- 1.30  26.03.09 : fixed the IPTR definition by only defining it for non AROS targets.
- 1.31  29.03.09 : added VARARGS68K definition for AROS.
- 1.32  28.05.09 : added STACKED definition for non-AROS targets.
- 1.33  03.06.10 : added missing SIPTR definition to make SDI_compiler.h more compatible
-                  to AROS.
- 1.34  26.07.10 : adapted IPTR and SIPTR definitions as the latest MorphOS SDK already
-                  contains them. (tboeckel)
-
+       29.11.08   Added some defines for Ignition and support modules (Mazze)
 */
 
 /*
@@ -74,7 +62,7 @@
 ** http://cvs.sourceforge.net/viewcvs.py/sditools/sditools/headers/
 **
 ** Jens Langner <Jens.Langner@light-speed.de> and
-** Dirk Stoecker <soft@dstoecker.de>
+** Dirk Stöcker <soft@dstoecker.de>
 */
 
 /* Some SDI internal header */
@@ -138,23 +126,20 @@
     #define INLINE static __inline __attribute__((always_inline))
   #endif
   /* we have to distinguish between AmigaOS4 and MorphOS */
-  #if defined(_M68000) || defined(__M68000) || defined(__mc68000)
-    #define REG(reg,arg) arg __asm(#reg)
-    #define LREG(reg,arg) register REG(reg,arg)
-  #else
+  #if defined(__PPC__)
     #define REG(reg,arg) arg
     #define SAVEDS
     #define STDARGS
     #define REGARGS
     #define STACKEXT
     #if defined(__MORPHOS__)
-      #define VARARGS68K __attribute__((varargs68k))
-    #endif
-    #if defined(__AROS__)
-      #define VARARGS68K __stackparm
+      #define VARARGS68K  __attribute__((varargs68k))
     #endif
     #define INTERRUPT
     #define CHIP
+  #else
+    #define REG(reg,arg) arg __asm(#reg)
+    #define LREG(reg,arg) register REG(reg,arg)
   #endif
   #define FAR
   #define NEAR
@@ -225,16 +210,83 @@
 #if !defined(DEPRECATED)
   #define DEPRECATED
 #endif
-#if !defined(__AROS__) && !defined(__MORPHOS__) && !defined(IPTR)
-  #define IPTR ULONG
-#endif
-#if !defined(__AROS__) && !defined(__MORPHOS__) && !defined(SIPTR)
-  #define SIPTR LONG
-#endif
-#if !defined(__AROS__) && !defined(STACKED)
-  #define STACKED
-#endif
 
 /*************************************************************************/
+
+#ifdef __AROS__
+  #undef REG
+  #define REG(reg, arg) arg
+
+  #undef SAVEDS
+  #define SAVEDS
+
+  #undef ASM
+  #define ASM
+
+  #undef REGARGS
+  #define REGARGS
+
+  #undef VARARGS68K
+  #define VARARGS68K __stackparm
+#else
+  #ifndef CONST_STRPTR
+	#define CONST_STRPTR UBYTE const *
+  #endif
+#endif /* __AROS__ */
+ 
+/*************************************************************************/
+
+/* Ignition support */
+
+#define PUBLIC ASM SAVEDS
+#define PRIVATE REGARGS
+
+/* IPTR is an integer type which is large enough to store an address.*/
+#if !defined(__AROS__) && !defined(__MORPHOS__)
+  typedef ULONG IPTR;
+#endif
+
+#if defined(__AROS__)
+#  define LIBFUNC_INIT AROS_LIBFUNC_INIT
+#  define LIBFUNC_EXIT AROS_LIBFUNC_EXIT
+#  define LIB_LH0 AROS_LH0
+#  define LIB_LH1 AROS_LH1
+#  define LIB_LH2 AROS_LH2
+#  define LIB_LH3 AROS_LH3
+#  define LIB_LH4 AROS_LH4
+#  define LIB_LH5 AROS_LH5
+#  define LIB_LHA AROS_LHA
+#  define min(a,b) ((a)<(b)?(a):(b))
+#  define max(a,b) ((a)>(b)?(a):(b))
+#  define PI (M_PI)
+
+#  undef CHIP
+#  define CHIP
+
+#  define ALIGNED __attribute__ ((aligned (4)))
+#else
+   // TODO write LIB_... macros
+#  define LIBFUNC_INIT
+#  define LIBFUNC_EXIT
+
+#  if !defined(ALIGNED)
+#    define ALIGNED
+#  endif
+
+#endif
+
+#if defined(__AROS__)
+   /* Platforms which need HookEntry from amiga.lib */
+   //#  define SETHOOK(hookname, funcname) hookname.h_Entry = HookEntry; hookname.h_SubEntry = (HOOKFUNC)funcname
+   // FIXME for now we set funcname to h_Entry. This must later be changed to h_SubEntry (uncomment
+   // the line above)
+#  define SETHOOK(hookname, funcname) hookname.h_Entry = (HOOKFUNC)funcname;
+
+#  define SETDISPATCHER(classname, funcname) classname->cl_Dispatcher.h_Entry = HookEntry; \
+   classname->cl_Dispatcher.h_SubEntry = (HOOKFUNC)funcname
+#else
+#  define SETHOOK(hookname, funcname) hookname.h_Entry = (HOOKFUNC)funcname
+#  define SETDISPATCHER(classname, funcname) classname->cl_Dispatcher.h_Entry = (HOOKFUNC)funcname
+#endif
 
 #endif /* SDI_COMPILER_H */
