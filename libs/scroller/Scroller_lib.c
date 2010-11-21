@@ -8,12 +8,63 @@
 
 #include "Scroller_includes.h"
 
+#define VERSION (0)
+#define REVISION (1)
+#define LIBNAME "pScroller.gadget"
+#define VSTRING "pScroller.gadget 0.2 (23.9.2000)"
+#define VERSTAG "$VER: pScroller.gadget 0.2 (23.9.2000)"
 
-struct Library * PUBLIC LibInit(REG(a0, BPTR Segment),REG(d0, struct ClassBase *cb),REG(a6, struct ExecBase *ExecBase);
+
+struct Library * PUBLIC LibInit(REG(a0, BPTR Segment),REG(d0, struct ClassBase *cb),REG(a6, struct ExecBase *ExecBase));
 struct Library * PUBLIC LibOpen(REG(a6, struct ClassBase *cb));
 BPTR PUBLIC LibExpunge(REG(a6, struct ClassBase *cb));
 BPTR PUBLIC LibClose(REG(a6, struct ClassBase *cb));
 LONG PUBLIC LibNull(REG(a6, struct ClassBase *cb));
+
+
+static APTR LibVectors[] =
+{
+	LibOpen,
+	LibClose,
+	LibExpunge,
+	LibNull,
+
+	GetClass,
+
+	(APTR)-1
+};
+
+
+static struct
+{
+	ULONG DataSize;
+	APTR Table;
+	APTR Data;
+	struct Library * (*Init)();
+} LibInitTab =
+{
+	sizeof(struct ClassBase),
+	LibVectors,
+	NULL,
+	LibInit
+};
+
+
+static const USED_VAR struct Resident ROMTag =
+{
+	RTC_MATCHWORD,
+	(struct Resident *)&ROMTag,
+	(struct Resident *)(&ROMTag + 1),
+	RTF_AUTOINIT|RTF_EXTENDED,
+	VERSION,
+	NT_LIBRARY,
+	0,
+	(char *)LIBNAME,
+	(char *)VSTRING,
+	&LibInitTab,
+	REVISION,
+	0
+};
 
 
 void PRIVATE SC_Exit(struct ClassBase *cb)
@@ -31,15 +82,15 @@ void PRIVATE SC_Exit(struct ClassBase *cb)
 
 int PRIVATE SC_Init(struct ClassBase *cb)
 {
-  if (cb->cb_IntuitionBase = OpenLibrary("intuition.library",37))
+  if ((cb->cb_IntuitionBase = OpenLibrary("intuition.library",37)) != NULL)
   {
-    if (cb->cb_GfxBase = (APTR)OpenLibrary("graphics.library",37))
+    if ((cb->cb_GfxBase = (APTR)OpenLibrary("graphics.library",37)) != NULL)
     {
-      if (cb->cb_UtilityBase = OpenLibrary("utility.library",37))
+      if ((cb->cb_UtilityBase = OpenLibrary("utility.library",37)) != NULL)
       {
         Class *cl;
 
-        if (cl = MakeClass("pinc-scrollergadget","propgclass",NULL,sizeof(struct ScrollerGData),0))
+        if ((cl = MakeClass("pinc-scrollergadget","propgclass",NULL,sizeof(struct ScrollerGData),0)) != NULL)
         {
           cl->cl_Dispatcher.h_Entry = (APTR)DispatchScrollerGadget;
           cl->cl_Dispatcher.h_Data = cb;
@@ -48,7 +99,7 @@ int PRIVATE SC_Init(struct ClassBase *cb)
 
           cb->cb_ScrollerClass = cl;
 
-          if (cl = MakeClass("pinc-arrowimage","imageclass",NULL,sizeof(struct ArrowIData),0))
+          if ((cl = MakeClass("pinc-arrowimage","imageclass",NULL,sizeof(struct ArrowIData),0)) != NULL)
           {
             cl->cl_Dispatcher.h_Entry = (APTR)DispatchArrowImage;
             cl->cl_Dispatcher.h_Data = cb;
@@ -76,41 +127,17 @@ Class * PUBLIC GetClass(REG(a6, APTR cb))
 }
 
 
-STATIC APTR LibVectors[] =
-{
-  LibOpen,
-  LibClose,
-  LibExpunge,
-  LibNull,
-
-  GetClass,
-
-  (APTR)-1
-};
-
-extern UBYTE __far LibName[], LibID[];
-extern LONG __far LibVersion, LibRevision;
-
-struct { ULONG DataSize; APTR Table; APTR Data; struct Library * (*Init)(); } __aligned LibInitTab =
-{
-  sizeof(struct ClassBase),
-  LibVectors,
-  NULL,
-  LibInit
-};
-
-
 struct Library * PUBLIC LibInit(REG(a0, BPTR segment),REG(d0, struct ClassBase *cb),REG(a6, struct ExecBase *ExecBase))
 {
   if(ExecBase->LibNode.lib_Version < 37)
     return(NULL);
 
   cb->cb_LibNode.lib_Node.ln_Type = NT_LIBRARY;
-  cb->cb_LibNode.lib_Node.ln_Name = LibName;
+  cb->cb_LibNode.lib_Node.ln_Name = LIBNAME;
   cb->cb_LibNode.lib_Flags        = LIBF_CHANGED | LIBF_SUMUSED;
-  cb->cb_LibNode.lib_Version      = LibVersion;
-  cb->cb_LibNode.lib_Revision     = LibRevision;
-  cb->cb_LibNode.lib_IdString     = (APTR)LibID;
+  cb->cb_LibNode.lib_Version      = VERSION;
+  cb->cb_LibNode.lib_Revision     = REVISION;
+  cb->cb_LibNode.lib_IdString     = VSTRING;
   cb->cb_LibSegment = segment;
   cb->cb_SysBase = ExecBase;
 
@@ -181,5 +208,5 @@ BPTR PUBLIC LibClose(REG(a6, struct ClassBase *cb))
 
 LONG PUBLIC LibNull(REG(a6, struct ClassBase *cb))
 {
-  return(NULL);
+	return 0;
 }

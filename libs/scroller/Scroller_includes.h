@@ -18,6 +18,7 @@
 #endif
 
 #include "SDI_compiler.h"
+#include "compatibility.h"
 
 #include <exec/execbase.h>
 #include <exec/libraries.h>
@@ -25,6 +26,7 @@
 #include <exec/lists.h>
 #include <exec/ports.h>
 #include <exec/memory.h>
+#include <exec/resident.h>
 #include <devices/input.h>
 #include <intuition/intuition.h>
 #include <intuition/gadgetclass.h>
