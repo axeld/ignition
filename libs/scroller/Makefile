@@ -1,6 +1,6 @@
 CC=i386-aros-gcc
 CFLAGS=-Wall -Wno-pointer-sign -I../../include -Iinclude
-LDFLAGS=-lgraphics -lintuition -lutility -lrom -nostartfiles -auto
+LDFLAGS=-lgraphics -lintuition -lutility -lrom -nostartfiles
 
 EXE = ../pScroller.gadget
 
