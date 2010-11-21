@@ -1,6 +1,10 @@
-CC=i386-aros-gcc
-CFLAGS=-Wall -Wno-pointer-sign -I../../include -Iinclude
-LDFLAGS=-lgraphics -lintuition -lutility -lrom -nostartfiles
+# Copyright ©1999-2010 pinc Software. All Rights Reserved.
+# Licensed under the terms of the MIT License.
+
+CC = i386-aros-gcc
+CFLAGS = -Wall -Wno-pointer-sign -I../../include -Iinclude \
+	-D__GRAPHICS_NOLIBBASE__ -D__INTUITION_NOLIBBASE__ -D__UTILITY_NOLIBBASE__
+LDFLAGS = -lrom -nostartfiles
 
 EXE = ../pScroller.gadget
 

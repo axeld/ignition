@@ -1,5 +1,5 @@
 /*
- * Copyright ©1999-2008 pinc Software. All Rights Reserved.
+ * Copyright ©1999-2010 pinc Software. All Rights Reserved.
  * Licensed under the terms of the MIT License.
  */
 
@@ -9,7 +9,7 @@
 #include "Scroller_includes.h"
 
 #define VERSION (0)
-#define REVISION (1)
+#define REVISION (2)
 #define LIBNAME "pScroller.gadget"
 #define VSTRING "pScroller.gadget 0.2 (23.9.2000)"
 #define VERSTAG "$VER: pScroller.gadget 0.2 (23.9.2000)"

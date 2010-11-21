@@ -1,5 +1,5 @@
 /*
- * Copyright ©1999-2008 pinc Software. All Rights Reserved.
+ * Copyright ©1999-2010 pinc Software. All Rights Reserved.
  * Licensed under the terms of the MIT License.
  */
 #ifndef SCROLLER_INCLUDES_H
@@ -7,15 +7,6 @@
 
 
 #define INTUI_V36_NAMES_ONLY
-
-#if defined(__SASC)
-#	define __USE_SYSBASE
-
-#	define SysBase cb->cb_SysBase
-#	define IntuitionBase cb->cb_IntuitionBase
-#	define GfxBase cb->cb_GfxBase
-#	define UtilityBase cb->cb_UtilityBase
-#endif
 
 #include "SDI_compiler.h"
 #include "compatibility.h"
@@ -42,17 +33,18 @@
 #include <proto/graphics.h>
 #include <proto/utility.h>
 
-#if defined(__SASC)
-#	include <pragmas/exec_pragmas.h>
-#	include <pragmas/intuition_pragmas.h>
-#	include <pragmas/graphics_pragmas.h>
-#	include <pragmas/utility_pragmas.h>
-#endif
-
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
 #include <math.h>
+
+#if !defined(__AROS__)
+// AROS gets SysBase from the linker.
+#define SysBase cb->cb_SysBase
+#endif
+#define IntuitionBase cb->cb_IntuitionBase
+#define GfxBase cb->cb_GfxBase
+#define UtilityBase cb->cb_UtilityBase
 
 #define ID_FTXT  MAKE_ID('F','T','X','T')
 #define ID_CHRS  MAKE_ID('C','H','R','S')
