@@ -7,22 +7,12 @@
 
 #define INTUI_V36_NAMES_ONLY
 
-#if !defined(__AROS__)
-#	define __USE_SYSBASE
-
-#	define SysBase cb->cb_SysBase
-#	define IntuitionBase cb->cb_IntuitionBase
-#	define GfxBase cb->cb_GfxBase
-#	define DOSBase cb->cb_DOSBase
-#	define UtilityBase cb->cb_UtilityBase
-#	define IFFParseBase cb->cb_IFFParseBase
-#endif
-
 #define ConsoleDevice ((struct Library *)cb->cb_Console.io_Device)
 
 #include "TextEdit_private.h"
 
 #include "SDI_compiler.h"
+#include "compatibility.h"
 
 #include <exec/execbase.h>
 #include <exec/libraries.h>
@@ -49,15 +39,16 @@
 #include <proto/utility.h>
 #include <proto/dos.h>
 
-#if defined(__SASC)
-#	include <pragmas/exec_pragmas.h>
-#	include <pragmas/iffparse_pragmas.h>
-#	include <pragmas/console_pragmas.h>
-#	include <pragmas/intuition_pragmas.h>
-#	include <pragmas/graphics_pragmas.h>
-#	include <pragmas/utility_pragmas.h>
-#	include <pragmas/dos_pragmas.h>
+#if !defined(__AROS__)
+// AROS gets SysBase from linker
+#define SysBase cb->cb_SysBase
 #endif
+
+#define IntuitionBase cb->cb_IntuitionBase
+#define GfxBase cb->cb_GfxBase
+#define DOSBase cb->cb_DOSBase
+#define UtilityBase cb->cb_UtilityBase
+#define IFFParseBase cb->cb_IFFParseBase
 
 #include <stdlib.h>
 #include <ctype.h>
@@ -140,10 +131,6 @@ extern void PRIVATE DrawEditGadget(struct ClassBase *cb,struct RastPort *rp,stru
 
 /** public functions **/
 
-
-#if defined(__AROS__)
-#	include <proto/pTextEdit.h>
-#else
 /* Mazze: ClassBase moved to end of argument list */
 extern Class * PUBLIC GetClass(REG(a6, APTR cb));
 extern void PUBLIC Text2Clipboard(REG(d0, UBYTE clipunit),REG(a0, STRPTR t),REG(d1, long len),REG(a6, struct ClassBase *cb));
@@ -151,6 +138,5 @@ extern STRPTR PUBLIC TextFromClipboard(REG(d0, UBYTE clipunit),REG(a0, APTR pool
 extern IPTR PUBLIC DispatchEditGadget(REG(a0, Class *cl),REG(a2, Object *o),REG(a1, Msg msg));
 extern void PUBLIC FreeEditList(REG(a0, struct EditGData *ed),REG(a6, struct ClassBase *cb));
 extern BOOL PUBLIC PrepareEditText(REG(a0, struct EditGData *ed),REG(a1, struct RastPort *rp),REG(a2, STRPTR t),REG(a6, struct ClassBase *cb));
-#endif
 
 #endif    // TEXTEDIT_H

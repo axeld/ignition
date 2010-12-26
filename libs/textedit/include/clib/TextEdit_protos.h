@@ -21,9 +21,10 @@
 /*--- functions in V1 or higher ---*/
 
 /* Public entries */
-Class *GetClass(APTR classbase);
+Class *GetClass(void);
 void Text2Clipboard(UBYTE clipunit,STRPTR t,LONG len);
 STRPTR TextFromClipboard(UBYTE clipunit,APTR pool);
+void FreeEditList(struct EditGData *ed);
 void PrepareEditText(struct EditGData *ed,struct RastPort *rp,STRPTR t);
 
 #endif   /* CLIB_TEXTEDIT_PROTOS_H */
