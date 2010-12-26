@@ -46,6 +46,7 @@ int PRIVATE TE_Init(struct ClassBase *cb)
     {
       if (cb->cb_UtilityBase = OpenLibrary("utility.library",37))
       {
+        cb->cb_Console.io_Message.mn_Length = sizeof(struct IOStdReq);
         if (!OpenDevice("console.device",-1,(struct IORequest *)&cb->cb_Console,0))
         {
           Class *cl;
