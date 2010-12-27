@@ -9,16 +9,38 @@
 #include "TextEdit_includes.h"
 
 
-struct Library * PUBLIC LibInit(REG(a0, BPTR Segment),REG(d0, struct ClassBase *cb),REG(a6, struct ExecBase *ExecBase));
-struct Library * PUBLIC LibOpen(REG(a6, struct ClassBase *cb));
-BPTR PUBLIC LibExpunge(REG(a6, struct ClassBase *cb));
-BPTR PUBLIC LibClose(REG(a6, struct ClassBase *cb));
-LONG PUBLIC LibNull(REG(a6, struct ClassBase *cb));
+#define VERSION	        1
+#define REVISION        5
+#define DATE            "26.12.2010"
+#define VERS            "pTextEdit.gadget"
+#define VSTRING         "pTextEdit.gadget 1.5 (26.12.2010)\r\n"
+#define VERSTAG         "\0$VER: pTextEdit.gadget 1.5 (26.10.2010)"
+
+static const char UserLibName[] = VERS;
+static const char UserLibID[]   = VERSTAG;
+
+LIBFUNC static struct ClassBase * LibInit(REG(a0, BPTR Segment), REG(d0, struct ClassBase *cb), REG(a6, struct ExecBase *sb));
+LIBFUNC static BPTR               LibExpunge (REG(a6, struct ClassBase *cb));
+LIBFUNC static struct ClassBase * LibOpen    (REG(a6, struct ClassBase *cb));
+LIBFUNC static BPTR               LibClose   (REG(a6, struct ClassBase *cb));
+LIBFUNC static LONG               LibNull    (void);
 
 
-Class * PUBLIC GetClass(REG(a6, APTR cb))
+int Main(void)
 {
-  return(((struct ClassBase *)cb)->cb_Class);
+  return RETURN_FAIL;
+}
+
+LIBFUNC static LONG LibNull(VOID)
+{
+  return 0;
+}
+
+
+LIBFUNC Class * GetClass(void)
+{
+  // return(((struct ClassBase *)cb)->cb_Class);
+  return 0; // FIXME
 }
 
 
@@ -40,25 +62,25 @@ void PRIVATE TE_Exit(struct ClassBase *cb)
 
 int PRIVATE TE_Init(struct ClassBase *cb)
 {
-  if (cb->cb_IntuitionBase = OpenLibrary("intuition.library",37))
+  if ((cb->cb_IntuitionBase = OpenLibrary("intuition.library",37)) != NULL)
   {
-    if (cb->cb_GfxBase = (APTR)OpenLibrary("graphics.library",37))
+    if ((cb->cb_GfxBase = (APTR)OpenLibrary("graphics.library",37)) != NULL)
     {
-      if (cb->cb_UtilityBase = OpenLibrary("utility.library",37))
+      if ((cb->cb_UtilityBase = OpenLibrary("utility.library",37)) != NULL)
       {
         cb->cb_Console.io_Message.mn_Length = sizeof(struct IOStdReq);
         if (!OpenDevice("console.device",-1,(struct IORequest *)&cb->cb_Console,0))
         {
           Class *cl;
 
-          if (cl = MakeClass("pinc-editgadget",GADGETCLASS,NULL,sizeof(struct EditGData),0))
+          if ((cl = MakeClass("pinc-editgadget",GADGETCLASS,NULL,sizeof(struct EditGData),0)) != NULL)
           {
             cl->cl_Dispatcher.h_Entry = (APTR)DispatchEditGadget;
             cl->cl_Dispatcher.h_Data = cb;
             cl->cl_UserData = (ULONG)cb;
             AddClass(cl);
 
-            if (cb->cb_IFFParseBase = OpenLibrary("iffparse.library",37))
+            if ((cb->cb_IFFParseBase = OpenLibrary("iffparse.library",37)) != NULL)
               cb->cb_DOSBase = OpenLibrary("dos.library",37);
             cb->cb_Class = cl;
 
@@ -75,56 +97,70 @@ int PRIVATE TE_Init(struct ClassBase *cb)
   return(FALSE);
 }
 
+#define libvector LFUNC_FAS(GetClass) \
+  LFUNC_FA_(Text2Clipboard) \
+  LFUNC_FA_(TextFromClipboard) \
+  LFUNC_FA_(FreeEditList) \
+  LFUNC_FA_(PrepareEditText)
 
-STATIC APTR LibVectors[] =
+
+STATIC CONST_APTR LibVectors[] =
 {
   LibOpen,
   LibClose,
   LibExpunge,
   LibNull,
-
-  GetClass,
-  Text2Clipboard,
-  TextFromClipboard,
-  FreeEditList,
-  PrepareEditText,
-
+  libvector,
   (APTR)-1
 };
 
-extern UBYTE __far LibName[], LibID[];
-extern LONG __far LibVersion, LibRevision;
 
-struct { ULONG DataSize; APTR Table; APTR Data; struct Library * (*Init)(); } __aligned LibInitTab =
+STATIC CONST IPTR LibInitTab[] =
 {
   sizeof(struct ClassBase),
-  LibVectors,
-  NULL,
-  LibInit
+  (IPTR)LibVectors,
+  (IPTR)NULL,
+  (IPTR)LibInit
 };
 
 
-struct Library * PUBLIC LibInit(REG(a0, BPTR segment),REG(d0, struct ClassBase *cb),REG(a6, struct ExecBase *ExecBase))
+static const USED_VAR struct Resident ROMTag =
+{
+  RTC_MATCHWORD,
+  (struct Resident *)&ROMTag,
+  (struct Resident *)(&ROMTag + 1),
+  RTF_AUTOINIT,
+  VERSION,
+  NT_LIBRARY,
+  0,
+  (char *)UserLibName,
+  (char *)UserLibID + 6,
+  (APTR)LibInitTab
+};
+
+
+struct ClassBase * LibInit(REG(a0, BPTR segment),REG(d0, struct ClassBase *cb),REG(a6, struct ExecBase *ExecBase))
 {
   if(ExecBase->LibNode.lib_Version < 37)
     return(NULL);
 
   cb->cb_LibNode.lib_Node.ln_Type = NT_LIBRARY;
-  cb->cb_LibNode.lib_Node.ln_Name = LibName;
+  cb->cb_LibNode.lib_Node.ln_Pri  = 0;
+  cb->cb_LibNode.lib_Node.ln_Name = UserLibName;
   cb->cb_LibNode.lib_Flags        = LIBF_CHANGED | LIBF_SUMUSED;
-  cb->cb_LibNode.lib_Version      = LibVersion;
-  cb->cb_LibNode.lib_Revision     = LibRevision;
-  cb->cb_LibNode.lib_IdString     = (APTR)LibID;
+  cb->cb_LibNode.lib_Version      = VERSION;
+  cb->cb_LibNode.lib_Revision     = REVISION;
+  cb->cb_LibNode.lib_IdString     = (APTR)UserLibID;
   cb->cb_LibSegment = segment;
   cb->cb_SysBase = ExecBase;
 
   InitSemaphore(&cb->cb_LockSemaphore);
 
-  return((struct Library *)cb);
+  return cb;
 }
 
 
-struct Library * PUBLIC LibOpen(REG(a6, struct ClassBase *cb))
+LIBFUNC struct ClassBase * LibOpen(REG(a6, struct ClassBase *cb))
 {
   cb->cb_LibNode.lib_Flags &= ~LIBF_DELEXP;
   cb->cb_LibNode.lib_OpenCnt++;
@@ -143,11 +179,11 @@ struct Library * PUBLIC LibOpen(REG(a6, struct ClassBase *cb))
     }
   }
   ReleaseSemaphore(&cb->cb_LockSemaphore);
-  return((struct Library *)cb);
+  return (cb);
 }
 
 
-BPTR PUBLIC LibExpunge(REG(a6, struct ClassBase *cb))
+LIBFUNC BPTR LibExpunge(REG(a6, struct ClassBase *cb))
 {
   if (!cb->cb_LibNode.lib_OpenCnt && cb->cb_LibSegment)
   {
@@ -165,7 +201,7 @@ BPTR PUBLIC LibExpunge(REG(a6, struct ClassBase *cb))
 }
 
 
-BPTR PUBLIC LibClose(REG(a6, struct ClassBase *cb))
+LIBFUNC BPTR LibClose(REG(a6, struct ClassBase *cb))
 {
   if (cb->cb_LibNode.lib_OpenCnt)
     cb->cb_LibNode.lib_OpenCnt--;
@@ -179,11 +215,5 @@ BPTR PUBLIC LibClose(REG(a6, struct ClassBase *cb))
     if (cb->cb_LibNode.lib_Flags & LIBF_DELEXP)
       return(LibExpunge(cb));
   }
-  return(NULL);
-}
-
-
-LONG PUBLIC LibNull(REG(a6, struct ClassBase *cb))
-{
   return(NULL);
 }

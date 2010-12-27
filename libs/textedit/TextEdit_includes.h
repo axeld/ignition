@@ -12,6 +12,7 @@
 #include "TextEdit_private.h"
 
 #include "SDI_compiler.h"
+#include "SDI_lib.h"
 #include "compatibility.h"
 
 #include <exec/execbase.h>
@@ -20,6 +21,7 @@
 #include <exec/lists.h>
 #include <exec/ports.h>
 #include <exec/memory.h>
+#include <exec/resident.h>
 #include <devices/input.h>
 #include <intuition/intuition.h>
 #include <intuition/gadgetclass.h>
@@ -131,12 +133,17 @@ extern void PRIVATE DrawEditGadget(struct ClassBase *cb,struct RastPort *rp,stru
 
 /** public functions **/
 
-/* Mazze: ClassBase moved to end of argument list */
-extern Class * PUBLIC GetClass(REG(a6, APTR cb));
-extern void PUBLIC Text2Clipboard(REG(d0, UBYTE clipunit),REG(a0, STRPTR t),REG(d1, long len),REG(a6, struct ClassBase *cb));
-extern STRPTR PUBLIC TextFromClipboard(REG(d0, UBYTE clipunit),REG(a0, APTR pool),REG(a6, struct ClassBase *cb));
+//extern Class * PUBLIC GetClass(REG(a6, APTR cb));
+LIBPROTO(GetClass, Class *);
+//extern void PUBLIC Text2Clipboard(REG(d0, UBYTE clipunit),REG(a0, STRPTR t),REG(d1, long len),REG(a6, struct ClassBase *cb));
+LIBPROTO(Text2Clipboard, void, REG(d0, UBYTE clipunit),REG(a0, STRPTR t),REG(d1, long len));
+//extern STRPTR PUBLIC TextFromClipboard(REG(d0, UBYTE clipunit),REG(a0, APTR pool),REG(a6, struct ClassBase *cb));
+LIBPROTO(TextFromClipboard, STRPTR, REG(d0, UBYTE clipunit),REG(a0, APTR pool));
+//extern void PUBLIC FreeEditList(REG(a0, struct EditGData *ed),REG(a6, struct ClassBase *cb));
+LIBPROTO(FreeEditList, void, REG(a0, struct EditGData *ed));
+//extern BOOL PUBLIC PrepareEditText(REG(a0, struct EditGData *ed),REG(a1, struct RastPort *rp),REG(a2, STRPTR t),REG(a6, struct ClassBase *cb));
+LIBPROTO(PrepareEditText, BOOL, REG(a0, struct EditGData *ed),REG(a1, struct RastPort *rp),REG(a2, STRPTR t));
+
 extern IPTR PUBLIC DispatchEditGadget(REG(a0, Class *cl),REG(a2, Object *o),REG(a1, Msg msg));
-extern void PUBLIC FreeEditList(REG(a0, struct EditGData *ed),REG(a6, struct ClassBase *cb));
-extern BOOL PUBLIC PrepareEditText(REG(a0, struct EditGData *ed),REG(a1, struct RastPort *rp),REG(a2, STRPTR t),REG(a6, struct ClassBase *cb));
 
 #endif    // TEXTEDIT_H

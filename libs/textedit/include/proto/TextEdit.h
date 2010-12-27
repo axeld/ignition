@@ -3,7 +3,7 @@
 #ifndef PROTO_TEXTEDIT_H
 #define PROTO_TEXTEDIT_H
 
-#include <clib/textedit_protos.h>
+#include <clib/TextEdit_protos.h>
 
 #ifndef _NO_INLINE
 # if defined(__GNUC__)

@@ -119,14 +119,11 @@ void PUBLIC process_TextFromClipboard(void)
 }
 
 
-LIB_LH3(void, Text2Clipboard,
-  LIB_LHA(UBYTE, clipunit, D0),
-  LIB_LHA(STRPTR, t, A0),
-  LIB_LHA(long, len, D1),
-  struct ClassBase *, cb, 5, pTextEdit)
+LIBFUNC void Text2Clipboard(
+  REG(d0, UBYTE clipunit),
+  REG(a0, STRPTR t),
+  REG(d1, long len))
 {
-  LIBFUNC_INIT
-
   struct Task *this;
 
   if (!t || !len || !cb->cb_IFFParseBase)
@@ -153,18 +150,13 @@ LIB_LH3(void, Text2Clipboard,
   }
   else
     internal_Text2Clipboard(clipunit,t,len,cb);
-
-  LIBFUNC_EXIT
 }
 
 
-LIB_LH2(STRPTR, TextFromClipboard,
-  LIB_LHA(UBYTE, clipunit, A0),
-  LIB_LHA(APTR, pool, A0),
-  struct ClassBase *, cb, 6, pTextEdit)
+LIBFUNC STRPTR TextFromClipboard(
+  REG(d0, UBYTE clipunit),
+  REG(a0, APTR pool))
 {
-  LIBFUNC_INIT
-
   struct Task *this;
 
   if (!pool || !cb->cb_IFFParseBase)
@@ -197,6 +189,4 @@ LIB_LH2(STRPTR, TextFromClipboard,
   }
   else
     return(internal_TextFromClipboard(clipunit,pool,cb));
-
-  LIBFUNC_EXIT
 }

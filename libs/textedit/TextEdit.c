@@ -31,12 +31,8 @@ void PRIVATE strdel(STRPTR t,long len)
 }
 
 
-LIB_LH1(VOID, FreeEditList,
-  LIB_LHA(struct EditGData *, ed, A0),
-  struct ClassBase *, cb, 7, pTextEdit)
+LIBFUNC VOID FreeEditList(REG(a0, struct EditGData * ed))
 {
-  LIBFUNC_INIT
-
   struct MinNode *mln;
   struct EditLine *el;
   long   count;
@@ -48,8 +44,6 @@ LIB_LH1(VOID, FreeEditList,
   }
   ed->ed_Top = ed->ed_List.mlh_Head;
   ed->ed_TextLines = 0;
-
-  LIBFUNC_EXIT
 }
 
 
@@ -106,11 +100,10 @@ JustifyEditLine(struct EditGData *ed, struct EditLine *fel, long width, BOOL las
 }
 
 
-LIB_LH3(BOOL, PrepareEditText,
-  LIB_LHA(struct EditGData *, ed, A0),
-  LIB_LHA(struct RastPort *, rp, A1),
-  LIB_LHA(STRPTR, t, A2),
-  struct ClassBase *, cb, 8, pTextEdit)
+LIBFUNC BOOL PrepareEditText(
+  REG(a0, struct EditGData * ed),
+  REG(a1, struct RastPort * rp),
+  REG(a2, STRPTR t))
 {
   LIBFUNC_INIT
 
