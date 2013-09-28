@@ -528,16 +528,9 @@ struct AppCmd {
 struct Command {
     struct Command *cmd_Succ;
     struct Command *cmd_Pred;
-#if defined(__AROS__)
-  #warning FIXME when V1 ABI is out
-    char   *cmd_Name;
-    UBYTE  cmd_Type;
-    BYTE   cmd_Pri;
-#else
     UBYTE  cmd_Type;
     BYTE   cmd_Pri;
     char   *cmd_Name;
-#endif
 };
 
 #define CMDT_INTERN 0

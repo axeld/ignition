@@ -19,12 +19,7 @@ long tf_col, tf_row, mp_flags, gTextBufferLength;
 STRPTR tf_format, gTextBuffer, itaPoint;
 UWORD calcerr, calcflags = CF_REQUESTER;
 long mday[] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
-#if defined(__AROS__) && !(AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-#warning FIXME when V1 ABI is out
-struct FormatVorlage empty_fv = {{NULL, NULL, NULL, FVT_NONE, 0}, NULL, 0, 0, 0, 0};
-#else
 struct FormatVorlage empty_fv = {{NULL, NULL, FVT_NONE, 0, NULL}, NULL, 0, 0, 0, 0};
-#endif
 struct MinList flangs;
 APTR tree_stack;
 ULONG tree_size;
