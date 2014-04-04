@@ -21,9 +21,8 @@ To build ignition, you currently need the following pieces installed:
  * pScroller BOOPSI gadget (including headers)
 
 The latter three are components I wrote years ago and are all available on
-the Aminet. I plan to add them to the ignition source repository in the future,
-and I would welcome help with this, too. All of them will be released under the
-MIT license.
+the Aminet. Their sources are also part of this source repository, and are
+licensed under the MIT license.
 
 
 Build
@@ -41,10 +40,10 @@ Note that ignition assumes to be built with German being the native locale.
 
 Helping with development
 --
-If you are a C or C++ programmer, any help to further improve ignition are
+If you are a C or C++ programmer, any help to further improve ignition is
 welcome.
-However, the code has been developed over a curse of more than 10 years, and
-you'll find horrible as well as elegant code in there, with mixing coding
+However, the code has been developed over a course of more than 10 years, and
+you'll find horrible, as well as elegant code in there, with mixing coding
 styles.
 New code should all follow the same coding style, though, that is:
  * Use only tabs for indenting, default tab size is 4.
@@ -73,7 +72,7 @@ There are currently only two channels of communication:
 
  * User mailing list (https://lists.berlios.de/mailman/listinfo/ignition-user)
  * Developer mailing list (https://lists.berlios.de/mailman/listinfo/ignition-develop)
-
+ * Commit mailing list
 
 Directory layout
 --
