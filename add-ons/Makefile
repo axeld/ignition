@@ -164,14 +164,15 @@ ifeq ($(OS), os4)
   endif
 
   # Compiler/Linker flags
-  CRT      = newlib
-  CPU      = -mcpu=powerpc
-  WARN     += -Wdeclaration-after-statement -Wdisabled-optimization
-  REDEFINE =
-  CFLAGS   += -mcrt=$(CRT) -D__USE_INLINE__ -D__NEW_TIMEVAL_DEFINITION_USED__ \
-              $(REDEFINE) -Wa,-mregnames
-  LDFLAGS  += -mcrt=$(CRT)
-
+#  CRT      = newlib
+#  CPU      = -mcpu=powerpc
+#  WARN     += -Wdeclaration-after-statement -Wdisabled-optimization
+#  REDEFINE =
+#  CFLAGS   += -mcrt=$(CRT) -D__USE_INLINE__ -D__NEW_TIMEVAL_DEFINITION_USED__ \
+#              $(REDEFINE) -Wa,-mregnames
+#  LDFLAGS  += -mcrt=$(CRT)
+   CFLAGS = -D__USE_INLINE__ -nostdlib -O3 -gstabs
+   LDFLAGS = -D__USE_INLINE__ -nostdlib -O3 -gstabs
 else
 ifeq ($(OS), os3)
 

@@ -4,11 +4,34 @@
  * Licensed under the terms of the GNU General Public License, version 3.
  */
 
+#define CATCOMP_CODE
+#define CATCOMP_BLOCK
 
 #include "types.h"
 #include "funcs.h"
+#ifdef __amigaos4__
+	#include <stdarg.h>
 
-#include <proto/timer.h>
+	#include <proto/gtdrag.h>
+	#include <proto/timer.h>
+	#include <proto/texteditor.h>
+	#include <gadgets/texteditor.h>
+	#include <proto/scroller.h>
+	#include <gadgets/scroller.h>
+	#include <proto/colorwheel.h>
+	#include <gadgets/colorwheel.h>
+	#include <gadgets/gradientslider.h>
+	#include <proto/elf.h>
+	struct CyberGfxIFace *ICyberGfx;
+    struct EGlyphEngine EEngine;
+
+	//*** ELF.library structures
+//	struct Library* ElfBase = NULL;
+//	struct ElfIFace* IElf = NULL;
+
+//    struct ColorWheelIFace      *IColorWheel;
+#endif
+
  
 #define GHELP_OBJECT 7   /* delay until the help text is shown */
 #define GHELP_GADGET 2   /* (in IntuiTicks) */
@@ -78,11 +101,20 @@ bool   ende = false, gScreenHasChanged;
 STRPTR pubname = "IGNITION.\0\0\0", gEditor = "ged";
 struct RDArgs *ra;
 struct Library *GTDragBase, *CyberGfxBase, *TextEditBase, *ScrollerBase;
-struct Library *ColorWheelBase, *GradientSliderBase, *TimerBase;
+#ifdef __amigaos4__
+	struct Library *ColorWheelBase, *GradientSliderBase;
+	struct CyberGfxIFace *ICyberGfx;
+    struct EGlyphEngine EEngine;
+    struct ColorWheelIFace      *IColorWheel;
+	struct GradientSliderIFace  *IGradientSlider;
+    char portname[13];
+#else
+	struct Library *ColorWheelBase, *GradientSliderBase, *TimerBase;
+#endif
 struct Library *BulletBase, *AmigaGuideBase;
 bool   noabout = false, gIsBeginner = false;
 struct LocaleInfo gLocaleInfo;
-
+BOOL debug = FALSE;
 
 struct InputEvent PUBLIC *
 ghelpFunc(REG(a0, struct InputEvent *ie))
@@ -479,7 +511,7 @@ DrawHelpText(struct Window *win, struct Gadget *gad, CONST_STRPTR t)
     }
     if (!page->pg_Mappe->mp_Prefs.pr_Disp->pd_HelpBar)
     {
-		ShowPopUpText(t, -1, -1);
+		ShowPopUpText((STRPTR)t, -1, -1);
         return;
     }
     if (t || dhelpcnt++ > 3)
@@ -683,7 +715,7 @@ MakeToolGadgets(struct winData *wd,struct Gadget *gad,long w)
     struct Gadget *pgad;
     struct Page *page;
     char   t[16];
-
+	
     page = wd->wd_Data;
     w -= downImg->Width;
 
@@ -940,7 +972,9 @@ RefreshProjectWindow(struct Window *win,BOOL all)
         DrawBars(win);
         RefreshGadgets(win->FirstGadget,win,NULL);
         GT_RefreshWindow(win,NULL);
-
+#ifdef __amigaos4__
+        RefreshWindowFrame(win); //Manchmal ist der Rahmen noch "beschädigt"
+#endif
         if (page->pg_MarkCol != -1)
             setTableCoord(page,(struct Rect32 *)&page->pg_MarkX1,page->pg_MarkCol,page->pg_MarkRow,page->pg_MarkWidth,page->pg_MarkHeight);
         setCoordPkt(page,&page->pg_Gad.cp,page->pg_Gad.cp.cp_Col,page->pg_Gad.cp.cp_Row);
@@ -1134,6 +1168,103 @@ NormalizeWindowBox(struct IBox *box)
 }
 
 
+#ifdef __amigaos4__
+struct Window VARARGS68K *OpenProjWindowA(struct Page *page, struct TagItem *tags);
+struct Window *OpenProjWindowA(struct Page *page, struct TagItem *tags)
+{
+    struct Window *win;
+    struct Mappe *mp;
+    struct IBox box;
+    BYTE   new = FALSE;
+
+    if (!page)
+    {
+        mp = NewProject();
+        page = NewPage(mp);
+        new = TRUE;
+    }
+    else
+        mp = page->pg_Mappe;
+    if (!page)
+    {
+        ErrorRequest(GetString(&gLocaleInfo, MSG_CREATE_PROJECT_ERR));
+		return NULL;
+    }
+    box.Left = GetTagData(WA_Left,mp->mp_WindowBox.Left,(struct TagItem *)tags);
+    box.Top = GetTagData(WA_Top,mp->mp_WindowBox.Top,(struct TagItem *)tags);
+    box.Width = GetTagData(WA_Width,mp->mp_WindowBox.Width,(struct TagItem *)tags);
+    box.Height = GetTagData(WA_Height,mp->mp_WindowBox.Height,(struct TagItem *)tags);
+
+    NormalizeWindowBox(&box);
+
+	if ((wd = AllocPooled(pool, sizeof(struct winData))) != 0) {
+        wd->wd_Type = WDT_PROJECT;
+        wd->wd_Data = page;
+        MyNewList(&wd->wd_Objs);
+        wd->wd_BorGads = MakeBorderScroller(wd);
+        wd->wd_Server = handleProjIDCMP;
+
+		if (MakeProjectGadgets(wd, box.Width, box.Height))
+        {
+			if ((win = OpenWindowTags(NULL, WA_Flags,        WFLG_CLOSEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_ACTIVATE |WFLG_SIZEGADGET |WFLG_SIZEBBOTTOM | WFLG_SIZEBRIGHT | WFLG_REPORTMOUSE,
+                                           WA_Title,        GetPageTitle(page),
+                                           WA_Left,         box.Left,
+                                           WA_Top,          box.Top,
+                                           WA_Width,        box.Width,
+                                           WA_Height,       box.Height,
+                                           prefs.pr_Flags & PRF_SIMPLEPROJS ? WA_SimpleRefresh : WA_NoCareRefresh,TRUE,
+                                           WA_NewLookMenus, TRUE,
+                                           WA_MenuHelp,     TRUE,
+                                           WA_PubScreen,    scr,
+                                           WA_Gadgets,      wd->wd_Gadgets,
+                                           WA_MinWidth,     wd_PosWidth+70+boxwidth+TLn("Seite 999")+downImg->Width,
+                                           WA_MinHeight,    scr->WBorTop+4*fontheight+prefs.pr_Icon->pi_Height+34+leftImg->Height,
+                                           WA_MaxWidth,     -1,
+                                           WA_MaxHeight,    -1,
+                                           TAG_END)) != 0)
+            {
+                win->UserPort = iport;  win->UserData = (APTR)wd;
+                ModifyIDCMP(win, APPIDCMP | IDCMP_GADGETUP | IDCMP_GADGETDOWN | IDCMP_NEWSIZE | IDCMP_IDCMPUPDATE | IDCMP_SIZEVERIFY | IDCMP_ACTIVEWINDOW | IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_MENUVERIFY | (prefs.pr_Flags & PRF_SIMPLEPROJS ? IDCMP_REFRESHWINDOW : 0));
+                AddGList(win,wd->wd_BorGads,-1,-1,NULL);
+                SetMenuStrip(win,mp->mp_Prefs.pr_Menu);
+                DrawBars(win);
+                RefreshGadgets(win->FirstGadget,win,NULL);
+                RefreshGList(wd->wd_Gadgets,win,NULL,CountGadToolGads(win));
+                GT_RefreshWindow(win,NULL);
+                page->pg_Window = mp->mp_Window = win;
+
+                if (!new)
+                {
+                    SetMediumSize(mp);
+					SetZoom(page, page->pg_Zoom, TRUE, FALSE);
+                }
+                DrawTable(win);
+                SetPageProps(page);
+
+				return win;
+            }
+            FreeGadgets(wd->wd_Gadgets);
+        }
+		FreePooled(pool, wd, sizeof(struct winData));
+    }
+    return NULL;
+}
+
+struct Window *OpenProjWindow(struct Page *page, ...)
+{
+	va_list ap;
+	struct TagItem *tags;
+	struct Window *rwin;
+
+	va_startlinear(ap, page);
+	tags = va_getlinearva(ap, struct TagItem *);
+	rwin =OpenProjWindowA(page, tags);
+	va_end(ap);
+	
+	return rwin;
+}
+
+#else
 struct Window *
 OpenProjWindow(struct Page *page,ULONG tag1,...)
 {
@@ -1214,7 +1345,7 @@ OpenProjWindow(struct Page *page,ULONG tag1,...)
     }
     return NULL;
 }
-
+#endif
 
 void
 MakeFewFuncs(void)
@@ -1266,7 +1397,11 @@ RemInputHandler(void)
         DoIO((struct IORequest *)ghelpio);
 
         CloseDevice((struct IORequest *)ghelpio);
+#ifdef __amigaos4__
+		FreeSysObject(ASOT_IOREQUEST, (struct IORequest *)ghelpio);
+#else
         DeleteExtIO((struct IORequest *)ghelpio);
+#endif
     }
     FreePooled(pool,ghelpintr,sizeof(struct Interrupt));
 }
@@ -1279,7 +1414,11 @@ AddInputHandler(void)
         ghelpintr->is_Code = (void(*)())ghelpFunc;
         ghelpintr->is_Node.ln_Name = "ignition-GadgetHelp";
         ghelpintr->is_Node.ln_Pri = 100;
+#ifdef __amigaos4__
+		if ((ghelpio = (struct IOStdReq *)AllocSysObjectTags(ASOT_IOREQUEST, ASOIOR_ReplyPort, iport, ASOIOR_Size, sizeof(struct IOStdReq), TAG_END)) != 0) {
+#else
         if ((ghelpio = (struct IOStdReq *)CreateExtIO(iport, sizeof(struct IOStdReq))) != 0) {
+#endif
             if (!OpenDevice("input.device", 0, (struct IORequest *)ghelpio, 0)) {
                 ghelpio->io_Data = ghelpintr;
                 ghelpio->io_Command = IND_ADDHANDLER;
@@ -1593,7 +1732,11 @@ FreeAppIcon(void)
 
         while ((msg = GetMsg(wbport)) != 0)
             ReplyMsg(msg);
+#ifdef __amigaos4__
+		FreeSysObject(ASOT_PORT, wbport);
+#else
         DeleteMsgPort(wbport);
+#endif
         sigwait = (1L << SIGBREAKB_CTRL_C) | (1L << iport->mp_SigBit) | (1L << rxport->mp_SigBit);
         wbport = NULL;
     }
@@ -1608,15 +1751,19 @@ InitAppIcon(void)
     if (!(prefs.pr_Flags & PRF_APPICON) || wbport)
         return;
 
-	if ((dir = Lock(iconpath, SHARED_LOCK)) == NULL)
+	if ((dir = Lock(iconpath, SHARED_LOCK)) == (BPTR)NULL)
 		return;
 
 	olddir = CurrentDir(dir);
+#ifdef __amigaos4__
+	if ((wbport = AllocSysObjectTags(ASOT_PORT, TAG_END)) != 0) {
+#else
 	if ((wbport = CreateMsgPort()) != 0) {
+#endif
 		sigwait = (1L << SIGBREAKB_CTRL_C) | (1L << iport->mp_SigBit) | (1L << rxport->mp_SigBit) | (1L << wbport->mp_SigBit);
 		if ((appdo = GetDiskObject("def_app")) != 0) {
 			appdo->do_Type = 0;
-			appicon = AddAppIconA(0, 0, "ignition", wbport, NULL, appdo, NULL);
+			appicon = AddAppIconA(0, 0, "ignition", wbport, (BPTR)NULL, appdo, (const struct TagItem *)NULL);
 		}
 	}
 	CurrentDir(olddir);
@@ -1722,14 +1869,22 @@ CloseApp(void)
     if (iport)
     {
         EmptyMsgPort(iport);
+#ifdef __amigaos4__
+		FreeSysObject(ASOT_PORT, iport);
+#else
         DeleteMsgPort(iport);
+#endif
     }
     FreeFonts();
     CloseRexx();
     if (rxport)
     {
         EmptyMsgPort(rxport);
+#ifdef __amigaos4__
+		FreeSysObject(ASOT_PORT, rxport);
+#else
         DeletePort(rxport);
+#endif
     }
     FreeGraphics();
     closeIO();
@@ -1737,12 +1892,26 @@ CloseApp(void)
 	CloseCatalog(gLocaleInfo.li_Catalog);
     CloseLocale(loc);
 
-	CloseLibrary(AmigaGuideBase);
+
+#ifdef __amigaos4__
+//	DropInterface((struct Interface*)IDataTypes);
+// 	CloseLibrary(DataTypesBase);	
+  	DropInterface((struct Interface *)ICyberGfx);
+	CloseLibrary((struct Library *)CyberGfxBase);
+    DropInterface( (struct Interface *)IGradientSlider );
+    CloseLibrary(GradientSliderBase);
+//  DropInterface( (struct Interface *)IColorWheel );
+//  CloseLibrary(ColorWheelBase);
+//  DropInterface( (struct Interface *)ITextEditor );
+//  CloseLibrary(TextEditorBase);
+#else
     CloseLibrary(ScrollerBase);
     CloseLibrary(TextEditBase);
     CloseLibrary(ColorWheelBase);
     CloseLibrary(GradientSliderBase);
     CloseLibrary(CyberGfxBase);
+	CloseLibrary(AmigaGuideBase);
+#endif
 
     while ((n = MyRemHead(&sizes)) != 0) {
         FreeString(n->ln_Name);
@@ -1826,6 +1995,8 @@ InitApp(void)
 				gIsBeginner = TRUE;
 			if ((value = FindToolType(dio->do_ToolTypes, "EDITOR")) != 0)
 				gEditor = AllocString(value);
+			if ((value = FindToolType(dio->do_ToolTypes, "Debug")) != 0)
+				debug = TRUE;
 
             FreeDiskObject(dio);
         }
@@ -1838,7 +2009,11 @@ InitApp(void)
 		// TODO: find good editor default values!
 	}
 
+#ifdef __amigaos4__
+	gLocaleInfo.li_LocaleBase = (struct Library *)ILocale;
+#else
 	gLocaleInfo.li_LocaleBase = LocaleBase;
+#endif
     loc = OpenLocale(NULL);
 	gLocaleInfo.li_Catalog = OpenCatalog(loc, "ignition.catalog", OC_BuiltInLanguage, "deutsch", TAG_END);
 
@@ -1846,18 +2021,17 @@ InitApp(void)
         InitAppScreen(iscr);
 
     /** create logo-images from PictureImage-Class **/
-
-	if ((pincImage = NewObject(pictureiclass, NULL,
+	if ((pincImage = (struct Image *)NewObject(pictureiclass, NULL,
 			PIA_FromImage,	&pincOriginalImage,
 			PIA_WithColors,	standardPalette + 1,
 			PDTA_Screen,	iscr,
-			TAG_END)) != 0)
+			TAG_END)) != NULL)
         AddImageObj(NULL,pincImage);
 
-    if ((logoImage = NewObject(pictureiclass,NULL,PIA_FromImage, &logoOriginalImage,
+    if ((logoImage = (struct Image *)NewObject(pictureiclass,NULL,PIA_FromImage, &logoOriginalImage,
                                                                                              PIA_WithColors,standardPalette+1,
                                                                                              PDTA_Screen,   iscr,
-                                                                                             TAG_END)) != 0)
+                                                                                             TAG_END)) != NULL)
         AddImageObj(NULL,logoImage);
 
     if (iscr)
@@ -1875,6 +2049,48 @@ InitApp(void)
     fewftype = 1;
     CurrentTime(&lastsecs,(ULONG *)&i);
 
+#ifdef __amigaos4__
+//	struct Library *DataTypesBase = OpenLibrary("datatypes.library", 53);
+// 	IDataTypes = (struct DataTypesIFace*)GetInterface(DataTypesBase, "main", 1, NULL);  	
+  	CyberGfxBase = (struct Library *) OpenLibrary("cybergraphics.library",43);
+	ICyberGfx = (struct CyberGfxIFace *) GetInterface((struct Library *)CyberGfxBase,"main",1,NULL);
+
+    //if ((ColorWheelBase = OpenLibrary("gadgets/colorwheel.gadget",53)) != NULL) {
+		//if((IColorWheel = (struct ColorWheelIFace *)GetInterface(ColorWheelBase, "main", 1, NULL )) == NULL)
+	        //ErrorOpenLibrary("ColorWheel.gadget",NULL);
+	    //}
+		//
+	//else
+        //ErrorOpenLibrary("ColorWheel.gadget",NULL);
+//
+    UpdateProgressBar(pb,(STRPTR)~0L,(float)0.08);
+
+    //if ((ScrollerBase = OpenLibrary("gadgets/scroller.gadget",53)) != NULL) {
+		//if((IScroller = (struct ScrollerIFace *)GetInterface(ScrollerBase, "main", 1, NULL )) == NULL)
+	        //ErrorOpenLibrary("Scroller.gadget",NULL);
+		//}
+	//else
+        //ErrorOpenLibrary("Scroller.gadget",NULL);
+//
+    UpdateProgressBar(pb,(STRPTR)~0L,(float)0.10);
+
+    //if ((TextEditorBase = OpenLibrary("gadgets/texteditor.gadget",53)) != NULL) {
+		//if((ITextEditor = (struct TextEditorIFace *)GetInterface(TextEditorBase, "main", 1, NULL )) == NULL)
+	        //ErrorOpenLibrary("TextEditor.gadget",NULL);
+		//}
+	//else
+        //ErrorOpenLibrary("TextEditor.gadget",NULL);
+//
+  	//if ((ElfBase = OpenLibrary("elf.library", 51L))) {
+  		//if (!(IElf = (struct ElfIFace*) GetInterface(ElfBase,"main",1, NULL))){
+			//ErrorOpenLibrary("could not get elf.library main interface", NULL);
+  			//}
+  	    //}
+  	//else
+        //ErrorOpenLibrary("could not open elf.library",NULL);
+//  	
+
+#else
     CyberGfxBase = OpenLibrary("cybergraphics.library",41);
 
     if (!(ColorWheelBase = OpenLibrary("gadgets/colorwheel.gadget",39)))
@@ -1882,13 +2098,14 @@ InitApp(void)
 
     UpdateProgressBar(pb,(STRPTR)~0L,(float)0.08);
 
-    if (!(ScrollerBase = OpenClass("gadgets","pScroller.gadget",0)))
+    if (!(ScrollerBase = IgnOpenClass("gadgets","pScroller.gadget",0)))
         ErrorOpenLibrary("pScroller.gadget",NULL);
 
     UpdateProgressBar(pb,(STRPTR)~0L,(float)0.10);
 
-    if (!(TextEditBase = OpenClass("gadgets","pTextEdit.gadget",0)))
+    if (!(TextEditBase = IgnOpenClass("gadgets","pTextEdit.gadget",0)))
         ErrorOpenLibrary("pTextEdit.gadget",NULL);
+#endif
 
 	InitCalc();
 	InitSearch();
@@ -1905,11 +2122,24 @@ InitApp(void)
 	MakeLocaleStrings(&events, MSG_OPEN_DOCUMENT_EVENT, MSG_CLOSE_DOCUMENT_EVENT, MSG_CELL_SELECTION_EVENT, MSG_INPUT_DONE_EVENT,
 		MSG_TIME_EVENT, MSG_RECALC_EVENT, MSG_LEFT_MOUSE_BUTTON_EVENT, MSG_RIGHT_MOUSE_BUTTON_EVENT, TAG_END);
 
+#ifdef __amigaos4__
+	//Geändert, da unteres Konstrukt Reaper-Meldung generiert
+	Strlcpy(portname, "IGNITION.X", 13);
+	Forbid();
+	for (i = 1; i < 9; i++) {
+		((char *)portname)[9]  = i + 48;
+        if (!FindPort(portname))
+            break;
+    }
+    Permit();
+    pubname = portname;
+#else
 	for (i = 1; i < 9; i++) {
 		*(pubname+9) = i + 48;
         if (!FindPort(pubname))
             break;
     }
+#endif
 
 	UpdateProgressBar(pb, GetString(&gLocaleInfo, MSG_SEARCH_FONTS_PROGRESS), (float)0.15);
     SearchFonts();
@@ -2064,7 +2294,7 @@ handleGadgetHelp(void)
 
                         foreach(&page->pg_gObjects,go)
                         {
-                            if (CheckGObject(page,go,x-wd->wd_TabX+page->pg_TabX,y-wd->wd_TabY+page->pg_TabY))
+                            if (CheckGObject(page, go, x-wd->wd_TabX+page->pg_TabX, y-wd->wd_TabY+page->pg_TabY))
                             {
 								helpText = go->go_Help;
                                 break;
@@ -2361,7 +2591,9 @@ InitHelp(struct Screen *scr)
 	static struct NewAmigaGuide nag;
 		// must stay valid until the guide is created...
 
+#ifndef __amigaos4__
 	AmigaGuideBase = OpenLibrary("amigaguide.library", 39L);
+#endif
 	if (AmigaGuideBase == NULL)
 		return;
 
@@ -2412,7 +2644,11 @@ LoadFiles(struct List *list)
 long
 dosstart(struct List *list)
 {
+#ifdef __amigaos4__
+	struct AnchorPath *ap;
+#else
     struct AnchorPath ALIGNED ap;
+#endif
     struct FileArg *fa;
     long   rc = RETURN_OK,temprc;
     long   opts[NUM_OPTS];
@@ -2427,26 +2663,51 @@ dosstart(struct List *list)
             args = (char **)opts[OPT_FILE];
             while(!rc && (arg = *args++))
             {
+#ifdef __amigaos4__
+	ap = AllocDosObjectTags(	DOS_ANCHORPATH, 
+	                         	  	ADO_Mask, SIGBREAKF_CTRL_C,
+	                         		ADO_Strlen, 1024L,
+	                         		TAG_END ); 
+                MatchFirst(arg, ap);
+#else
                 memset(&ap,0,sizeof(struct AnchorPath));
 
                 MatchFirst(arg,&ap);
+#endif
                 if ((temprc = IoErr()) != 0)
 					PrintFault(temprc, NULL);
 
                 while(!temprc)
                 {
+#ifdef __amigaos4__
+                    if (ap->ap_Info.fib_DirEntryType <= 0) // file
+                    {
+                        if ((fa = AllocPooled(pool, sizeof(struct FileArg))) != 0) {
+                            fa->fa_Lock = DupLock(ap->ap_Current->an_Lock);
+                            fa->fa_Node.ln_Name = AllocString(ap->ap_Info.fib_FileName);
+#else
                     if (ap.ap_Info.fib_DirEntryType <= 0) // file
                     {
                         if ((fa = AllocPooled(pool, sizeof(struct FileArg))) != 0) {
                             fa->fa_Lock = DupLock(ap.ap_Current->an_Lock);
                             fa->fa_Node.ln_Name = AllocString(ap.ap_Info.fib_FileName);
+#endif
                             fa->fa_Node.ln_Type = FAT_FROMDOS;
                             MyAddTail(list, fa);
                         }
                     }
+#ifdef __amigaos4__
+                    temprc = MatchNext(ap);
+#else
                     temprc = MatchNext(&ap);
+#endif
                 }
+#ifdef __amigaos4__
+				MatchEnd(ap);
+				FreeDosObject(DOS_ANCHORPATH,ap);
+#else
                 MatchEnd(&ap);
+#endif
                 if (temprc == ERROR_NO_MORE_ENTRIES)
                     rc = RETURN_OK;
                 else if (temprc == ERROR_BREAK)
@@ -2497,13 +2758,21 @@ main(int argc, char **argv)
 {
     static long rc;
 
+#ifdef __amigaos4__
+    if (!(pool = AllocSysObjectTags(ASOT_MEMPOOL, ASOPOOL_MFlags, MEMF_CLEAR | MEMF_SHARED, ASOPOOL_Puddle, 16384, ASOPOOL_Threshold, 16384, TAG_END)))
+#else
     if (!(pool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC, 16384, 16384)))
+#endif
         return RETURN_FAIL;
 
     MyNewList(&files);
 	if (argc) {
 		if ((rc = dosstart((struct List *)&files)) != 0) {
+#ifdef __amigaos4__
+			FreeSysObject(ASOT_MEMPOOL, pool);
+#else
             DeletePool(pool);
+#endif
             return rc;
         }
     }
@@ -2511,22 +2780,37 @@ main(int argc, char **argv)
         wbstart((struct List *)&files, sm->sm_ArgList, 1, sm->sm_NumArgs);
 
     shelldir = CurrentDir(GetProgramDir());
-
+#ifndef __amigaos4__
 	if ((GTDragBase = OpenLibrary("gtdrag.library", 3)) != 0) {
+#else
+	 {
+#endif
         InitAppClasses();
 
 		if (GTD_AddApp("ignition", GTDA_NewStyle, TRUE, TAG_END)) {
+#ifdef __amigaos4__
+			if ((iport = AllocSysObjectTags(ASOT_PORT, TAG_END)) != 0) {
+#else
 			if ((iport = CreateMsgPort()) != 0) {
+#endif
                 InitApp();
 
+#ifdef __amigaos4__
+				if ((rxport = AllocSysObjectTags(ASOT_PORT, ASOPORT_Name, pubname, ASOPORT_Pri, 0, TAG_END)) != 0) {
+#else
 				if ((rxport = CreatePort(pubname, 0)) != 0) {
+#endif
+#ifdef __amigaos4__
+					if ((sTimeRequest = (struct timerequest *)AllocSysObjectTags(ASOT_IOREQUEST, ASOIOR_ReplyPort, rxport, ASOIOR_Size, sizeof(struct timerequest), TAG_END)) != 0) {
+#else
 					if ((sTimeRequest = (struct timerequest *)CreateExtIO(rxport, sizeof(struct timerequest))) != 0) {
+#endif
 						sTimeRequest->tr_node.io_Command = TR_ADDREQUEST;
 						if (!OpenDevice(TIMERNAME, UNIT_WAITUNTIL, (struct IORequest *)sTimeRequest, 0L)) {
-							TimerBase = (struct Library *)sTimeRequest->tr_node.io_Device;
+							TimerBase = (struct Device *)sTimeRequest->tr_node.io_Device;
 								// make the timer device library functions available
 
-							GetSysTime(&sTimeRequest->tr_time);
+							GetSysTime((struct TimeVal *)&sTimeRequest->tr_time);
 							sTimeInSeconds = sTimeRequest->tr_time.tv_secs + 1;
 							sTimeRequest->tr_time.tv_secs = sTimeInSeconds;
 
@@ -2534,7 +2818,11 @@ main(int argc, char **argv)
                                 // WaitIO() will produce Enforcer-Hits if that's missing
 						} else {
 							/* opening the device failed - we have no timer... */
+#ifdef __amigaos4__
+							FreeSysObject(ASOT_IOREQUEST, (struct IORequest *)sTimeRequest);
+#else
 							DeleteExtIO((struct IORequest *)sTimeRequest);
+#endif
 							sTimeRequest = NULL;
                         }
                     }
@@ -2544,7 +2832,7 @@ main(int argc, char **argv)
                         InitAsl();
                         rc = RETURN_FAIL;
 						if (IsListEmpty((struct List *)&files)) {
-                            if (OpenProjWindow(NULL, TAG_END))
+                            if (OpenProjWindow(NULL, TAG_END))	
                                 rc = RETURN_OK;
 						} else
                             rc = LoadFiles((struct List *)&files);
@@ -2559,20 +2847,30 @@ main(int argc, char **argv)
 					AbortIO((struct IORequest *)sTimeRequest);
 					WaitIO((struct IORequest *)sTimeRequest);
 					CloseDevice((struct IORequest *)sTimeRequest);
+#ifdef __amigaos4__
+					FreeSysObject(ASOT_IOREQUEST, (struct IORequest *)sTimeRequest);
+#else
 					DeleteExtIO((struct IORequest *)sTimeRequest);
+#endif
                 }
             }
             CloseApp();
             GTD_RemoveApp();
         }
         FreeAppClasses();
-
-        CloseLibrary(GTDragBase);
+#ifndef __amigaos4__
+        CloseLibrary(GTDragBase);       
 	} else
         ErrorOpenLibrary("gtdrag.library", NULL);
-
+#else
+	}
+#endif
     CurrentDir(shelldir);
+#ifdef __amigaos4__
+	FreeSysObject(ASOT_MEMPOOL, pool);
+#else
     DeletePool(pool);
+#endif
 
     return RETURN_OK;
 }

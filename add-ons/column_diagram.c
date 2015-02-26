@@ -15,8 +15,12 @@
 #endif
 
 #define CATCOMP_NUMBERS
-#include "ignition_strings.h"
 
+#ifdef __amigaos4__
+	#include "../ignition_strings.h"
+#else
+	#include "ignition_strings.h"
+#endif
 #include <string.h>
 
 
@@ -24,10 +28,28 @@ const char *version = "$VER: column_diagram.gc 0.7 (7.8.2003)";
 
 /** private instance structure **/
 
+#ifdef __amigaos4__
+	#ifdef __GNUC__
+		#ifdef __PPC__
+			#pragma pack(2)
+		#endif
+	#elif defined(__VBCC__)
+		#pragma amiga-align
+	#endif
+#endif
 struct gBalken
 {
     UBYTE gb_Frame;
 };
+#ifdef __amigaos4__
+	#ifdef __GNUC__
+		#ifdef __PPC__
+			#pragma pack()
+		#endif
+	#elif defined(__VBCC__)
+		#pragma default-align
+	#endif
+#endif
 
 /** interface definition **/
 
@@ -64,7 +86,7 @@ draw(REG(d0, struct Page *page), REG(d1, ULONG dpi), REG(a0, struct RastPort *rp
 	long   pseudo3D, depth, offset;
 	long   i, j, k, o;
 
-	gSuperDraw(page, dpi, rp, gc, gd, gb);
+	gSuperDraw(page, dpi, rp, gc, (struct gObject *)gd, gb);
 
 	gDoMethod(gd, GCM_GET, GAA_Bounds, &agb);
 	gDoMethod(gd, GCM_GET, GAA_Pseudo3D, &pseudo3D);

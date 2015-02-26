@@ -39,7 +39,7 @@ SetMousePointer(struct Window *win, ULONG which)
     if (which == STANDARD_POINTER)
         ClearPointer(win);
     else
-        SetWindowPointer(win, WA_Pointer, pp[which] ? PP_OBJECT(pp[which]) : NULL, TAG_END);
+        SetWindowPointer(win, WA_Pointer, (pp[which] ? (struct PointerPrefs *)PP_OBJECT(pp[which]) : NULL), TAG_END);
 }
 
 
@@ -114,7 +114,7 @@ loadPointers(STRPTR name)
         if (error == IFFERR_EOF)
             error = 0;
     }
-    Close((void*)iff->iff_Stream);
+    Close((BPTR)iff->iff_Stream);
     FreeIFF(iff);
 
     return error;

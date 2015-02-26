@@ -246,6 +246,11 @@
   typedef ULONG IPTR;
 #endif
 
+#ifdef __AMIGAOS41__
+#  define min(a,b) ((a)<(b)?(a):(b))
+#  define max(a,b) ((a)>(b)?(a):(b))
+#endif
+
 #if defined(__AROS__)
 #  define LIBFUNC_INIT AROS_LIBFUNC_INIT
 #  define LIBFUNC_EXIT AROS_LIBFUNC_EXIT

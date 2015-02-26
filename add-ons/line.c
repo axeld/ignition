@@ -16,13 +16,30 @@
 
 const char *version = "$VER: line.gc 0.12 (2.3.2003)";
 
-
+#ifdef __amigaos4__
+	#ifdef __GNUC__
+		#ifdef __PPC__
+			#pragma pack(2)
+		#endif
+	#elif defined(__VBCC__)
+		#pragma amiga-align
+	#endif
+#endif
 struct gLine
 {
   ULONG gl_Pen,gl_OutlinePen;
   ULONG gl_Weight;
   BYTE  gl_HasOutline;
 };
+#ifdef __amigaos4__
+	#ifdef __GNUC__
+		#ifdef __PPC__
+			#pragma pack()
+		#endif
+	#elif defined(__VBCC__)
+		#pragma default-align
+	#endif
+#endif
 
 #define GLA_BeginLine GOA_TagUser + 1
 #define GLA_EndLine   GOA_TagUser + 2
@@ -33,7 +50,7 @@ struct gInterface interface[] =
   {GOA_OutlinePen, NULL,GIT_PEN,NULL,NULL},
   {GOA_HasOutline, NULL,GIT_CHECKBOX,NULL,NULL},
   {GOA_Weight,     NULL,GIT_WEIGHT,NULL,NULL},
-  {NULL,           NULL,NULL,NULL,NULL}
+  {0,           NULL,0,NULL,NULL}
 };
 										
 const STRPTR superClass = "root";
@@ -184,8 +201,11 @@ ULONG PUBLIC dispatch(REG(a0, struct gClass *gc), REG(a2, struct gObject *go), R
         b = (qx + a*vx) / wx;
 
         /* Länge der Linie berechnen */
-
-        length = sqrt(vx*vx + vy*vy);
+#ifdef __amigaos4__
+        length = gcalcllength(vx, vy);
+#else
+	   length = sqrt(vx*vx + vy*vy);
+#endif
 
         if (a >= 0 && a <= 1)
         {

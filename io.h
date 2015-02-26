@@ -5,7 +5,16 @@
 #ifndef IGN_IO_H
 #define IGN_IO_H
 					
- 
+#ifdef __amigaos4__
+#ifdef __GNUC__
+   #ifdef __PPC__
+    #pragma pack(2)
+   #endif
+#elif defined(__VBCC__)
+   #pragma amiga-align
+#endif
+#endif
+
 /*************************** IO-Datatypes ***************************/
 
 struct IOTypeLink {
@@ -147,6 +156,16 @@ struct NumberLink {
 #define IO_STANDARD_SAVE			0
 #define IO_SAVE_FULL_NAMES			1
 #define IO_IGNORE_PROTECTED_CELLS	2
+
+#ifdef __amigaos4__
+#ifdef __GNUC__
+   #ifdef __PPC__
+    #pragma pack()
+   #endif
+#elif defined(__VBCC__)
+   #pragma default-align
+#endif
+#endif
 
 /*************************** Prototypes ***************************/
 

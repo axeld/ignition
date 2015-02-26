@@ -10,7 +10,6 @@
 
 #include <stdarg.h>
 
-
 void
 Rect32ToRect(struct Rect32 *rect32, struct Rectangle *rect)
 {
@@ -285,8 +284,8 @@ moveList(struct MinList *from, struct MinList *to)
 	to->mlh_Head = from->mlh_Head;
 	to->mlh_Tail = NULL;
 	to->mlh_TailPred = from->mlh_TailPred;
-	to->mlh_Head->mln_Pred = (struct Node *)&to->mlh_Head;
-	to->mlh_TailPred->mln_Succ = (struct Node *)&to->mlh_Tail;
+	to->mlh_Head->mln_Pred = (struct MinNode *)&to->mlh_Head;
+	to->mlh_TailPred->mln_Succ = (struct MinNode *)&to->mlh_Tail;
 	MyNewList(from);
 }
 
@@ -342,7 +341,6 @@ SortListWith(struct MinList *l, APTR func)
 
 	if ((buffer = allocSort(l, &len)) != 0) {
 		qsort(buffer, len, sizeof(struct Node *), func);
-
 		MyNewList(l);
 		for (i = 0; i < len; i++)
 			MyAddTail(l, *(buffer + i));
@@ -828,7 +826,7 @@ CopyListItems(struct MinList *from, struct MinList *to, APTR copy)
 long SAVEDS
 LinkNameSort(struct Link **la, struct Link **lb)
 {
-	return compareNames((struct Node **)&(*la)->l_Link,(struct Node **)&(*lb)->l_Link);
+	return compareNames((const struct Node **)&(*la)->l_Link,(const struct Node **)&(*lb)->l_Link);
 }
 
 
@@ -932,7 +930,11 @@ AddToNameList(STRPTR buffer, STRPTR t, int *plen, int maxlength)
 	if (!len && l > maxlength - 5) {
 		// write part of first name
 		*buffer = '"';
+#ifdef __amigaos4__
+		Strlcpy(buffer+1,t,maxlength-5);
+#else
 		stccpy(buffer+1,t,maxlength-5);
+#endif
 		strcpy(buffer+maxlength-5,"...\"");
 
 		return FALSE;
@@ -956,7 +958,7 @@ AddToNameList(STRPTR buffer, STRPTR t, int *plen, int maxlength)
 
 
 struct Library *
-OpenClass(STRPTR secondary, STRPTR name, LONG version)
+IgnOpenClass(STRPTR secondary, STRPTR name, LONG version)
 {
 	struct Library *class;
 	char path[256];

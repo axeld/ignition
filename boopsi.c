@@ -7,10 +7,14 @@
 
 #include "types.h"
 #include "funcs.h"
-
+#include "cybergraphics.h"
 #include <graphics/rpattr.h>
 #include <intuition/gadgetclass.h>
 //#include <datatypes/pictureclass.h>
+#ifdef __amigaos4__
+	#include <proto/gtdrag.h>
+	#include <proto/cybergraphics.h>
+#endif
 
 #if !defined(PDTM_WRITEPIXELARRAY)
 #	define PBPAFMT_RGB  0	/* 3 bytes per pixel (red, green, blue) */
@@ -101,7 +105,11 @@ DispatchPageGadget(REG(a0, Class *cl), REG(a2, Object *o), REG(a1, Msg msg))
 				
 				// Count pages and gadgets in the pages
 				for (i = 0; pd->pd_Pages[i]; i++);
+#ifdef __amigaos4__
+				pd->pd_GadgetCount = AllocVecTags(i * sizeof(ULONG), AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE );
+#else
 				pd->pd_GadgetCount = AllocVec(i * sizeof(ULONG), MEMF_CLEAR | MEMF_PUBLIC);
+#endif
 				pd->pd_Count = i;
 				for (i = 0; i < pd->pd_Count; i++) {
 					for (gad = pd->pd_Pages[i]; gad; gad = gad->NextGadget)
@@ -371,7 +379,11 @@ DispatchIndexGadget(REG(a0, Class *cl), REG(a2, Object *o), REG(a1, Msg msg))
 
 				for (i = 0;*(id->id_Labels+i);i++);  // Zähle Labels
 				id->id_Count = i;
+#ifdef __amigaos4__
+				id->id_Pos = AllocVecTags(i*sizeof(LONG)*3, AVT_ClearWithValue, 0, TAG_DONE);
+#else
 				id->id_Pos = AllocVec(i*sizeof(LONG)*3,MEMF_CLEAR);
+#endif
 				id->id_Width = id->id_Pos+i;
 				id->id_Length = id->id_Width+i;
 				id->id_MinWidth = 16;
@@ -581,10 +593,10 @@ DrawFramesGadget(struct RastPort *rp, struct Gadget *gad, struct GadgetInfo *gi,
 
 	if (all) {
 		// draw the whole gadget
-		if ((img = NewObject(NULL,"frameiclass",
+		if ((img = (struct Image *)NewObject(NULL,"frameiclass",
 				IA_Width,  stdframe_width,
 				IA_Height, stdframe_height,
-				TAG_END)) != 0) {
+				TAG_END)) != NULL) {
 			for (x = 0, y = 0; y < stdframe_rows; x++) {
 				if (x >= stdframe_cols)
 					x = 0,y++;
@@ -593,7 +605,7 @@ DrawFramesGadget(struct RastPort *rp, struct Gadget *gad, struct GadgetInfo *gi,
 					DrawFGFrame(rp,stdframe_count > x+y*stdframe_cols ? kPredefinedFrames[x+y*stdframe_cols] : 0L,a,b);
 				}
 			}
-			DisposeObject(img);
+			DisposeObject((Object *)img);
 		}
 	}
 	if (stdframe_new != stdframe_active) {
@@ -960,16 +972,23 @@ CopyFromPictureImage(struct PictureIData *pd, struct Image *fim, LONG *cregs, st
 
 		cols = 1 << depth;
 
+#ifdef __amigaos4__
+		if ((pd->pd_ColorMap = AllocVecTags(sizeof(struct ColorRegister) * cols, AVT_Type, MEMF_SHARED, TAG_DONE )) != 0) {
+#else
 		if ((pd->pd_ColorMap = AllocVec(sizeof(struct ColorRegister) * cols, MEMF_PUBLIC)) != 0) {
+#endif
 			for (i = 0;i < cols;i++) {
 				pd->pd_ColorMap[i].red =	cregs[i * 3 + 0];
 				pd->pd_ColorMap[i].green = cregs[i * 3 + 1];
 				pd->pd_ColorMap[i].blue =  cregs[i * 3 + 2];
 			}
 
+#ifdef __amigaos4__
+			if ((pd->pd_ColorRegs = AllocVecTags(sizeof(LONG) * 3 * cols, AVT_Type, MEMF_SHARED, TAG_DONE )) != 0) {
+#else
 			if ((pd->pd_ColorRegs = AllocVec(sizeof(LONG) * 3 * cols, MEMF_PUBLIC)) != 0) {
+#endif
 				CopyMem(cregs, pd->pd_ColorRegs, sizeof(LONG) * 3 * cols);
-
 				pd->pd_NumColors = cols;
 				pd->pd_Depth = depth;
 
@@ -1002,9 +1021,17 @@ CopyFromPictureObject(struct PictureIData *pd, Object *obj, struct Image *im)
 						PDTA_BitMapHeader,		&bmh,
 						TAG_DONE) > 4) {
 		if (bm && cregs && cmap && bmh) {
+#ifdef __amigaos4__
+			if ((pd->pd_ColorMap = AllocVecTags(sizeof(struct ColorRegister) * cols, AVT_Type, MEMF_SHARED, TAG_DONE )) != 0) {
+#else
 			if ((pd->pd_ColorMap = AllocVec(sizeof(struct ColorRegister) * cols, MEMF_PUBLIC)) != 0) {
+#endif
 				CopyMem(cmap, pd->pd_ColorMap, sizeof(struct ColorRegister) * cols);
+#ifdef __amigaos4__
+				if ((pd->pd_ColorRegs = AllocVecTags(sizeof(LONG) * 3 * cols, AVT_Type, MEMF_SHARED, TAG_DONE )) != 0) {
+#else
 				if ((pd->pd_ColorRegs = AllocVec(sizeof(LONG) * 3 * cols, MEMF_PUBLIC)) != 0) {
+#endif
 					CopyMem(cregs, pd->pd_ColorRegs, sizeof(LONG) * 3 * cols);
 
 					pd->pd_NumColors = cols;
@@ -1364,6 +1391,7 @@ FreeAppClasses(void)
 void
 InitAppClasses(void)
 {
+    	
 	SETHOOK(fillHook, fillHookFunc);
 	SETHOOK(renderHook, RenderHook);
 	SETHOOK(formelHook, FormelHook);
@@ -1404,4 +1432,5 @@ InitAppClasses(void)
 
 	if ((popupiclass = MakeClass(NULL, "imageclass", NULL, 0, 0)) != 0)
 		SETDISPATCHER(popupiclass, DispatchPopUpImage);
+
 }

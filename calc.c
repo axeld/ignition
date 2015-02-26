@@ -8,6 +8,9 @@
 #include "types.h"
 #include "funcs.h"
 
+#ifdef __amigaos4__
+	#include <clib/macros.h>
+#endif
 
 #define TREESIZE 2048
 
@@ -19,7 +22,12 @@ long tf_col, tf_row, mp_flags, gTextBufferLength;
 STRPTR tf_format, gTextBuffer, itaPoint;
 UWORD calcerr, calcflags = CF_REQUESTER;
 long mday[] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
+#if defined(__AROS__) && !(AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+#warning FIXME when V1 ABI is out
+struct FormatVorlage empty_fv = {{NULL, NULL, NULL, FVT_NONE, 0}, NULL, 0, 0, 0, 0};
+#else
 struct FormatVorlage empty_fv = {{NULL, NULL, FVT_NONE, 0, NULL}, NULL, 0, 0, 0, 0};
+#endif
 struct MinList flangs;
 APTR tree_stack;
 ULONG tree_size;
@@ -1422,7 +1430,7 @@ AddFormat(struct MinList *list, STRPTR t, BYTE pri, BYTE komma, BYTE align, ULON
 				value = FORMAT_TIME_PREVIEW;
              break;
         }
-		fv->fv_Preview = AllocString(FitValueInFormat(value, fv, NULL, 0, 0));
+		fv->fv_Preview = AllocString(FitValueInFormat(value, (struct Node *)fv, NULL, 0, 0));
         fv->fv_Alignment = align == -1 ? TFA_RIGHT : align;
         fv->fv_NegativePen = pen;
 		MyAddTail(list, fv);
@@ -2030,7 +2038,7 @@ CheckFormat(struct Node *fv, STRPTR t, double *_value)
 				{
 					uint32 day1 = type == FVT_SWEEK ? ABDAY_1 : DAY_1;
 
-					s = GetLocaleStr(loc, day1 + i);
+					s = (char *)GetLocaleStr(loc, day1 + i);
 					length = strlen(s);
 
 					if (!strnicmp(s, t + index, length) && !isalpha(t[index + length]))
@@ -2092,7 +2100,14 @@ CheckFormat(struct Node *fv, STRPTR t, double *_value)
             default:
 			{
 				long longValue;
+#ifdef __amigaos4__
+				long length;
+				
+				for(length = 0; isdigit(t[index + length]) && &t[index + length] != '\0'; length++);
+				longValue  = atol(t+ index);
+#else
 				long length = stcd_l(t + index, &longValue);
+#endif
 				if (length == 0)
 					return CFR_NO_MATCH;
 
@@ -2170,26 +2185,29 @@ CheckFormat(struct Node *fv, STRPTR t, double *_value)
     if (minus)
         zahl = -zahl;
 
-	if (_value) switch (fv->ln_Type)
-    {
-        case FVT_PERCENT:
-			*_value = zahl / 100.0;
-            break;
-        case FVT_TIME:
-			*_value = hour * 3600.0 + m * 60.0 + sec;  /* day removed */
-            break;
-        case FVT_DATE:
-			day += mday[m - 1];
-            if (m > 2 && !(year % 4) && (year % 100 || !(year % 400)))
-                day++;
-			// FIXME: GCC warning: operation on 'year' may be undefined
-			m = (long)--year * 365 + year / 4 - year / 100 + year / 400;
-			*_value = (double)(day + m);
-            break;
-        default:
-			*_value = zahl;
-    }
-
+	if (_value) 
+	{
+		switch (fv->ln_Type)
+	    {
+    	    case FVT_PERCENT:
+				*_value = zahl / 100.0;
+            	break;
+	        case FVT_TIME:
+				*_value = hour * 3600.0 + m * 60.0 + sec;  /* day removed */
+   	        	 break;
+   	     case FVT_DATE:
+				day += mday[m - 1];
+            	if (m > 2 && !(year % 4) && (year % 100 || !(year % 400)))
+	                day++;
+				// FIXME: GCC warning: operation on 'year' may be undefined
+				m = (long)--year * 365 + year / 4 - year / 100 + year / 400;
+				*_value = (double)(day + m);
+	            break;
+    	    default:
+				*_value = zahl;
+	    }
+	}
+	
     return result;
 }
 
@@ -2262,7 +2280,7 @@ GetValue(struct Page *page, struct tableField *tf)
 
 	if (tf->tf_Format
 		&& (fv = (struct FormatVorlage *)FindLinkName(&mp->mp_CalcFormats, tf->tf_Format)) != NULL
-		&& (rc = CheckFormat(fv,tf->tf_Text, &tf->tf_Value)) & CFR_FITS)
+		&& (rc = CheckFormat((struct Node *)fv,tf->tf_Text, &tf->tf_Value)) & CFR_FITS)
         tf_format = NULL;
     else
 		rc = GetFormatOfValue(tf->tf_Text, &tf->tf_Value);
@@ -2401,7 +2419,7 @@ CheckFuncArgs(struct Function *f,struct MinList *args)
 
     /*** Argumentanzahl prüfen ***/
     {
-        long num = CountNodes((struct List *)args);
+        long num = CountNodes((struct MinList *)args);
 
         if (num < f->f_MinArgs || f->f_MaxArgs != -1 && num > f->f_MaxArgs)
             return CTERR_ARGS;
@@ -2498,7 +2516,11 @@ neuerOperand(char **t)
             if (*s == ',') *s = '.';
         if (isdigit(**t))
         {
+#ifdef __amigaos4__
+			Strlcpy(zahl, *t, (long)((char *)s - *t) + 1);
+#else
             stccpy(zahl, *t, (long)((char *)s - *t) + 1);
+#endif
             k->t_Value = strtod(zahl,NULL);
             k->t_Op = OP_VALUE;
             k->t_Pri = PRI_TOP;

@@ -8,6 +8,12 @@
 #include "types.h"
 #include "funcs.h"
 #include "classes.h"
+#ifdef __amigaos4__
+	#include <proto/texteditor.h>
+	#include <gadgets/texteditor.h>
+	#include <proto/scroller.h>
+	#include <gadgets/scroller.h>
+#endif
 
 
 const char *gAppCommandLabels[3];
@@ -144,7 +150,7 @@ CreateBorderGadgets(REG(a0, struct winData *wd))
     gpd.gpd_RPort = &scr->RastPort;
     gpd.gpd_Which = GDOMAIN_NOMINAL;
     gpd.gpd_Attrs = NULL;
-	if (DoClassMethodA(framesgclass, &gpd))
+	if (DoClassMethodA(framesgclass, (Msg)&gpd))
 		gWidth = max(gWidth, gpd.gpd_Domain.Width + 32), gHeight += gpd.gpd_Domain.Height;
 
 	ngad.ng_TopEdge += gpd.gpd_Domain.Height + 5 + fontheight;
@@ -274,7 +280,7 @@ RefreshCellPageGadgets(REG(a0, struct Window *win), REG(d0, long active))
             if ((gad = GadgetAddress(win, 23)) != 0)
             {
                 DrawGroupBorder(rp,GetString(&gLocaleInfo, MSG_PATTERN_BORDER),8+lborder,gad->TopEdge-fontheight-2,win->Width-w,2*fontheight+11);
-                DrawPatternField(rp,gad,(ULONG)wd->wd_ExtData[7],(BYTE)wd->wd_Data);
+                DrawPatternField(rp,gad,(ULONG)wd->wd_ExtData[7],(BYTE)((long)wd->wd_Data));
             }
             if ((gad = GadgetAddress(win, 8)) != 0)
                 DrawGroupBorder(rp,GetString(&gLocaleInfo, MSG_ALIGNMENT_BORDER),8+lborder,gad->TopEdge-fontheight-2,win->Width-w,3*fontheight+18);
@@ -634,7 +640,7 @@ AddDiagramGadgets(struct gDiagram *gd, struct Gadget *pgad, struct MinList *list
 
 	for (gi = gd->gd_Object.go_Class->gc_Interface; gi && gi->gi_Tag; gi++)
     {
-        ngad.ng_GadgetText = GetGLabel(gi);
+        ngad.ng_GadgetText = (STRPTR)GetGLabel(gi);
 
 		switch (gi->gi_Type)
         {
@@ -860,7 +866,7 @@ RefreshDiagramPageGadgets(REG(a0, struct Window *win), REG(d0, long active))
             {
                 ULONG pen = 0x0;
 
-                GetGObjectAttr(gd,GAA_NumberPen,&pen);
+                GetGObjectAttr((struct gObject *)gd,GAA_NumberPen,&pen);
                 DrawColorField(rp,gad,pen,TRUE);
                 itext.IText = GetString(&gLocaleInfo, MSG_COLOR_LABEL);
                 PrintIText(rp,&itext,gad->LeftEdge-2*boxwidth-8-IntuiTextLength(&itext),gad->TopEdge+2);
@@ -872,7 +878,7 @@ RefreshDiagramPageGadgets(REG(a0, struct Window *win), REG(d0, long active))
             {
                 ULONG pen = 0x0;
 
-                GetGObjectAttr(gd,GAA_BPen,&pen);
+                GetGObjectAttr((struct gObject *)gd,GAA_BPen,&pen);
                 DrawColorField(rp,gad,pen,TRUE);
                 itext.IText = GetString(&gLocaleInfo, MSG_BACKGROUND_COLOR_LABEL);
                 PrintIText(rp,&itext,gad->LeftEdge-2*boxwidth-8-IntuiTextLength(&itext),gad->TopEdge+2);
@@ -997,7 +1003,7 @@ CreateDiagramGadgets(REG(a0, struct winData *wd))
     ngad.ng_Flags = PLACETEXT_ABOVE;
     ngad.ng_GadgetID = 8;                   // 8
 	/*pgad =*/ CreateGadget(LISTVIEW_KIND, pgad, &ngad, GTLV_Labels, &gdiagrams, GTLV_ShowSelected, NULL,
-		GTLV_Selected, gd ? FindListEntry(&gdiagrams, (struct Node *)gd->gd_Object.go_Class) : ~0L,
+		GTLV_Selected, gd ? FindListEntry(&gdiagrams, (struct MinNode *)gd->gd_Object.go_Class) : ~0L,
 		GTLV_CallBack, &renderHook, GTLV_MaxPen, 7, GTLV_ItemHeight, itemheight, TAG_END);
 
     ngad.ng_Height = fontheight+4;
@@ -1242,7 +1248,7 @@ CreateFormelGadgets(REG(a0, struct winData *wd))
 // ToDo: that should be done differently (better localized page sizes)!
 STRPTR pageLabels[] = {"A3", "A4", "A5", "US Letter", "US Legal", NULL, NULL};
 const ULONG pageWidth[] = {305664, 215142, 152166, 221081, 221081};  /* in mm*1024 */
-const ULONG pageHeight[] = {432333, 304640, 216166, 286106, 364134};
+const ULONG pageHeight[] = {432332, 304640, 216166, 286105, 364134};
 const ULONG pageSizes = 5;
 
 
@@ -1255,7 +1261,6 @@ CreatePageSetupGadgets(REG(a0, struct winData *wd))
 
     gWidth = TLn(GetString(&gLocaleInfo, MSG_PAGE_FORMAT_GAD))+TLn(GetString(&gLocaleInfo, MSG_MARKED_GAD))+116+rborder+lborder;
 	gHeight = barheight + fontheight * 11 + 81 + bborder;
-
 	for (i = 0; i < pageSizes; i++)
     {
         if (pageWidth[i] == mp->mp_mmWidth && pageHeight[i] == mp->mp_mmHeight)
@@ -1370,6 +1375,19 @@ CreateDocInfoGadgets(REG(a0, struct winData *wd))
     ngad.ng_GadgetID++;                     // 3
     gad = CreateGadget(STRING_KIND,gad,&ngad,GT_Underscore,'_',GTST_String,mp->mp_CatchWords,TAG_END);
 
+#ifdef __amigaos4__
+	gad = NewObj(wd, WOT_GADGET, TEXTEDITOR_GetClass(), "editorgadget", 
+			GA_Left,      ngad.ng_LeftEdge,
+            GA_Top,       ngad.ng_TopEdge+fontheight+7,
+            GA_Width,     ngad.ng_Width,
+            GA_Height,    fontheight*5+4,
+            GA_DrawInfo,  dri,
+            GA_Previous,  gad,
+//          EGA_Scroller, TRUE,
+          	GA_TEXTEDITOR_Contents,     mp->mp_Note,
+            GA_ID,        4,
+            TAG_END);
+#else
 	gad = NewObj(wd, WOT_GADGET, NULL, "pinc-editgadget",
 			GA_Left,      ngad.ng_LeftEdge,
             GA_Top,       ngad.ng_TopEdge+fontheight+7,
@@ -1381,6 +1399,7 @@ CreateDocInfoGadgets(REG(a0, struct winData *wd))
             EGA_Text,     mp->mp_Note,
             GA_ID,        4,
             TAG_END);
+#endif
     wd->wd_ExtData[1] = gad;
 
     ngad.ng_GadgetText = GetString(&gLocaleInfo, MSG_OK_UGAD);
@@ -1660,6 +1679,19 @@ CreateNotesGadgets(struct winData *wd, long wid, long hei)
     if (rxpage && rxpage->pg_Gad.tf)
         t = rxpage->pg_Gad.tf->tf_Note;
 
+#ifdef __amigaos4__
+	gad = NewObj(wd, WOT_GADGET, TEXTEDITOR_GetClass(), "editorgadget", 
+			GA_Left,      lborder,
+            GA_Top,       ngad.ng_TopEdge,
+			GA_Width,     wid - rborder - lborder,
+			GA_Height,    fontheight * rows + 4,
+            GA_DrawInfo,  dri,
+            GA_Previous,  gad,
+//          EGA_Scroller, TRUE,
+          	GA_TEXTEDITOR_Contents,     t,
+            GA_ID,        1,
+            TAG_END);
+#else
 	gad = NewObj(wd, WOT_GADGET, NULL, "pinc-editgadget",
 			GA_Left,      lborder,
             GA_Top,       ngad.ng_TopEdge,
@@ -1671,6 +1703,7 @@ CreateNotesGadgets(struct winData *wd, long wid, long hei)
             EGA_Text,     t,
             GA_ID,        1,
             TAG_END);
+#endif
     wd->wd_ExtData[1] = gad;
 
 	ngad.ng_LeftEdge = wid - boxwidth - rborder;
@@ -1760,7 +1793,7 @@ CreateObjectGadgets(REG(a0, struct winData *wd))
         gWidth = 0;
         for(gi = go->go_Class->gc_Interface;gi && gi->gi_Tag;gi++)
         {
-            if (!(s = GetGLabel(gi)))
+            if (!(s = (STRPTR)GetGLabel(gi)))
                 continue;
 
             gw = TLn(s);
@@ -1837,7 +1870,7 @@ CreateObjectGadgets(REG(a0, struct winData *wd))
 				AddObjectGadget(wd->wd_ExtData[4], gad, gi->gi_Tag, GIT_PEN, POPUP_KIND);
                 break;
             case GIT_WEIGHT:
-                ngad.ng_GadgetText = GetGLabel(gi);
+                ngad.ng_GadgetText = (STRPTR)GetGLabel(gi);
 				ngad.ng_LeftEdge = w + TLn(ngad.ng_GadgetText) + 16;
 				ngad.ng_Width = gWidth - 8 - rborder - boxwidth - ngad.ng_LeftEdge;
                 ngad.ng_GadgetID++;
@@ -1853,7 +1886,7 @@ CreateObjectGadgets(REG(a0, struct winData *wd))
                 if (!gi->gi_Special)
                     break;
 
-                ngad.ng_GadgetText = GetGLabel(gi);
+                ngad.ng_GadgetText = (STRPTR)GetGLabel(gi);
                 ngad.ng_LeftEdge = w+TLn(ngad.ng_GadgetText)+16;
                 ngad.ng_Width = gWidth-8-rborder-ngad.ng_LeftEdge;
                 ngad.ng_GadgetID++;
@@ -1862,7 +1895,7 @@ CreateObjectGadgets(REG(a0, struct winData *wd))
                 AddObjectGadget(wd->wd_ExtData[4],gad,gi->gi_Tag,GIT_CYCLE,CYCLE_KIND);
                 break;
             case GIT_CHECKBOX:
-                ngad.ng_GadgetText = GetGLabel(gi);
+                ngad.ng_GadgetText = (STRPTR)GetGLabel(gi);
                 ngad.ng_LeftEdge = gWidth-8-rborder-boxwidth;
                 ngad.ng_Width = boxwidth;
                 ngad.ng_GadgetID++;
@@ -1879,11 +1912,11 @@ CreateObjectGadgets(REG(a0, struct winData *wd))
 
     for(gi = go->go_Class->gc_Interface;gi && gi->gi_Tag;gi++)
     {
-        ngad.ng_GadgetText = GetGLabel(gi);
+        ngad.ng_GadgetText = (STRPTR)GetGLabel(gi);
         switch(gi->gi_Type)
         {
             case GIT_BUTTON:
-                ngad.ng_GadgetText = GetGLabel(gi);
+                ngad.ng_GadgetText = (STRPTR)GetGLabel(gi);
                 ngad.ng_LeftEdge = lborder;
                 ngad.ng_Width = gWidth-lborder-rborder;
                 ngad.ng_Flags = PLACETEXT_IN;
@@ -2024,13 +2057,13 @@ CreateCommandGadgets(REG(a0, struct winData *wd))
     gad = CreateGadget(BUTTON_KIND,gad,&ngad,GT_Underscore,'_',TAG_END);
 }
 
-
 void ASM
 CreateFileTypeGadgets(REG(a0, struct winData *wd))
 {
 	struct IOTypeLink *iol;
     struct IOType *io;
     long   i = -1;
+    struct Node *n;
 
 	gWidth = scr->Width / 3;
 	gHeight = barheight + 17 * fontheight + 35 + bborder;
@@ -2042,27 +2075,35 @@ CreateFileTypeGadgets(REG(a0, struct winData *wd))
 		if (io == NULL || iol->iol_Link == io)
             break;
     }
-
+    
 	// if no type is set yet, use the one with the highest priority
-	if (io == NULL)
+	if (io == NULL) 
 		io = iol->iol_Link;
-
 	wd->wd_ExtData[2] = iol;
-
+	
+#ifdef __amigaos4__
+	iol = (APTR)((struct List *)wd->wd_ExtData[1])->lh_Head; //Wieder auf startwert setzen, sonst zeigt der Zeiger in die irre...
+	wd->wd_ExtData[0] = io = iol->iol_Link;
+#endif
+	
     ngad.ng_LeftEdge = lborder;
     ngad.ng_TopEdge += fontheight+6;
     ngad.ng_Width = gWidth-lborder-rborder;
     ngad.ng_Height = 8*fontheight+4;
     ngad.ng_GadgetText = wd->wd_ExtData[0] ? GetString(&gLocaleInfo, MSG_AVAILABLE_LOAD_MODULES_GAD) : GetString(&gLocaleInfo, MSG_AVAILABLE_SAVE_MODULES_GAD);
     ngad.ng_Flags = PLACETEXT_ABOVE;                     // 1
+#ifdef __amigaos4__
+	gad = CreateGadget(LISTVIEW_KIND, gad, &ngad, GTLV_Labels, wd->wd_ExtData[1], GTLV_ShowSelected, NULL, GTLV_Selected, 0, TAG_END);
+#else
 	gad = CreateGadget(LISTVIEW_KIND, gad, &ngad, GTLV_Labels, wd->wd_ExtData[1], GTLV_ShowSelected, NULL, GTLV_Selected, i, TAG_END);
     wd->wd_ExtData[0] = (APTR)((struct Page *)wd->wd_Data)->pg_Mappe->mp_FileType;
+#endif
 
 	ngad.ng_TopEdge += fontheight * 9 + 12;
 	ngad.ng_Height = 6 * fontheight + 4;
     ngad.ng_GadgetText = GetString(&gLocaleInfo, MSG_NOTES_GAD);
     ngad.ng_GadgetID++;                                  // 2
-	gad = CreateGadget(LISTVIEW_KIND, gad, &ngad, GTLV_Labels, i != ~0L ? &iol->iol_Description : NULL, GTLV_ReadOnly, TRUE, TAG_END);
+	gad = CreateGadget(LISTVIEW_KIND, gad, &ngad, GTLV_Labels, (i != ~0L ? &iol->iol_Description : NULL), GTLV_ReadOnly, TRUE, TAG_END);
 
 	ngad.ng_TopEdge += ngad.ng_Height + 3;
 	ngad.ng_Height = fontheight + 4;
@@ -2150,6 +2191,17 @@ CreateScriptsGadgets(struct winData *wd, long wid, long hei)
     ngad.ng_GadgetID++;                      // 7
     gad = CreateGadget(BUTTON_KIND,gad,&ngad,GT_Underscore,'_',GA_Disabled,TRUE,TAG_END);
 
+#ifdef __amigaos4__
+	gad = NewObj(wd, WOT_GADGET, TEXTEDITOR_GetClass(), "editorgadget", GA_Left,      w,
+                                                          				GA_Top,       top-h,
+                                                          				GA_Width,     wid-w-rborder,
+                                                          				GA_Height,    h,
+                                                          				GA_DrawInfo,  dri,
+                                                          				GA_Previous,  gad,
+                                                          				GA_Disabled,  TRUE,
+                                                          				GA_ID,        8,
+                                                          				TAG_END);
+#else
 	gad = NewObj(wd, WOT_GADGET, NULL, "pinc-editgadget", GA_Left,      w,
                                                           GA_Top,       top-h,
                                                           GA_Width,     wid-w-rborder,
@@ -2162,6 +2214,7 @@ CreateScriptsGadgets(struct winData *wd, long wid, long hei)
                                                           GA_Disabled,  TRUE,
                                                           GA_ID,        8,
                                                           TAG_END);
+#endif
     wd->wd_ExtData[1] = gad;
 }
 

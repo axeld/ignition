@@ -8,6 +8,9 @@
 #include "types.h"
 #include "funcs.h"
 #include <dos/dostags.h>
+#ifdef __amigaos4__
+	#include <stdarg.h>
+#endif
 
 
 #define RXPOS_CELL 1
@@ -37,7 +40,7 @@ BeginRxPos(int8 mode, STRPTR pos)
 {
 	struct tablePos tp;
 	struct Term *t;
-
+	
 	if (pos) {
 		tf_col = tf_row = 0;
 		if (FillTablePos(&tp, t = CreateTree(rxpage, pos))) {
@@ -112,7 +115,11 @@ GetRxPen(LONG arg)
 		ULONG num;
 
 		if (*(STRPTR)arg == '0' && *((STRPTR)arg+1) == 'x' || *(STRPTR)arg == '#')
+#ifdef __amigaos4__
+			sscanf((STRPTR)arg, "%x", &num);
+#else
 			stch_l((STRPTR)arg,(LONG *)&num);
+#endif
 		else
 			num = atol((STRPTR)arg);
 
@@ -150,6 +157,18 @@ NotifyRexxScript(struct RexxScript *rxs)
 
 	if ((file = Open(rxs->rxs_NotifyRequest.nr_Name, MODE_OLDFILE)) != 0)
 	{
+#ifdef __amigaos4__
+		struct ExamineData *edata;
+		
+		if(edata = ExamineObjectTags(EX_FileHandleInput, file, TAG_END)) {
+			FreeRexxScriptData(rxs);
+			if ((rxs->rxs_Data = AllocPooled(pool, rxs->rxs_DataLength = edata->FileSize + 1)) != 0)
+				Read(file, rxs->rxs_Data, edata->FileSize);
+
+			RefreshLockList(&rxs->rxs_Map->mp_RexxScripts);
+			FreeDosObject(DOS_EXAMINEDATA, edata); 
+		}
+#else
 		struct FileInfoBlock ALIGNED fib;
 
 		if (ExamineFH(file,&fib))
@@ -160,6 +179,7 @@ NotifyRexxScript(struct RexxScript *rxs)
 
 			RefreshLockList(&rxs->rxs_Map->mp_RexxScripts);
 		}
+#endif
 		Close(file);
 	}
 }
@@ -261,10 +281,14 @@ void DeleteRexxScript(struct Mappe *mp,struct RexxScript *rxs)
 	if (rxs->rxs_NotifyRequest.nr_Name)
 	{
 		EndNotify(&rxs->rxs_NotifyRequest);
+#ifdef __amigaos4__
+		Delete(rxs->rxs_NotifyRequest.nr_Name);
+#else
 		DeleteFile(rxs->rxs_NotifyRequest.nr_Name);
+#endif
 		FreeString(rxs->rxs_NotifyRequest.nr_Name);
 	}
-	RemoveFromLockedList(&mp->mp_RexxScripts,rxs);
+	RemoveFromLockedList(&mp->mp_RexxScripts,(struct MinNode *)rxs);
 	FreeString(rxs->rxs_Node.ln_Name);
 	FreeRexxScriptData(rxs);
 
@@ -285,7 +309,7 @@ struct RexxScript *NewRexxScript(struct Mappe *mp,STRPTR name,BYTE header)
 		rxs->rxs_Map = mp;
 		if (header)
 			CreateRexxScriptHeader(rxs);
-		AddLockedTail(&mp->mp_RexxScripts,rxs);
+		AddLockedTail(&mp->mp_RexxScripts,(struct MinNode *)rxs);
 	}
 	return(rxs);
 }
@@ -384,7 +408,7 @@ LoadBlock(struct Page *page, STRPTR name, long mode)
 				ErrorRequest(GetString(&gLocaleInfo, MSG_LOAD_BLOCK_ERR), IFFErrorText(error));
 			CloseIFF(iff);
 		}
-		Close((void*)iff->iff_Stream);
+		Close((BPTR)iff->iff_Stream);
 	}
 	FreeIFF(iff);
 
@@ -431,7 +455,7 @@ SaveBlock(struct Page *page, STRPTR name)
 				ErrorRequest(GetString(&gLocaleInfo, MSG_SAVE_BLOCK_ERR), IFFErrorText(error));
 			CloseIFF(iff);
 		}
-		Close((void*)iff->iff_Stream);
+		Close((BPTR)iff->iff_Stream);
 	}
 	FreeIFF(iff);
 }
@@ -545,7 +569,7 @@ rxPaste(long *opts)
 	BeginRxPos(RXPOS_CELL, (STRPTR)opts[0]);
 	if (opts[2])
 		clipunit = *(LONG *)opts[2];
-	PasteClip(rxpage, (struct PasteNode *)(opts[3] ? ~0L : NULL),opts[1] ? PC_TEXTONLY : 0);
+	PasteClip(rxpage, (struct PasteNode *) (opts[3] ? (APTR)~0L : NULL), (opts[1] ? PC_TEXTONLY : 0));
 	clipunit = unit;
 
 	EndRxPos((STRPTR)opts[0]);
@@ -577,7 +601,6 @@ ULONG rxBorder(long *opts)
 
 	if (opts[6])
 		OpenAppWindow(WDT_BORDER,TAG_END);
-
 	BeginRxPos(RXPOS_BLOCK,(STRPTR)opts[0]);
 	if (opts[1] || opts[2] || opts[3] || opts[4])
 	{
@@ -1249,7 +1272,7 @@ rxCellColumns(long *opts)
 }
 
 // CELL POS,INSERTROW/S,INSERTCOL/S,SHIFTDOWN/S,SHIFTRIGHT/S,REMOVEROW/S,REMOVECOL/S,SHIFTUP/S,SHIFTLEFT/S
-//	  0   1		   2		   3		   4			5		   6		   7		 8
+//	  0       1		       2		   3		   4			5		   6		   7		 8
 
 ULONG
 rxCell(long *opts)
@@ -1270,7 +1293,6 @@ rxCell(long *opts)
 		EndRxPos((STRPTR)opts[0]);
 		return RC_WARN;
 	}
-
 	if (opts[1] || opts[3])
 		mode = UNT_INSERT_VERT_CELLS;
 	if (opts[2] || opts[4])
@@ -1891,7 +1913,7 @@ rxFilter(long *opts)
 }
 
 // NAME NAME,SET/K,TYPE,DELETE/S,REQ/S,GLOBAL/S
-//	  0	1	 2	3		4	 5
+//	      0	  1	     2	   3	  4	      5
 
 ULONG
 rxName(long *opts)
@@ -1966,7 +1988,7 @@ rxName(long *opts)
 }
 
 // CELLNAME POS,SET/K,DELETE/S,REQ/S
-//		  0   1	 2		3
+//		      0   1	    2		3
 
 ULONG rxCellName(long *opts)
 {
@@ -1983,7 +2005,15 @@ ULONG rxCellName(long *opts)
 			TablePos2String(rxpage,(struct tablePos *)&rxpage->pg_MarkCol,t);
 		else
 			strcpy(t,Coord2String(rxpage->pg_Gad.cp.cp_Col,rxpage->pg_Gad.cp.cp_Row));
+#ifdef __amigaos4__
+		opts[0] = opts[1];
+		opts[1] = (long)t;
+		opts[2] = (long)"c";
+		opts[3] = opts[4] = opts[5] = FALSE;
+		rxName(opts);
+#else
 		RexxCall(rxName,opts[1],t,"c",FALSE,FALSE,FALSE);
+#endif
 	}
 	else
 	{
@@ -1994,7 +2024,17 @@ ULONG rxCellName(long *opts)
 			if (nm->nm_Node.ln_Type == NMT_CELL)
 			{
 				if (rxpage->pg_MarkCol != -1 && !memcmp(&rxpage->pg_MarkCol,&nm->nm_TablePos,sizeof(struct tablePos)) || rxpage->pg_MarkCol == -1 && !nm->nm_TablePos.tp_Width && !nm->nm_TablePos.tp_Height && nm->nm_TablePos.tp_Col == rxpage->pg_Gad.cp.cp_Col && nm->nm_TablePos.tp_Row == rxpage->pg_Gad.cp.cp_Row)
-					RexxCall(rxName,nm->nm_Node.ln_Name,NULL,TRUE,FALSE,FALSE);
+#ifdef __amigaos4__
+				{
+					opts[0] = (long)nm->nm_Node.ln_Name;
+					opts[1] = (long)NULL;
+					opts[2] = (long)"c";
+					opts[3] = opts[4] = (long)FALSE;
+					rxName(opts);
+				}
+#else
+					RexxCall(rxName,nm->nm_Node.ln_Name,NULL,"c",FALSE,FALSE);
+#endif
 			}
 		}
 	}
@@ -2216,8 +2256,8 @@ rxLoadPicture(long *opts)
 								   ASLFR_TitleText,	 GetString(&gLocaleInfo, MSG_LOAD_PICTURE_TITLE),
 								   ASLFR_InitialDrawer, graphicpath,
 								   ASLFR_InitialFile,   "",
-								   ASLFR_InitialPattern,"#?",
 								   ASLFR_DoSaveMode,	FALSE,
+								   ASLFR_InitialPattern,"#?",
 								   ASLFR_DoPatterns,	FALSE,
 								   ASLFR_DrawersOnly,   FALSE,
 								   TAG_END))
@@ -2244,7 +2284,7 @@ rxObjectInfo(long *opts)
 
 	if (opts[0])
 	{
-		if ((go = (struct gObject *)FindCommand((struct List *)&rxpage->pg_gObjects, (STRPTR)opts[0])) != 0)
+		if ((go = (struct gObject *)FindCommand((struct MinList *)&rxpage->pg_gObjects, (STRPTR)opts[0])) != 0)
 			OpenGObjectWindow(go);
 		else
 			return RC_WARN;
@@ -2268,11 +2308,6 @@ rxDupObject(long *opts)
 {
 	struct UndoNode *un;
 
-	if (!(un = CreateUndo(rxpage, UNDO_PRIVATE, GetString(&gLocaleInfo, MSG_DUPLICATE_OBJECTS_UNDO))))
-		return RC_WARN;
-
-	un->un_Type = UNT_ADD_OBJECTS;
-
 	if (opts[0])
 	{
 		struct gObject *go;
@@ -2281,6 +2316,10 @@ rxDupObject(long *opts)
 		{
 			if (!stricmp((STRPTR)opts[0], go->go_Node.ln_Name ? go->go_Node.ln_Name : ""))
 			{
+				if (!(un = CreateUndo(rxpage, UNDO_PRIVATE, GetString(&gLocaleInfo, MSG_DUPLICATE_OBJECTS_UNDO))))
+					return RC_WARN;
+
+				un->un_Type = UNT_ADD_OBJECTS;
 				DuplicateGGroup(rxpage, OBJECTGROUP(go), un);
 				break;
 			}
@@ -2293,7 +2332,13 @@ rxDupObject(long *opts)
 		foreach (&rxpage->pg_gGroups, gg)
 		{
 			if (gg->gg_Flags & GOF_SELECTED)
+			{
+				if (!(un = CreateUndo(rxpage, UNDO_PRIVATE, GetString(&gLocaleInfo, MSG_DUPLICATE_OBJECTS_UNDO))))
+					return RC_WARN;
+
+				un->un_Type = UNT_ADD_OBJECTS;
 				DuplicateGGroup(rxpage, gg, un);
+			}
 		}
 	}
 
@@ -2562,6 +2607,9 @@ ULONG rxLoad(long *opts)
 				RefreshPrefsModules(&mp->mp_Prefs, ~(PRF_NAMES | PRF_FORMAT | PRF_CMDS));
 			}
 			DisposeProject(page->pg_Mappe);
+#ifdef __amigaos4__
+			RefreshProjWindows(TRUE); //Beseitigt Fehler in Tabellenfenster beim Laden zB nach laden von "Rechnen mit Typen.igs"
+#endif
 		} else
 			OpenProjWindow(rxpage, TAG_END);
 
@@ -2738,7 +2786,7 @@ rxPrefs(long *opts)
 
 		if (doit) {
 			if (opts[PREFS_LOAD]) {
-				LoadPrefs(&prefs,dest,NULL,flags);
+				LoadPrefs(&prefs,dest,(BPTR)NULL,flags);
 //		RefreshPrefsModules(&prefs,flags);
 			} else
 				SavePrefs(&prefs,dest,flags);
@@ -2870,7 +2918,7 @@ rxHelp(long *opts)
 		strcpy(t, (STRPTR)opts[0]);
 	else if (imsg.Class == IDCMP_MENUHELP)
 	{
-		struct AppMenuEntry *ame;
+		struct AppMenueEntry *ame;
 		struct MenuItem *item;
 
 		strcpy(t, "unknown");
@@ -3530,7 +3578,11 @@ CloseRexx(void)
 	if (notifyport)
 	{
 		EmptyMsgPort(notifyport);
+#ifdef __amigaos4__
+		FreeSysObject(ASOT_PORT, notifyport);
+#else
 		DeleteMsgPort(notifyport);
+#endif
 	}
 	if (rxsigbit != -1)
 		FreeSignal(rxsigbit);
@@ -3542,7 +3594,11 @@ initRexx(void)
 {
 	MyNewList(&rexxports);
 
+#ifdef __amigaos4__
+	if ((notifyport = AllocSysObjectTags(ASOT_PORT, TAG_END)) != 0)
+#else
 	if ((notifyport = CreateMsgPort()) != 0)
+#endif
 	{
 		notifysig = 1L << notifyport->mp_SigBit;
 		//rxmask = notifysig;
@@ -3644,6 +3700,7 @@ initRexx(void)
 }
 
 
+#ifndef __amigaos4__
 ULONG
 RexxCall(ULONG (*func)(long *opts),...)
 {
@@ -3653,7 +3710,7 @@ RexxCall(ULONG (*func)(long *opts),...)
 
 	return RC_FAIL;
 }
-
+#endif
 
 void
 RemoveRexxPort(struct RexxPort *rxp)
@@ -3767,7 +3824,11 @@ RunRexxScript(UBYTE type, STRPTR name)
 	}
 	Forbid();
 	if (!(hostPort = FindPort("REXX")) && !FindTask("RexxMaster")) {
-		Execute("SYS:System/RexxMast >Nil:", NULL, NULL);
+#ifdef __amigaos4__
+		SystemTags("SYS:System/RexxMast >Nil:", SYS_Input, NULL, SYS_Output, NULL, TAG_DONE);
+#else
+		Execute("SYS:System/RexxMast >Nil:", (BPTR)NULL, (BPTR)NULL);
+#endif
 		hostPort = FindPort("REXX");
 	}
 	if (hostPort)

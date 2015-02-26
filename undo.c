@@ -196,7 +196,7 @@ ApplyDiagramTypeUndoRedo(struct Page *page, struct UndoNode *un, BYTE type)
 	MyRemove(oldDiagram);
 	MyAddTail(&page->pg_gDiagrams, newDiagram);
 
-	UpdateObjectReferences(oldDiagram, newDiagram);
+	UpdateObjectReferences((struct gObject *)oldDiagram, (struct gObject *)newDiagram);
 	
 	if (win != NULL)
 	{

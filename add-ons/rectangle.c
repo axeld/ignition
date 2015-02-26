@@ -14,10 +14,28 @@
 
 const char *version = "$VER: rectangle.gc 0.6 (2.3.2003)";
 
+#ifdef __amigaos4__
+	#ifdef __GNUC__
+		#ifdef __PPC__
+			#pragma pack(2)
+		#endif
+	#elif defined(__VBCC__)
+		#pragma amiga-align
+	#endif
+#endif
 struct Rect
 {
 	ULONG r_FillPen, r_OutlinePen, r_Weight;
 };
+#ifdef __amigaos4__
+	#ifdef __GNUC__
+		#ifdef __PPC__
+			#pragma pack()
+		#endif
+	#elif defined(__VBCC__)
+		#pragma default-align
+	#endif
+#endif
 
 struct gInterface interface[] =
 {

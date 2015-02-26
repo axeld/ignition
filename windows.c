@@ -12,6 +12,10 @@
 #include "classes.h"
 #include "version.h"
 #include <stdarg.h>
+#ifdef __amigaos4__
+	#include <proto/gtdrag.h>
+	#include <gadgets/button.h>
+#endif
 
 // for the version command
 const STRPTR kVersion = VERSTRING;
@@ -23,6 +27,7 @@ extern struct Image *toolImage[9];
 extern struct RastPort *doublerp;
 extern struct Layer_Info *gli;
 extern STRPTR lasterror;
+extern BOOL debug;
 
 
 int32
@@ -57,13 +62,67 @@ DoRequestA(CONST_STRPTR t, CONST_STRPTR gads, APTR args)
 }
 
 
+#ifdef __amigaos4__
+int32
+DoRequest(CONST_STRPTR t, CONST_STRPTR gads, ...)
+{
+	va_list ap;
+	STRPTR s;
+	int32 rvalue;
+
+	va_startlinear(ap, gads);
+	s = va_getlinearva(ap, STRPTR);
+	rvalue =  DoRequestA(t, gads, s);
+	va_end(ap);
+	
+	return rvalue;
+}
+#else
 long
 DoRequest(CONST_STRPTR t, CONST_STRPTR gads, ...)
 {
 	return DoRequestA(t, gads, &gads + 1);
 }
+#endif
 
+#ifdef __amigaos4__
+void
+ErrorRequest(CONST_STRPTR t, ...)
+{
+	STRPTR s;
+	long len;
 
+	if ((s = AllocPooled(pool, len = strlen(t) + 256)) != 0) {
+		va_list args;
+
+		va_start(args, t);
+		vsprintf(s, t, args);
+		va_end(args);
+
+		FreeString(lasterror);
+		lasterror = AllocString(s);
+
+		FreePooled(pool, s, len);
+	}
+	if (rxquiet) {
+		struct Node *ln;
+
+		if (lasterror && (ln = AllocPooled(pool, sizeof(struct Node)))) {
+			ln->ln_Name = AllocString(lasterror);
+			MyAddTail(&errors, ln);
+		}
+	} else
+	{
+		va_list ap;
+		STRPTR s;
+
+		va_startlinear(ap, t);
+		s = va_getlinearva(ap, STRPTR);
+		DoRequestA(t,GetString(&gLocaleInfo, MSG_OK_GAD), s);
+		va_end(ap);
+	}
+}
+#else
 void
 ErrorRequest(CONST_STRPTR t, ...)
 {
@@ -92,7 +151,7 @@ ErrorRequest(CONST_STRPTR t, ...)
 	} else
 		DoRequestA(t,GetString(&gLocaleInfo, MSG_OK_GAD),&t+1);
 }
-
+#endif
 
 void PUBLIC
 ErrorRequestA(REG(a0, CONST_STRPTR t), REG(a1, APTR args))
@@ -380,17 +439,16 @@ CreatePopGadget(struct winData *wd, struct Gadget *gad, bool disabled)
 	ngad.ng_Height = fontheight + 4;
 	ngad.ng_GadgetText = NULL;
 
-	return NewObj(wd,WOT_GADGET,buttonclass,NULL,GA_Left,	 ngad.ng_LeftEdge,
-												 GA_Top,	  ngad.ng_TopEdge,
-												 GA_Width,	boxwidth,
-												 GA_Height,   fontheight + 4,
-												 GA_Image,	popImage,
-												 GA_Disabled, disabled,
-												 GA_Previous, gad,
-												 GA_Immediate,TRUE,
-												 GA_RelVerify,TRUE,
-												 GA_ID,	   ngad.ng_GadgetID,
-												 TAG_END);
+	return NewObj(wd,WOT_GADGET,buttonclass,NULL, 		GA_Left, 		ngad.ng_LeftEdge,
+												 		GA_Top,	  		ngad.ng_TopEdge,
+												 		GA_Height,  	fontheight + 4,
+												 		GA_Image,		popImage,
+												 		GA_Disabled,	disabled,
+												 		GA_Previous,	gad,
+												 		GA_Immediate,	TRUE,
+												 		GA_RelVerify,	TRUE,
+												 		GA_ID,	   		ngad.ng_GadgetID,
+												 		TAG_END);
 	//return(CreateImgGadget(popimg,popimg,4,gad,&ngad,disabled));
 }
 
@@ -420,14 +478,14 @@ DrawField(struct RastPort *rp, WORD x, WORD y)
 {
 	struct Image *obj;
 
-	if ((obj = NewObject(NULL,"frameiclass",IA_Width,	 boxwidth << 1,
+	if ((obj = (struct Image *)NewObject(NULL,"frameiclass",IA_Width,	 boxwidth << 1,
 										   IA_Height,	fontheight + 4,
 										   IA_Recessed,  TRUE,
 										   IA_FrameType, FRAME_BUTTON,
 										   TAG_END)) != 0)
 	{
 		DrawImage(rp, obj, x, y);
-		DisposeObject(obj);
+		DisposeObject((Object *)obj);
 	}
 }
 
@@ -475,7 +533,7 @@ DrawGroupBorder(struct RastPort *rp, CONST_STRPTR t,long x, long y, long w, long
 {
 	struct Image *obj;
 
-	if ((obj = NewObject(NULL,"frameiclass",IA_Top,	   t ? (fontheight >> 1)-1 : 0,
+	if ((obj = (struct Image *)NewObject(NULL,"frameiclass",IA_Top,	   t ? (fontheight >> 1)-1 : 0,
 										   IA_Width,	 w,
 										   IA_Height,	h-(t ? (fontheight >> 1)-1 : 0),
 										   IA_Recessed,  1,
@@ -483,9 +541,9 @@ DrawGroupBorder(struct RastPort *rp, CONST_STRPTR t,long x, long y, long w, long
 										   TAG_END)) != 0)
 	{
 		DrawImage(rp, obj, x, y);
-		DisposeObject(obj);
+		DisposeObject((Object *)obj);
 	}
-	if ((obj = NewObject(NULL,"frameiclass",IA_Top,	   t ? (fontheight >> 1) : 1,
+	if ((obj = (struct Image *)NewObject(NULL,"frameiclass",IA_Top,	   t ? (fontheight >> 1) : 1,
 										   IA_Left,	  1,
 										   IA_Width,	 w-2,
 										   IA_Height,	h-(t ? (fontheight >> 1)+1 : 2),
@@ -493,7 +551,7 @@ DrawGroupBorder(struct RastPort *rp, CONST_STRPTR t,long x, long y, long w, long
 										   TAG_END)) != 0)
 	{
 		DrawImage(rp, obj, x, y);
-		DisposeObject(obj);
+		DisposeObject((Object *)obj);
 	}
 	if (t)
 	{
@@ -516,13 +574,24 @@ DrawDithRect(struct RastPort *rp,long x1,long y1,long x2,long y2)
 }
 
 
-APTR
-NewObj(struct winData *wd,short type,APTR cl,STRPTR name,ULONG tag1,...)
+#ifdef __amigaos4__
+APTR VARARGS68K NewObj(struct winData *wd,short type,APTR cl,STRPTR name,...);// ULONG tag1,...);
+APTR NewObj(struct winData *wd,short type,APTR cl,STRPTR name,...)// ULONG tag1,...)
+#else
+APTR NewObj(struct winData *wd,short type,APTR cl,STRPTR name,ULONG tag1,...)
+#endif
 {
 	struct winObj *wo;
 	APTR   *obj;
 
-	if ((obj = NewObjectA(cl, name, (struct TagItem *)&tag1)) != 0)
+#ifdef __amigaos4__
+	va_list ap;
+	struct TagItem *tags;
+
+	va_startlinear(ap, name);
+	tags = va_getlinearva(ap, struct TagItem *);
+
+	if ((obj = (APTR)NewObjectA(cl, name, tags)) != 0)
 	{
 		if ((wo = AllocPooled(pool, sizeof(struct winObj))) != 0)
 		{
@@ -531,6 +600,17 @@ NewObj(struct winData *wd,short type,APTR cl,STRPTR name,ULONG tag1,...)
 			MyAddTail(&wd->wd_Objs, wo);
 		}
 	}
+#else
+	if ((obj = (APTR)NewObjectA(cl, name, (struct TagItem *)&tag1)) != 0)
+	{
+		if ((wo = AllocPooled(pool, sizeof(struct winObj))) != 0)
+		{
+			wo->wo_Obj = obj;
+			wo->wo_Type = type;
+			MyAddTail(&wd->wd_Objs, wo);
+		}
+	}
+#endif
 	return obj;
 }
 
@@ -557,8 +637,6 @@ struct Window *
 GetAppWindow(long type)
 {
 	struct Window *win;
-
-	//printf("scr = %lx, iport = %lx\n",scr,iport);
 	if (!scr || !iport)
 		return NULL;
 
@@ -754,6 +832,7 @@ RemoveGadgets(struct Gadget **firstgad,BOOL border)
 }
 
 
+#ifndef __amigaos4__
 void
 StripIntuiMessages(struct MsgPort *mp, struct Window *win)
 {
@@ -772,7 +851,7 @@ StripIntuiMessages(struct MsgPort *mp, struct Window *win)
 		msg = (struct IntuiMessage *)succ;
 	}
 }
-
+#endif
 
 void
 CloseAppWindow(struct Window *win,BOOL cleanUp)
@@ -849,14 +928,14 @@ DrawRequesterBorder(struct Window *win)
 	DrawDithRect(win->RPort,win->BorderLeft,win->BorderTop,win->Width-1-win->BorderRight,win->Height-1-win->BorderBottom);
 	RefreshGadgets(win->FirstGadget,win,NULL);
 
-	if ((obj = NewObject(NULL, "frameiclass",
+	if ((obj = (struct Image *)NewObject(NULL, "frameiclass",
 				IA_Width,		win->Width - rborder - lborder,
 				IA_Height,		win->Height - win->BorderTop - win->BorderBottom - 14 - fontheight,
 				IA_Recessed,	TRUE,
 				TAG_END)) != 0)
 	{
 		DrawImage(win->RPort, obj, lborder, win->BorderTop + 4);
-		DisposeObject(obj);
+		DisposeObject((Object *)obj);
 	}
 }
 
@@ -911,7 +990,7 @@ UpdateProgressBar(struct ProgressBar *pb, CONST_STRPTR t, float p)
 		p = 0.0;
 
 	w = (long)(pb->pb_Width*p+0.5);
-	diff = zstrcmp(t,pb->pb_Text);
+	diff = zstrcmp((STRPTR)t,pb->pb_Text);
 
 	if (w > pb->pb_Width)
 		w = pb->pb_Width;
@@ -929,7 +1008,11 @@ UpdateProgressBar(struct ProgressBar *pb, CONST_STRPTR t, float p)
 	if (diff || pb->pb_BarWidth > w)
 		EraseRect(rp,x+w+1,y,x+pb->pb_Width,h);
 
+#ifdef __amigaos4__
+	Strlcpy(pb->pb_Text,t,PROGRESSBAR_TEXTLEN);
+#else
 	stccpy(pb->pb_Text,t,PROGRESSBAR_TEXTLEN);
+#endif
 	pb->pb_BarWidth = w;
 
 	if (!t)
@@ -991,10 +1074,11 @@ CreateInfo(struct Window *win)
 	itext.IText = "Axel Dörfler";  PrintIText(win->RPort,&itext,16+lborder,barheight+117);
 	itext.IText = "http://www.pinc-software.de";  PrintIText(win->RPort,&itext,16+lborder,barheight+129);
 	itext.IText = "eMail: info@pinc-software.de";  PrintIText(win->RPort,&itext,16+lborder,barheight+141);
-
-	itext.IText = "Open Source Version";
-	PrintIText(win->RPort, &itext, 6 + lborder, barheight + 194);
-
+#ifdef __amigaos4__
+	itext.IText = "Open Source Version AmigaOS4"; PrintIText(win->RPort, &itext, 6 + lborder, barheight + 194);
+#else
+	itext.IText = "Open Source Version"; PrintIText(win->RPort, &itext, 6 + lborder, barheight + 194);
+#endif
 	CloseFont(tf);
 	itext.FrontPen = 1;  itext.BackPen = 0;
 	itext.ITextFont = scr->Font;
@@ -1365,7 +1449,467 @@ TestOpenAppWindow(struct Window **rwin, long type, struct TagItem *ti)
 	return TRUE;
 }
 
+#ifdef __amigaos4__
+struct Window *OpenAppWindowA(long type, struct TagItem *tags)
+{
+	struct Window *win;
+	struct winData *wd;
+	bool error = false, reopened = false;
+	int32 idcmp, flags, x, y, minWidth = -1L, minHeight = -1L;
+	CONST_STRPTR title;
 
+	ObtainSemaphore(&gWindowSemaphore);
+
+	if (!TestOpenAppWindow(&win, type, (struct TagItem *)tags)) {
+		ReleaseSemaphore(&gWindowSemaphore);
+		return win;
+	}
+	title = (STRPTR)GetTagData(WA_Title, (ULONG)GetString(&gLocaleInfo,
+		MSG_IGNITION_REQUEST_TITLE), (struct TagItem *)tags);
+
+	if ((wd = (struct winData *)GetTagData(WA_WinData, 0, (struct TagItem *)tags)) != 0)
+		reopened = true;
+
+	x = GetTagData(WA_Left, prefs.pr_WinPos[type].Left, (struct TagItem *)tags);
+	y = GetTagData(WA_Top, prefs.pr_WinPos[type].Top, (struct TagItem *)tags);
+
+	ngad.ng_VisualInfo = vi;
+	ngad.ng_TextAttr = scr->Font;
+	ngad.ng_UserData = NULL;
+	ngad.ng_TopEdge = barheight + 3;
+	ngad.ng_Height = fontheight + 4;
+	ngad.ng_GadgetID = 1;
+
+	if (wd || (wd = AllocPooled(pool, sizeof(struct winData))))
+	{
+		struct TagItem *ti;
+
+		wd->wd_Type = type;
+
+		if (!reopened && type != WDT_DEFINECMD && type != WDT_OBJECT)
+			wd->wd_Data = rxpage;
+		if ((ti = FindTagItem(WA_Data, (struct TagItem *)tags)) != 0)
+			wd->wd_Data = (APTR)ti->ti_Data;
+
+		if (!reopened)
+		{
+			wd->wd_CurrentPage = GetTagData(WA_Page, 0, (struct TagItem *)tags);
+			wd->wd_ExtData[0] = (APTR)GetTagData(WA_ExtData, 0, (struct TagItem *)tags);
+	
+			if (type == WDT_DEFINECMD)
+				wd->u.definecmd.wd_Map = (APTR)GetTagData(WA_Map, 0, (struct TagItem *)tags);
+		}
+		MyNewList(&wd->wd_Objs);
+
+		if ((gad = CreateContext(&wd->wd_Gadgets)) != 0)
+		{
+			wd->wd_Server = gCreateWinData[type - 1].cwd_Server;
+			wd->wd_CleanUp = gCreateWinData[type - 1].cwd_CleanUp;
+
+			flags = WFLG_CLOSEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_ACTIVATE;
+			idcmp = gCreateWinData[type - 1].cwd_IDCMP | (prefs.pr_Flags & PRF_SIMPLEWINDOWS ? IDCMP_REFRESHWINDOW : 0);
+
+			if (IsPrefsWindow(type))
+				title = MakePrefsTitle(wd->wd_Data, type, GetString(&gLocaleInfo, gCreateWinData[type - 1].cwd_Title));
+			else if (gCreateWinData[type - 1].cwd_Title)
+				title = GetString(&gLocaleInfo, gCreateWinData[type - 1].cwd_Title);
+
+			gWidth = GetTagData(WA_Width, -1, (struct TagItem *)tags);
+			if (gWidth == -1)
+				gWidth = prefs.pr_WinPos[type].Width;
+			gHeight = GetTagData(WA_Height, -1, (struct TagItem *)tags);
+			if (gHeight == -1)
+				gHeight = prefs.pr_WinPos[type].Height;
+
+			switch (type)
+			{
+				case WDT_PREFS:
+					minWidth = TLn(GetString(&gLocaleInfo, MSG_ADD_GAD)) + TLn(GetString(&gLocaleInfo, MSG_REMOVE_GAD)) + 100;
+					minHeight = barheight + fontheight + itemheight*5 + 17 + leftImg->Height;
+
+					if (gWidth == -1) {
+						gHeight = barheight + itemheight*9 + 2*fontheight + 21 + leftImg->Height;
+						gWidth = TLn(GetString(&gLocaleInfo, MSG_FORMATS_PREFS)) + 120;
+						gWidth = max(gWidth, minWidth);
+					}
+
+					InitTreeList(&prefstree);
+					break;
+				case WDT_DEFINECMD:
+					if (!wd->u.definecmd.wd_AppCmd)
+						wd->u.definecmd.wd_AppCmd = NewAppCmd(wd->wd_Data);
+					break;
+				case WDT_PREFKEYS:
+					minWidth = TLn("ctrl amiga w") + TLn(GetString(&gLocaleInfo, MSG_RECORD_GAD)) + boxwidth + 70 + lborder + rborder;
+					minHeight = barheight + 11 * fontheight + 43 + leftImg->Height;
+
+					if (gWidth == -1) {
+						gWidth = minWidth;
+						gHeight = minHeight + 8 * fontheight;
+					}
+					break;
+				case WDT_FILETYPE:
+					flags = WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_RMBTRAP;
+					x = fileReq->fr_LeftEdge + fileReq->fr_Width + 16;
+					break;
+				case WDT_SETTITLE:
+				case WDT_SETNAME:
+					SetNamePosition(&x, &y);
+					break;
+				case WDT_CLIP:
+					minWidth = scr->Width >> 2;  minHeight = barheight + fontheight*5 + 14 + leftImg->Height;
+
+					if (gWidth == -1) {
+						gWidth = minWidth;
+						gHeight = barheight + fontheight*11 + 14 + leftImg->Height;
+					}
+					break;
+				case WDT_GCLASSES:
+				{
+					long w = TLn(GetString(&gLocaleInfo, MSG_INSERT_OBJECT_GAD));
+
+					minWidth = TLn(GetString(&gLocaleInfo, MSG_KEEP_WINDOWS_OPEN_GAD));
+					minWidth = max(w,minWidth)+boxwidth+itemwidth+lborder+rborder;
+
+					minHeight = itemheight * 2 + barheight + fontheight + 17 + leftImg->Height;
+
+					if (gWidth == -1) {
+						gWidth = minWidth + 42;
+						gHeight = minHeight + 3*itemheight;
+					}
+					break;
+				}
+				case WDT_NOTES:
+				{
+					minWidth = TLn(GetString(&gLocaleInfo, MSG_NOTE_GAD))+3*TLn(GetString(&gLocaleInfo, MSG_CANCEL_GAD))+boxwidth+76;
+					minHeight = fontheight*6+barheight+21 + leftImg->Height;
+
+					if (!reopened) {
+						initNotes(wd);
+
+						wd->wd_Data = rxpage ? rxpage->pg_Mappe : NULL;
+					}
+					if (gWidth == -1) {
+						gWidth = minWidth;
+						gHeight = minHeight + 2 * fontheight;
+					}
+					break;
+				}
+				case WDT_SCRIPTS:
+				{
+					minWidth = 2*TLn(GetString(&gLocaleInfo, MSG_DELETE_GAD)) + TLn(GetString(&gLocaleInfo, MSG_DESCRIPTION_GAD)) + 120;
+					minHeight = fontheight*11 + barheight + 21 + leftImg->Height;
+ 
+					if (gWidth == -1) {
+						gWidth = minWidth + 80;
+						gHeight = minHeight + 2*fontheight;
+					}
+					if (!reopened)
+						wd->wd_Data = rxpage ? rxpage->pg_Mappe : NULL;
+					break;
+				}
+				case WDT_PAGESETUP:
+				case WDT_DOCINFO:
+					if (!reopened)
+						wd->wd_Data = rxpage ? rxpage->pg_Mappe : NULL;
+					break;
+				case WDT_DIAGRAM:
+				{
+					struct gDiagram *sgd;
+
+					if (!reopened && (sgd = wd->u.diagram.wd_CurrentDiagram)) // altes Diagramm bearbeiten
+						wd->u.diagram.wd_OldDiagram = sgd;
+
+					if (wd->u.diagram.wd_OldDiagram)
+						title = GetString(&gLocaleInfo, MSG_CHANGE_DIAGRAM_TITLE);
+					break;
+				}
+				case WDT_PREVIEW:
+					minWidth = scr->Width/5;  minHeight = scr->Height/5;
+
+					if (!reopened)
+						gWidth = scr->Width/3,  gHeight = scr->Height/3;
+					flags |= WFLG_SIZEGADGET | WFLG_SIZEBBOTTOM;
+					break;
+			}
+
+			if (!reopened && gCreateWinData[type-1].cwd_Init)
+				gCreateWinData[type - 1].cwd_Init(wd);
+
+			if (gCreateWinData[type - 1].cwd_Gadgets)
+				gCreateWinData[type - 1].cwd_Gadgets(wd);
+			else if (gCreateWinData[type - 1].cwd_ResizableGadgets) {
+				gWidth = max(gWidth, minWidth);
+				gHeight = max(gHeight, minHeight);
+
+				gCreateWinData[type - 1].cwd_ResizableGadgets(wd, gWidth, gHeight);
+				flags |= WFLG_SIZEGADGET | WFLG_SIZEBBOTTOM;
+			}
+
+			if (!error)
+			{
+				if (x == -1)
+					x = (scr->Width - gWidth) >> 1;
+				if (y == -1)
+					y = (scr->Height - gHeight) >> 1;
+
+				if ((win = OpenWindowTags(NULL, WA_Flags,		flags,
+											   WA_Left,		 x,
+											   WA_Top,		  y,
+											   WA_Title,		title,
+											   WA_Width,		gWidth,
+											   WA_Height,	   gHeight,
+											   WA_NewLookMenus, TRUE,
+											   WA_MenuHelp,	 TRUE,
+											   WA_PubScreen,	scr,
+											   WA_Gadgets,	  wd->wd_Gadgets,
+//											   WA_IDCMP, LISTVIEWIDCMP,
+											   prefs.pr_Flags & PRF_SIMPLEWINDOWS ? WA_SimpleRefresh : TAG_IGNORE,TRUE,
+											   TAG_END)) != 0)
+				{
+					win->UserPort = iport;  win->UserData = (APTR)wd;
+					wd->wd_Mother = (struct Window *)GetTagData(WA_Mother,(ULONG)win->Parent,(struct TagItem *)tags);
+					ModifyIDCMP(win, idcmp);
+					if (minWidth != -1)
+						WindowLimits(win, minWidth, minHeight, -1, -1);
+					ScreenToFront(scr);
+
+					/* Post-Init */
+
+					switch (type)
+					{
+						case WDT_PREFSCREEN:
+							if (!reopened)
+								wd->wd_Data = (APTR)prefs.pr_Screen->ps_BFColor;
+							break;
+						case WDT_PREFDISP:
+							if (!reopened)
+							{
+								struct Prefs *pr = GetLocalPrefs(wd->wd_Data);
+
+								if (pr != &prefs && pr->pr_Disp == prefs.pr_Disp)
+								{
+									AddPrefsModuleToLocalPrefs(GetPrefsMap(pr),WDT_PREFDISP);
+
+									wd->wd_ExtData[2] = (APTR)TRUE;
+								}
+								else
+									wd->wd_ExtData[2] = (APTR)FALSE;
+
+								if ((wd->wd_ExtData[1] = AllocPooled(pool, sizeof(struct PrefDisp))) != 0)
+									CopyMem(pr->pr_Disp,wd->wd_ExtData[1],sizeof(struct PrefDisp));
+							}
+							if (wd->wd_Data)   // if it is map-related
+								wd->wd_Lock = AddFreeLock(wd->wd_Data,win);
+							break;
+						case WDT_PREFMENU:
+							GTD_AddGadget(LISTVIEW_KIND,wd->wd_ExtData[0],win,GTDA_InternalType, DRAGT_MENU,
+																			GTDA_Same,		 TRUE,
+																			GTDA_AcceptTypes,  DRAGT_MENU,
+																			TAG_END);
+							GTD_AddGadget(LISTVIEW_KIND,wd->wd_ExtData[1],win,GTDA_InternalType, DRAGT_SUBMENU,
+																			GTDA_Same,		 TRUE,
+																			GTDA_AcceptTypes,  DRAGT_SUBMENU,
+																			TAG_END);
+							GTD_AddGadget(LISTVIEW_KIND,wd->wd_ExtData[2],win,GTDA_InternalType, DRAGT_SUBMENU,
+																			GTDA_Same,		 TRUE,
+																			GTDA_AcceptTypes,  DRAGT_SUBMENU,
+																			TAG_END);
+
+							if (wd->wd_Data)   // if it is map-related
+								wd->wd_Lock = AddFreeLock(wd->wd_Data,win);
+							break;
+						case WDT_PREFICON:
+						{
+							struct Prefs *pr = GetLocalPrefs(wd->wd_Data);
+
+							GTD_AddGadget(LISTVIEW_KIND, wd->wd_ExtData[0], win,
+									GTDA_NoPosition,   TRUE,
+									GTDA_InternalType, DRAGT_APPCMD,
+									GTDA_AcceptTypes,  DRAGT_ICONOBJ,
+									GTDA_ItemHeight,   itemheight,
+									TAG_END);
+							GTD_AddGadget(LISTVIEW_KIND, wd->wd_ExtData[1], win,
+									GTDA_InternalType, DRAGT_ICONOBJ,
+									GTDA_AcceptTypes,  DRAGT_APPCMD | DRAGT_ICONOBJ | DRAGT_ICONSEPARATOR,
+									GTDA_Same,		 TRUE,
+									GTDA_ItemHeight,   itemheight,
+									TAG_END);
+							GTD_AddGadget(BUTTON_KIND, GadgetAddress(win,3), win,
+									GTDA_InternalType, DRAGT_ICONSEPARATOR,
+									GTDA_AcceptTypes,  0,
+									GTDA_RenderHook,   &renderHook,
+									GTDA_Object,	   wd->wd_ExtData[3],
+									GTDA_Width,		200,
+									GTDA_Height,	   itemheight,
+									TAG_END);
+							GTD_AddGadget(BUTTON_KIND,GadgetAddress(win,4),win,GTDA_AcceptTypes,DRAGT_ICONOBJ | DRAGT_ICONSEPARATOR,TAG_END);
+
+							if (wd->wd_Data)   // if it is map-related
+								wd->wd_Lock = AddFreeLock(wd->wd_Data,win);
+
+							wd->wd_ExtData[5] = AddLockNode(&pr->pr_AppCmds,0,PrefIconAppCmdLock,3*sizeof(APTR),win,wd->wd_ExtData[0],wd);
+							wd->wd_ExtData[7] = AddListViewLock(&pr->pr_IconObjs,win,wd->wd_ExtData[1]);
+							break;
+						}
+						case WDT_PRINTER:
+							UpdatePrinterGadgets(win, wd);
+							break;
+						case WDT_PRINTSTATUS:
+						{
+							struct wdtPrintStatus *wps = wd->wd_ExtData[0];
+
+							if (wps)
+							{
+								wps->wps_Window = win;
+
+								wps->wps_ProjectBar = NewProgressBar(win,lborder,barheight+6+fontheight,gWidth-lborder-rborder,fontheight+4);
+								wps->wps_PageBar = NewProgressBar(win,lborder,barheight+17+3*fontheight,gWidth-lborder-rborder,fontheight+4);
+								wps->wps_SinglePageBar = NewProgressBar(win, lborder, barheight + 24 + 4*fontheight,
+									gWidth - lborder - rborder, fontheight + 4);
+							}
+							break;
+						}
+						case WDT_SETTITLE:
+						case WDT_SETNAME:
+							wd->wd_Lock = AddLockNode(RXMAP,0,RxMapLock,sizeof(APTR),win);
+						case WDT_COMMAND:
+							ActivateGadget(GadgetAddress(win,1),win,NULL);
+							break;
+						case WDT_DEFINECMD:
+							if (!reopened && wd->wd_Data)
+								((struct AppCmd *)wd->wd_Data)->ac_Locked++;
+							ActivateGadget(GadgetAddress(win,1),win,NULL);
+							break;
+						case WDT_OBJECT:
+							if (wd->wd_Data) // "verbindet" das Fenster mit dem dazugehörigen Objekt
+								((struct gObject *)wd->wd_Data)->go_Window = win;
+
+							UpdateObjectGadgets(win);
+							break;
+						case WDT_DIAGRAM:
+							if (wd->u.diagram.wd_CurrentDiagram)
+								wd->u.diagram.wd_CurrentDiagram->gd_Object.go_Window = win;
+
+							UpdateObjectGadgets(win);
+							break;
+						case WDT_PAGE:
+							if (!reopened)
+							{
+								wd->wd_ExtData[0] = (APTR)((struct Page *)wd->wd_Data)->pg_APen;
+								wd->wd_ExtData[1] = (APTR)((struct Page *)wd->wd_Data)->pg_BPen;
+							}
+							break;
+						case WDT_CELL:
+							if (!reopened)
+								wd->wd_Data = NULL;
+							wd->wd_ExtData[5] = AddLockNode(&rxpage->pg_Mappe->mp_Formats,0,CellWindowLock,sizeof(APTR),win);
+							wd->wd_Lock = AddLockNode(RXMAP,0,CellWindowLock,sizeof(APTR),win);
+							break;
+						case WDT_ZOOM:
+							wd->wd_Lock = AddLockNode(RXMAP,0,ZoomWindowLock,2*sizeof(APTR),win,GadgetAddress(win,1));
+							break;
+						case WDT_GCLASSES:
+							wd->wd_ExtData[0] = AddListViewLock(&gclasses,win,GadgetAddress(win,1));
+						case WDT_BORDER:
+						case WDT_NOTES:
+						case WDT_CELLSIZE:
+						case WDT_FIND:
+						case WDT_REPLACE:
+						case WDT_FORMEL:
+							wd->wd_Lock = AddLockNode(RXMAP,0,RxMapLock,sizeof(APTR),win);
+							break;
+						case WDT_PREFS:
+						{
+							struct Gadget *gad = GadgetAddress(win, 1);
+
+							GTD_AddGadget(LISTVIEW_KIND, gad, win,
+									GTDA_Same,		TRUE,
+									GTDA_AcceptTypes, DRAGT_PREFS,
+									GTDA_InternalType,DRAGT_PREFS,
+									GTDA_ItemHeight,  itemheight,
+									GTDA_TreeView,	TRUE,
+									GTDA_InternalOnly,TRUE,
+									TAG_END);
+							wd->wd_Lock = AddTreeLock((struct MinList *)&prefstree, win, gad);
+							break;
+						}
+						case WDT_PREFCONTEXT:
+						{
+							GTD_AddGadget(LISTVIEW_KIND, wd->wd_ExtData[6], win,
+									GTDA_InternalType, DRAGT_SUBMENU,
+									GTDA_Same,		 TRUE,
+									GTDA_AcceptTypes,  DRAGT_SUBMENU,
+									TAG_END);
+							goto openappwindow_addfreelock;
+						}
+						case WDT_PREFCMDS:
+						{
+							struct Prefs *pr = GetLocalPrefs(wd->wd_Data);
+
+							GTD_AddGadget(LISTVIEW_KIND, wd->wd_ExtData[0], win,
+									GTDA_InternalType, DRAGT_APPCMD,
+									GTDA_AcceptTypes, 0,
+									GTDA_ItemHeight,  itemheight,
+									TAG_END);
+							wd->wd_ExtData[5] = AddLockNode(&pr->pr_AppCmds,0,AppCmdLock,3*sizeof(APTR),win,GadgetAddress(win,1),wd->wd_Data);
+							goto openappwindow_addfreelock;
+						}
+
+						case WDT_PREFKEYS:
+							GTD_AddWindow(win, GTDA_AcceptTypes, DRAGT_APPCMD, TAG_END);
+
+							goto openappwindow_addfreelock;
+
+						case WDT_SCRIPTS:
+							wd->wd_ExtData[5] = AddLockNode(&((struct Mappe *)wd->wd_Data)->mp_RexxScripts,0,ScriptsWindowLock,sizeof(APTR)*2,win,wd->wd_ExtData[0]);
+
+							goto openappwindow_addfreelock;
+
+						case WDT_PREFFORMAT:
+						case WDT_PREFNAMES:
+						case WDT_PREFCHOICE:
+						openappwindow_addfreelock:  /***************************************************************/
+							if (wd->wd_Data)   // if it is map-related
+								wd->wd_Lock = AddFreeLock(wd->wd_Data,win);
+							break;
+
+						case WDT_PREVIEW:
+							RefreshPreviewSize(win);
+							break;
+					}
+					RefreshAppWindow(win,wd);
+					GT_RefreshWindow(win,NULL);
+					SetMenuStrip(win,rxpage ? rxpage->pg_Mappe->mp_Prefs.pr_Menu : prefs.pr_Menu);
+
+					ReleaseSemaphore(&gWindowSemaphore);
+					return win;
+				}
+			}
+			FreeGadgets(wd->wd_Gadgets);
+		}
+#ifdef __amigaos4__
+		FreeVec(wd);
+#else
+		FreeMem(wd,sizeof(struct winData));
+#endif
+	}
+	ReleaseSemaphore(&gWindowSemaphore);
+
+	return NULL;
+}
+
+struct Window *OpenAppWindow(long type, ...)
+{
+	va_list ap;
+	struct TagItem *tags;
+
+	va_startlinear(ap, type);
+	tags = va_getlinearva(ap, struct TagItem *);
+    return OpenAppWindowA(type, tags);
+}
+
+#else
 struct Window *
 OpenAppWindow(long type, ULONG tag1, ...)
 {
@@ -1747,7 +2291,7 @@ OpenAppWindow(long type, ULONG tag1, ...)
 									GTDA_TreeView,	TRUE,
 									GTDA_InternalOnly,TRUE,
 									TAG_END);
-							wd->wd_Lock = AddTreeLock(&prefstree, win, gad);
+							wd->wd_Lock = AddTreeLock((struct MinList *)&prefstree, win, gad);
 							break;
 						}
 						case WDT_PREFCONTEXT:
@@ -1810,4 +2354,4 @@ OpenAppWindow(long type, ULONG tag1, ...)
 
 	return NULL;
 }
-
+#endif

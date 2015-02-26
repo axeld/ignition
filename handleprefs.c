@@ -7,6 +7,9 @@
 
 #include "types.h"
 #include "funcs.h"
+#ifdef __amigaos4__
+	#include <proto/gtdrag.h>
+#endif
 
 
 extern void CreatePrefsGadgets(struct winData *wd, long width, long height);
@@ -65,7 +68,10 @@ handlePrefsIDCMP(REG(a0, struct TagItem *tag))
                 {
                     struct PrefsModule *pm;
 
-                    if ((pm = tn->tn_Special) && pm->pm_Node.in_Type == LNT_PREFSMODULE)
+					pm = tn->tn_Special;
+					if(pm == NULL || pm == (APTR)0xFFFFFFFF)
+						break;
+                    if (pm->pm_Node.in_Type == LNT_PREFSMODULE)
                         OpenAppWindow(pm->pm_Type,WA_Data,(tn = GetTreeContainer(tn)) ? tn->tn_Special : NULL,TAG_END);
                 }
                 break;
@@ -165,7 +171,7 @@ handlePrefsIDCMP(REG(a0, struct TagItem *tag))
 	                                            GTDA_TreeView,    TRUE,
 	                                            GTDA_InternalOnly,TRUE,
 	                                            TAG_END);
-            wd->wd_Lock = AddTreeLock(&prefstree,win,gad);
+            wd->wd_Lock = AddTreeLock((struct MinList *)&prefstree,win,gad);
             break;
         }
         case IDCMP_OBJECTDROP:
@@ -253,14 +259,14 @@ void ASM HandlePrefChoiceIDCMP(REG(a0, struct TagItem *tag))
 
                     if (HasPrefsModule(pr,pm->pm_Type))
                         ErrorRequest(GetString(&gLocaleInfo, MSG_PREFS_ALREADY_EXIST_IN_FOLDER_ERR),pm->pm_Node.in_Name,((struct Node *)wd->wd_Data)->ln_Name);
-                    else if (LockList(&prefstree,LNF_REFRESH))
+                    else if (LockList((struct MinList *)&prefstree,LNF_REFRESH))
                     {
                         struct PrefsModule *cpm;
 
                         if ((cpm = AddPrefsModule(pr, pm->pm_Node.in_Name, pm->pm_ImageName, pm->pm_Type, pm->pm_Flags)) != 0)
                             AddPrefsModuleToTree(pr,cpm,&pr->pr_TreeNode->tn_Nodes);
 
-                        UnlockList(&prefstree,LNF_REFRESH);
+                        UnlockList((struct MinList *)&prefstree,LNF_REFRESH);
                         RefreshPrefsModule(pr,cpm,cpm->pm_Type);
                     }
                 }
@@ -313,7 +319,7 @@ void ClosePrefDispWindow(struct Prefs *pr)
 {
     BYTE refresh;
 
-    refresh = (BYTE)wd->wd_ExtData[0];
+    refresh = (BYTE)((long)(wd->wd_ExtData[0]));
     CloseAppWindow(win,TRUE);
 
     if (refresh)
@@ -342,7 +348,7 @@ void ASM handlePrefDispIDCMP(REG(a0, struct TagItem *tag))
                                                                          TAG_END))
                     {
                         strcpy(t,fontReq->fo_Attr.ta_Name);
-                        FreeString(pd->pd_AntiAttr.ta_Name);
+                        FreeString((STRPTR)pd->pd_AntiAttr.ta_Name);
                         pd->pd_AntiAttr.ta_Name = AllocString(fontReq->fo_Attr.ta_Name);
                         pd->pd_AntiAttr.ta_YSize = fontReq->fo_Attr.ta_YSize;
                         UpdateAntiFont(pr);
@@ -417,7 +423,7 @@ handlePrefScreenIDCMP(REG(a0, struct TagItem *tag))
                         }
                     }
                     UnlockPubScreenList();
-                    i = PopUpList(win,gad = GadgetAddress(win,1),(struct List *)&list,POPA_MaxItems,5,TAG_END);
+                    i = PopUpList(win,gad = GadgetAddress(win,1),(struct MinList *)&list,POPA_MaxItems,5,TAG_END);
                     if (i != ~0L)
                     {
                         for(ln = (struct Node *)list.mlh_Head;i && ln->ln_Succ;ln = ln->ln_Succ,i--);
@@ -500,7 +506,7 @@ handlePrefScreenIDCMP(REG(a0, struct TagItem *tag))
                         prefs.pr_Screen->ps_Width = scrReq->sm_DisplayWidth;
                         prefs.pr_Screen->ps_Height = scrReq->sm_DisplayHeight;
                         prefs.pr_Screen->ps_Depth = scrReq->sm_DisplayDepth;
-                        FreeString(prefs.pr_Screen->ps_TextAttr.ta_Name);
+                        FreeString((STRPTR)prefs.pr_Screen->ps_TextAttr.ta_Name);
                         prefs.pr_Screen->ps_TextAttr.ta_Name = AllocString(fontReq->fo_Attr.ta_Name);
                         prefs.pr_Screen->ps_TextAttr.ta_YSize = fontReq->fo_Attr.ta_YSize;
 
@@ -533,7 +539,7 @@ void ASM closePrefMenuWin(REG(a0, struct Window *win), REG(d0, BOOL clean))
 }
 
 
-void updatePrefMenuGads(struct AppMenu *am,struct AppMenuEntry *ame,struct AppMenuEntry *same)
+void updatePrefMenuGads(struct AppMenue *am,struct AppMenueEntry *ame,struct AppMenueEntry *same)
 {
     UBYTE dame,dsame;
 
@@ -546,16 +552,16 @@ void updatePrefMenuGads(struct AppMenu *am,struct AppMenuEntry *ame,struct AppMe
     ((struct Gadget *)wd->wd_ExtData[2])->UserData = same;
 
     GT_SetGadgetAttrs(wd->wd_ExtData[0],win,NULL,GTLV_Labels,   wd->wd_ExtData[3],
-                                                                                             GTLV_Selected, FindListEntry(wd->wd_ExtData[3],am),
+                                                                                             GTLV_Selected, FindListEntry(wd->wd_ExtData[3],(struct MinNode *)am),
                                                                                              GA_Disabled,   IsListEmpty((struct List *)wd->wd_ExtData[3]),
                                                                                              TAG_END);
     GT_SetGadgetAttrs(wd->wd_ExtData[1],win,NULL,GTLV_Labels,   am ? &am->am_Items : NULL,
                                                                                              GA_Disabled,   (am && !IsListEmpty((struct List *)&am->am_Items)) ? FALSE : TRUE,
-                                                                                             GTLV_Selected, am ? FindListEntry(&am->am_Items,ame) : ~0L,
+                                                                                             GTLV_Selected, am ? FindListEntry(&am->am_Items,(struct MinNode *)ame) : ~0L,
                                                                                              TAG_END);
     GT_SetGadgetAttrs(wd->wd_ExtData[2],win,NULL,GTLV_Labels,   ame ? &ame->am_Subs : NULL,
                                                                                              GA_Disabled,   (ame && !IsListEmpty((struct List *)&ame->am_Subs)) ? FALSE : TRUE,
-                                                                                             GTLV_Selected, ame ? FindListEntry(&ame->am_Subs,same) : ~0L,
+                                                                                             GTLV_Selected, ame ? FindListEntry(&ame->am_Subs,(struct MinNode *)same) : ~0L,
                                                                                              TAG_END);
     GT_SetGadgetAttrs(GadgetAddress(win,5),win,NULL,GA_Disabled,!am,TAG_END);
     GT_SetGadgetAttrs(GadgetAddress(win,6),win,NULL,GA_Disabled,!ame,TAG_END);
@@ -580,8 +586,8 @@ void updatePrefMenuGads(struct AppMenu *am,struct AppMenuEntry *ame,struct AppMe
 
 void ASM handlePrefMenuIDCMP(REG(a0, struct TagItem *tag))
 {
-    struct AppMenu *am;
-    struct AppMenuEntry *ame,*same;
+    struct AppMenue *am;
+    struct AppMenueEntry *ame,*same;
     STRPTR t;
     long   i;
 
@@ -672,7 +678,7 @@ void ASM handlePrefMenuIDCMP(REG(a0, struct TagItem *tag))
                         GT_SetGadgetAttrs(wd->wd_ExtData[0],win,NULL,GTLV_Labels,~0L,GTLV_Selected,~0L,TAG_END);
                         MyRemove(am);
                         FreeString(am->am_Node.ln_Name);
-                        FreePooled(pool,am,sizeof(struct AppMenu));
+                        FreePooled(pool,am,sizeof(struct AppMenue));
                         updatePrefMenuGads(NULL,NULL,NULL);
                     }
                     break;
@@ -684,13 +690,13 @@ void ASM handlePrefMenuIDCMP(REG(a0, struct TagItem *tag))
                         FreeString(ame->am_Node.ln_Name);
                         FreeString(ame->am_ShortCut);
                         FreeString(ame->am_AppCmd);
-                        while((same = (struct AppMenuEntry *)MyRemHead(&ame->am_Subs)) != 0)
+                        while((same = (struct AppMenueEntry *)MyRemHead(&ame->am_Subs)) != NULL)
                         {
                             FreeString(same->am_Node.ln_Name);
                             FreeString(same->am_ShortCut);
                             FreeString(same->am_AppCmd);
                         }
-                        FreePooled(pool,ame,sizeof(struct AppMenuEntry));
+                        FreePooled(pool,ame,sizeof(struct AppMenueEntry));
                         updatePrefMenuGads(am,NULL,NULL);
                     }
                     break;
@@ -702,7 +708,7 @@ void ASM handlePrefMenuIDCMP(REG(a0, struct TagItem *tag))
                         FreeString(same->am_Node.ln_Name);
                         FreeString(same->am_ShortCut);
                         FreeString(same->am_AppCmd);
-                        FreePooled(pool,same,sizeof(struct AppMenuEntry));
+                        FreePooled(pool,same,sizeof(struct AppMenueEntry));
                         updatePrefMenuGads(am,ame,NULL);
                     }
                     break;
@@ -732,7 +738,7 @@ void ASM handlePrefMenuIDCMP(REG(a0, struct TagItem *tag))
                     break;
                 case 11:
                 {
-                    struct AppMenuEntry *iam;
+                    struct AppMenueEntry *iam;
                     UBYTE  separator;
 
                     iam = ame;
@@ -750,7 +756,7 @@ void ASM handlePrefMenuIDCMP(REG(a0, struct TagItem *tag))
                             iam->am_Node.ln_Name = AllocString(t);
                             updatePrefMenuGads(am,ame,same);
                         }
-                        else if ((iam = AllocPooled(pool, sizeof(struct AppMenuEntry))) != 0)
+                        else if ((iam = AllocPooled(pool, sizeof(struct AppMenueEntry))) != 0)
                         {
                             GT_SetGadgetAttrs(wd->wd_ExtData[i-10],win,NULL,GTLV_Labels,~0L,GA_Disabled,FALSE,GTLV_Selected,~0L,TAG_END);
                             iam->am_Node.ln_Name = AllocString(t);
@@ -850,9 +856,9 @@ void ASM handlePrefMenuIDCMP(REG(a0, struct TagItem *tag))
                 }
                 else if (dm->dm_Object.od_InternalType == DRAGT_SUBMENU)
                 {
-                    struct AppMenuEntry *iam,*dam = dm->dm_Object.od_Object;
+                    struct AppMenueEntry *iam,*dam = dm->dm_Object.od_Object;
 
-                    if ((iam = AllocPooled(pool, sizeof(struct AppMenuEntry))) != 0)
+                    if ((iam = AllocPooled(pool, sizeof(struct AppMenueEntry))) != 0)
                     {
                         GT_SetGadgetAttrs(dm->dm_Target,win,NULL,GTLV_Labels,~0L,GA_Disabled,FALSE,GTLV_Selected,~0L,TAG_END);
                         iam->am_Node.ln_Name = AllocString(dam->am_Node.ln_Name);
@@ -860,9 +866,9 @@ void ASM handlePrefMenuIDCMP(REG(a0, struct TagItem *tag))
                         MyNewList(&iam->am_Subs);
 
                         if (wd->wd_ExtData[1] == dm->dm_Target)  // einhängen
-                            InsertAt(&am->am_Items,ame = iam,dm->dm_TargetEntry);
+                            InsertAt(&am->am_Items,(struct Node *)(ame = iam),dm->dm_TargetEntry);
                         else
-                            InsertAt(&ame->am_Subs,same = iam,dm->dm_TargetEntry);
+                            InsertAt(&ame->am_Subs,(struct Node *)(same = iam),dm->dm_TargetEntry);
 
                         updatePrefMenuGads(am,ame,same);         // aktivieren
                     }
@@ -1018,7 +1024,7 @@ HandleTablePrefsIDCMP(REG(a0, struct TagItem *tag))
                     if ((ln = FindListNumber(wd->wd_ExtData[3], pt->pt_EditFunc[imsg.Code] & PTEF_FUNCMASK)) != 0)
                         GT_SetGadgetAttrs(GadgetAddress(win,8),win,NULL,GTTX_Text,ln->ln_Name,TAG_END);
                     GT_SetGadgetAttrs(GadgetAddress(win,11),win,NULL,GTCB_Checked,pt->pt_EditFunc[imsg.Code] & PTEF_TEXTONLY,TAG_END);
-                    wd->wd_ExtData[4] = (APTR)imsg.Code;
+                    wd->wd_ExtData[4] = (APTR)((ULONG)imsg.Code);
                     break;
                 case 10:  // Ziehecke darstellen
                     pt->pt_Flags = (pt->pt_Flags & ~PTF_EDITFUNC) | (imsg.Code ? PTF_EDITFUNC : 0);
@@ -1097,7 +1103,7 @@ void ASM handlePressKeyIDCMP(REG(a0, struct TagItem *tag))
             if (swin)
             {
                 sortList(swd->wd_ExtData[2]);
-                GT_SetGadgetAttrs(swd->wd_ExtData[0],swin,NULL,GTLV_Labels,swd->wd_ExtData[2],GTLV_Selected,FindListEntry(swd->wd_ExtData[2],ak),TAG_END);
+                GT_SetGadgetAttrs(swd->wd_ExtData[0],swin,NULL,GTLV_Labels,swd->wd_ExtData[2],GTLV_Selected,FindListEntry(swd->wd_ExtData[2],(struct MinNode *)ak),TAG_END);
             }
             else
                 sortList(&prefs.pr_AppKeys);
@@ -1183,7 +1189,7 @@ HandleKeyboardPrefsIDCMP(REG(a0, struct TagItem *tag))
                         wd->wd_ExtData[1] = ak;
                         MyAddTail(wd->wd_ExtData[2], ak);
                         sortList(wd->wd_ExtData[2]);
-                        i = FindListEntry(wd->wd_ExtData[2],ak);
+                        i = FindListEntry(wd->wd_ExtData[2],(struct MinNode *)ak);
                     }
                     else
                     {
@@ -1259,7 +1265,7 @@ HandleKeyboardPrefsIDCMP(REG(a0, struct TagItem *tag))
 				} else
 					DisplayBeep(NULL);
 
-				GT_SetGadgetAttrs(wd->wd_ExtData[0], win, NULL, GTLV_Labels, wd->wd_ExtData[2], GTLV_Selected, FindListEntry(wd->wd_ExtData[2], ak), TAG_END);
+				GT_SetGadgetAttrs(wd->wd_ExtData[0], win, NULL, GTLV_Labels, wd->wd_ExtData[2], GTLV_Selected, FindListEntry(wd->wd_ExtData[2], (struct MinNode *)ak), TAG_END);
             }
             break;
         }
@@ -1464,7 +1470,7 @@ RemoveAppCmdsIconObjs(struct Prefs *pr,struct AppCmd *ac)
             struct IconObj *io = sio;
 
             count++;  sio = (APTR)sio->io_Node.in_Pred;
-            RemoveFromLockedList(&pr->pr_IconObjs,io);
+            RemoveFromLockedList(&pr->pr_IconObjs,(struct MinNode *)io);
 
             FreeString(io->io_AppCmd);
             FreePooled(pool,io,sizeof(struct IconObj));
@@ -1510,7 +1516,7 @@ handlePrefCmdsIDCMP(REG(a0, struct TagItem *tag))
                         MakeUniqueName(&pr->pr_AppCmds,&n->ln_Name);
                         if (!n->ln_Name)
                             n->ln_Name = AllocString(GetString(&gLocaleInfo, MSG_UNNAMED_IN_PARENTHESIS));
-                        AddLockedTail(&pr->pr_AppCmds,n);
+                        AddLockedTail(&pr->pr_AppCmds,(struct MinNode *)n);
 
                         for(i = 0,sn = (struct Node *)pr->pr_AppCmds.mlh_Head;sn != n;sn = sn->ln_Succ,i++);
                         ((struct Gadget *)wd->wd_ExtData[0])->UserData = n;
@@ -1524,7 +1530,7 @@ handlePrefCmdsIDCMP(REG(a0, struct TagItem *tag))
             {
                 if ((n = ((struct Gadget *)wd->wd_ExtData[0])->UserData) && !((struct AppCmd *)n)->ac_Locked)
                 {
-                    RemoveFromLockedList(&pr->pr_AppCmds,n);
+                    RemoveFromLockedList(&pr->pr_AppCmds,(struct MinNode *)n);
                     RemoveAppCmdsIconObjs(pr,(struct AppCmd *)n);
 
                     if (n->ln_Succ == (APTR)&pr->pr_AppCmds.mlh_Tail)
@@ -1668,7 +1674,7 @@ handleDefineCmdIDCMP(REG(a0, struct TagItem *tag))
                                     t = AllocString(ic->ic_Node.ln_Name);
                                 FreeString(cmd->cmd_Name);
                                 cmd->cmd_Name = t;
-                                GT_SetGadgetAttrs(gad,win,NULL,GTLV_Labels,&ac->ac_Cmds,GTLV_Selected,FindListEntry(&ac->ac_Cmds,cmd),TAG_END);
+                                GT_SetGadgetAttrs(gad,win,NULL,GTLV_Labels,&ac->ac_Cmds,GTLV_Selected,FindListEntry(&ac->ac_Cmds,(struct MinNode *)cmd),TAG_END);
                                 GT_SetGadgetAttrs(GadgetAddress(win,7),win,NULL,GTST_String,t,TAG_END);
                             }
                         }
@@ -1766,7 +1772,7 @@ handleDefineCmdIDCMP(REG(a0, struct TagItem *tag))
                             }
                             FreeString(cmd->cmd_Name);
                             cmd->cmd_Name = AllocString(txt);
-                            GT_SetGadgetAttrs(gad,win,NULL,GTLV_Labels,&ac->ac_Cmds,GTLV_Selected,FindListEntry(&ac->ac_Cmds,cmd),TAG_END);
+                            GT_SetGadgetAttrs(gad,win,NULL,GTLV_Labels,&ac->ac_Cmds,GTLV_Selected,FindListEntry(&ac->ac_Cmds,(struct MinNode *)cmd),TAG_END);
                             GT_SetGadgetAttrs(GadgetAddress(win,7),win,NULL,GTST_String,txt,TAG_END);
                         }
                     }
@@ -1908,7 +1914,7 @@ handleDefineCmdIDCMP(REG(a0, struct TagItem *tag))
 				wd->u.definecmd.wd_AppCmd = NULL;
 				CloseAppWindow(win, TRUE);
 
-				AddLockedTail(&pr->pr_AppCmds, (struct Node *)ac);
+				AddLockedTail(&pr->pr_AppCmds, (struct MinNode *)ac);
                 if (id)
                     RefreshProjWindows(TRUE);
             }
@@ -1952,7 +1958,7 @@ UpdateNamesGadgets(struct Name *nm, BOOL activate)
         GT_SetGadgetAttrs(GadgetAddress(win,6),win,NULL,GTST_String,nm->nm_Content,GA_Disabled,FALSE,TAG_END);
         GT_SetGadgetAttrs(GadgetAddress(win,7),win,NULL,GTCY_Active, (long)(nm->nm_Node.ln_Type & NMT_TYPEMASK), GA_Disabled, FALSE, TAG_END);
         GT_SetGadgetAttrs(GadgetAddress(win,8),win,NULL,GTTX_Text,nm->nm_Page ? nm->nm_Page->pg_Node.ln_Name : "-",GA_Disabled,wd->wd_Data ? FALSE : TRUE,TAG_END);
-        GT_SetGadgetAttrs(wd->wd_ExtData[0],win,NULL,GTLV_Labels,wd->wd_ExtData[2],GTLV_Selected,FindListEntry(wd->wd_ExtData[2],nm),TAG_END);
+        GT_SetGadgetAttrs(wd->wd_ExtData[0],win,NULL,GTLV_Labels,wd->wd_ExtData[2],GTLV_Selected,FindListEntry(wd->wd_ExtData[2],(struct MinNode *)nm),TAG_END);
         if (activate)
             ActivateGadget(gad, win, NULL);
     }
@@ -2063,7 +2069,7 @@ handlePrefNamesIDCMP(REG(a0, struct TagItem *tag))
 
                             nm->nm_Node.ln_Name = AllocString(nm->nm_Node.ln_Name);
                             sortList(wd->wd_ExtData[2]);
-                            GT_SetGadgetAttrs(wd->wd_ExtData[0],win,NULL,GTLV_Labels,wd->wd_ExtData[2],GTLV_Selected,FindListEntry(wd->wd_ExtData[2],nm),TAG_END);
+                            GT_SetGadgetAttrs(wd->wd_ExtData[0],win,NULL,GTLV_Labels,wd->wd_ExtData[2],GTLV_Selected,FindListEntry(wd->wd_ExtData[2],(struct MinNode *)nm),TAG_END);
 							if (IsValidName(wd->wd_ExtData[2], nm->nm_Node.ln_Name))
                                 i = 6;
                             else
@@ -2079,7 +2085,7 @@ handlePrefNamesIDCMP(REG(a0, struct TagItem *tag))
 
                             SetNameContent(nm, AllocString((STRPTR)i));
 
-                            GT_SetGadgetAttrs(wd->wd_ExtData[0],win,NULL,GTLV_Labels,wd->wd_ExtData[2],GTLV_Selected,FindListEntry(wd->wd_ExtData[2],nm),TAG_END);
+                            GT_SetGadgetAttrs(wd->wd_ExtData[0],win,NULL,GTLV_Labels,wd->wd_ExtData[2],GTLV_Selected,FindListEntry(wd->wd_ExtData[2],(struct MinNode *)nm),TAG_END);
                         }
                         break;
                     case 7:  // Typ
@@ -2314,7 +2320,7 @@ HandleFormatPrefsIDCMP(REG(a0, struct TagItem *tag))
                         GT_SetGadgetAttrs(wd->wd_ExtData[0],win,NULL,GTLV_Labels,~0L,TAG_END);
                         fv->fv_Node.ln_Pri = imsg.Code;
                         SortFormatList(wd->wd_ExtData[5]);
-                        GT_SetGadgetAttrs(wd->wd_ExtData[0],win,NULL,GTLV_Labels,wd->wd_ExtData[5],GTLV_Selected,i = FindListEntry(wd->wd_ExtData[5],fv),GTLV_MakeVisible,i,TAG_END);
+                        GT_SetGadgetAttrs(wd->wd_ExtData[0],win,NULL,GTLV_Labels,wd->wd_ExtData[5],GTLV_Selected,i = FindListEntry(wd->wd_ExtData[5],(struct MinNode *)fv),GTLV_MakeVisible,i,TAG_END);
                     }
                     break;
                 case 7:  // Format
@@ -2337,7 +2343,7 @@ HandleFormatPrefsIDCMP(REG(a0, struct TagItem *tag))
 								value = FORMAT_TIME_PREVIEW;
                              break;
                         }
-                        fv->fv_Preview = AllocString(FitValueInFormat(value,fv,NULL,0,0));
+                        fv->fv_Preview = AllocString(FitValueInFormat(value,(struct Node *)fv,NULL,0,0));
                         GT_SetGadgetAttrs(wd->wd_ExtData[0],win,NULL,GTLV_Labels,wd->wd_ExtData[5],TAG_END);
                     }
                     break;
@@ -2411,7 +2417,7 @@ setGradientColors(struct colorPen *cp, BOOL findname)
 {
     struct ColorWheelRGB rgb;
     struct ColorWheelHSB hsb;
-	short  *pens = (short *)wd->wd_ExtData[6], numPens = (short)wd->wd_ExtData[7];
+	short  *pens = (short *)wd->wd_ExtData[6], numPens = (short)((long)wd->wd_ExtData[7]);
     long   i = 0;
 
 	GetAttr(WHEEL_HSB, wd->wd_ExtData[1], (IPTR *)&hsb);
@@ -2433,6 +2439,9 @@ setGradientColors(struct colorPen *cp, BOOL findname)
 
     if (cp)
     {
+#ifdef __amigaos4__
+		ULONG no;
+#endif
 		// update pen
 
 		GetAttr(WHEEL_RGB, wd->wd_ExtData[1], (IPTR *)&rgb);
@@ -2450,7 +2459,12 @@ setGradientColors(struct colorPen *cp, BOOL findname)
 			FindColorName(cp);
 			GT_SetGadgetAttrs(GadgetAddress(win, 6), win, NULL, GTST_String, cp->cp_Node.ln_Name, TAG_END);
 		}
+#ifdef __amigaos4__
+		GT_GetGadgetAttrs(GadgetAddress(win, 1), win, NULL, GTCY_Active, &no, TAG_END); //Farbpalette bestimmen
+		GT_SetGadgetAttrs(GadgetAddress(win, 2), win, NULL, GTLV_Labels, no ? wd->wd_ExtData[5] : wd->wd_Data, TAG_END);
+#else
 		GT_SetGadgetAttrs(GadgetAddress(win, 2), win, NULL, GTLV_Labels, wd->wd_Data, TAG_END);
+#endif
     }
 }
 
@@ -2491,6 +2505,9 @@ void
 remapColorPen(struct colorPen *cp)
 {
 	ULONG r, g, b;
+#ifdef __amigaos4__
+	ULONG no;
+#endif
 
     if (!cp || cp->cp_Pen != ((short *)wd->wd_ExtData[6])[MAXGRADPENS+1])
         return;
@@ -2503,7 +2520,12 @@ remapColorPen(struct colorPen *cp)
     g = g | (g << 8) | (g << 16) | (g << 24);
     b = b | (b << 8) | (b << 16) | (b << 24);
 	cp->cp_Pen = ObtainBestPen(scr->ViewPort.ColorMap, r, g, b, TAG_END);
+#ifdef __amigaos4__
+	GT_GetGadgetAttrs(GadgetAddress(win, 1), win, NULL, GTCY_Active, &no, TAG_END); //Farbpalette bestimmen
+	GT_SetGadgetAttrs(GadgetAddress(win, 2), win, NULL, GTLV_Labels, no ? wd->wd_ExtData[5] : wd->wd_Data, TAG_END);
+#else
 	GT_SetGadgetAttrs(GadgetAddress(win, 2), win, NULL, GTLV_Labels, wd->wd_Data, TAG_END);
+#endif
 }
 
 
@@ -2511,7 +2533,7 @@ void ASM
 closePrefColorsWin(REG(a0, struct Window *win), REG(d0, BOOL clean))
 {
     struct winData *wd = (struct winData *)win->UserData;
-	short  numPens = (short)wd->wd_ExtData[7], *pens = (short *)wd->wd_ExtData[6];
+	short  numPens = (short)((long)wd->wd_ExtData[7]), *pens = (short *)wd->wd_ExtData[6];
     struct colorPen *cp;
 
 	ReleasePen(scr->ViewPort.ColorMap, pens[MAXGRADPENS + 1]);
@@ -2535,11 +2557,12 @@ void ASM
 handlePrefColorsIDCMP(REG(a0, struct TagItem *tag))
 {
     struct colorPen *cp = NULL;
-    long   i,col;
+    long   i, col;
 
     if ((gad = GadgetAddress(win, 2)) != 0)
+    {
         cp = (struct colorPen *)gad->UserData;
-
+	}
 	switch (imsg.Class)
     {
         case IDCMP_GADGETDOWN:
@@ -2571,11 +2594,19 @@ handlePrefColorsIDCMP(REG(a0, struct TagItem *tag))
                         cp->cp_Pen = ((short *)wd->wd_ExtData[6])[MAXGRADPENS+1];
 						GT_SetGadgetAttrs(GadgetAddress(win, 6), win, NULL, GTST_String, cp->cp_Node.ln_Name, TAG_END);
                     }
+#ifdef __amigaos4__
+					SetGadgetAttrs(wd->wd_ExtData[1], win, NULL,
+						WHEEL_Red,   (cp->cp_Red)  | (cp->cp_Red << 8)   | (cp->cp_Red << 16)    | (cp->cp_Red << 24),
+						WHEEL_Green, (cp->cp_Green)| (cp->cp_Green << 8) | (cp->cp_Green << 16) | (cp->cp_Green << 24),
+						WHEEL_Blue,  (cp->cp_Blue) | (cp->cp_Blue << 8)  | (cp->cp_Blue << 16)   | (cp->cp_Blue << 24),
+						TAG_END);
+#else
 					SetGadgetAttrs(wd->wd_ExtData[1], win, NULL,
 						WHEEL_Red,   (col = cp->cp_Red)   | (col << 8) | (col << 16) | (col << 24),
 						WHEEL_Green, (col = cp->cp_Green) | (col << 8) | (col << 16) | (col << 24),
 						WHEEL_Blue,  (col = cp->cp_Blue)  | (col << 8) | (col << 16) | (col << 24),
 						TAG_END);
+#endif
 					setGradientColors(cp, FALSE);
                     break;
 				case 3:		// new color
@@ -2592,11 +2623,19 @@ handlePrefColorsIDCMP(REG(a0, struct TagItem *tag))
                     cp->cp_Pen = ((short *)wd->wd_ExtData[6])[MAXGRADPENS+1];
                     GT_SetGadgetAttrs(gad,win,NULL,GTLV_Labels,wd->wd_Data,GTLV_Selected,i = CountNodes(wd->wd_Data),GTLV_MakeVisible,i,TAG_END);
                     GT_SetGadgetAttrs(gad = GadgetAddress(win,6),win,NULL,GTST_String,cp->cp_Node.ln_Name,TAG_END);
+#ifdef __amigaos4__
+					SetGadgetAttrs(wd->wd_ExtData[1], win, NULL,
+						WHEEL_Red,   (cp->cp_Red)  | (cp->cp_Red << 8)   | (cp->cp_Red << 16)    | (cp->cp_Red << 24),
+						WHEEL_Green, (cp->cp_Green)| (cp->cp_Green << 8) | (cp->cp_Green << 16) | (cp->cp_Green << 24),
+						WHEEL_Blue,  (cp->cp_Blue) | (cp->cp_Blue << 8)  | (cp->cp_Blue << 16)   | (cp->cp_Blue << 24),
+						TAG_END);
+#else
 					SetGadgetAttrs(wd->wd_ExtData[1], win, NULL,
 						WHEEL_Red,   (col = cp->cp_Red)   | (col << 8) | (col << 16) | (col << 24),
 						WHEEL_Green, (col = cp->cp_Green) | (col << 8) | (col << 16) | (col << 24),
 						WHEEL_Blue,  (col = cp->cp_Blue)  | (col << 8) | (col << 16) | (col << 24),
 						TAG_END);
+#endif
 					setGradientColors(cp, TRUE);
 					ActivateGadget(gad, win, NULL);
                     break;
@@ -2642,6 +2681,9 @@ handlePrefColorsIDCMP(REG(a0, struct TagItem *tag))
                     }
                     swapLists(&colors,wd->wd_Data);
                     UniqueColors(&colors);
+#ifdef __amigaos4__
+                    RefreshProjWindows(TRUE); //Übernahme der neuen Farben in den Fenstern
+#endif
                 case 11:    // Abbrechen
                     if ((gad = GadgetAddress(win, 2)) != 0)
                         remapColorPen(gad->UserData);
@@ -2791,7 +2833,7 @@ UpdateContextGadgets(struct ContextMenu *cm)
     {
         UBYTE dis = cm->cm_Node.ln_Name ? !strcmp(cm->cm_Node.ln_Name,"-") : TRUE;
 
-        GT_SetGadgetAttrs(wd->wd_ExtData[6],win,NULL,GTLV_Labels,list,GTLV_Selected,FindListEntry(list,cm),TAG_END);
+        GT_SetGadgetAttrs(wd->wd_ExtData[6],win,NULL,GTLV_Labels,list,GTLV_Selected,FindListEntry(list,(struct MinNode *)cm),TAG_END);
         GT_SetGadgetAttrs(GadgetAddress(win,4),win,NULL,GA_Disabled,FALSE,TAG_END);
         GT_SetGadgetAttrs(GadgetAddress(win,5),win,NULL,GTST_String,cm->cm_Node.ln_Name,TAG_END);
         GT_SetGadgetAttrs(GadgetAddress(win,6),win,NULL,GTST_String,cm->cm_AppCmd,GA_Disabled,dis,TAG_END);
@@ -2875,7 +2917,7 @@ handlePrefContextIDCMP(REG(a0, struct TagItem *tag))
             {
                 case 1:
                     GT_SetGadgetAttrs(GadgetAddress(win,2),win,NULL,GTLV_Labels,wd->wd_ExtData[imsg.Code],TAG_END);
-                    wd->wd_ExtData[7] = (APTR)imsg.Code;
+                    wd->wd_ExtData[7] = (APTR)((long)imsg.Code);
                     UpdateContextGadgets(NULL);
                     break;
                 case 2:
@@ -2971,13 +3013,13 @@ handlePrefContextIDCMP(REG(a0, struct TagItem *tag))
                 }
                 else if (dm->dm_Object.od_Object && dm->dm_Object.od_InternalType == DRAGT_SUBMENU)
                 {
-                    struct AppMenuEntry *am = (struct AppMenuEntry *)dm->dm_Object.od_Object;
+                    struct AppMenueEntry *am = (struct AppMenueEntry *)dm->dm_Object.od_Object;
 
                     GT_SetGadgetAttrs(wd->wd_ExtData[6],win,NULL,GTLV_Labels,~0L,TAG_END);
 
                     cm = AddContextMenu(list,am->am_Node.ln_Name,am->am_AppCmd);
                     MyRemove(cm);
-                    InsertAt(list,cm,dm->dm_TargetEntry);
+                    InsertAt(list,(struct Node *)cm,dm->dm_TargetEntry);
                 }
                 else
                     break;

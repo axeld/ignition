@@ -8,6 +8,9 @@
 #include "types.h"
 #include "funcs.h"
 
+#ifdef __amigaos4__
+	#include <proto/elf.h>
+#endif
 
 //#define DUMP_CELLS
 //#define ENABLE_OLD_FORMAT
@@ -105,23 +108,35 @@ ReadChunkString(struct IFFHandle *iff, STRPTR buffer, ULONG len)
 static STRPTR
 DecryptString(STRPTR s)
 {
-	STRPTR decrypt = AllocString(s);
-	int    i,length = strlen(decrypt);
+    int length;
 
 	/* MERKER: vielleicht doch mal was vernünftiges ausdenken... */
+	if(length = strlen(s))
+	{
+		STRPTR decrypt = AllocString(s);
+		int    i;
 
-	for(i = 0;i < length;i++)
-		decrypt[i] += 13;
-
-	return(decrypt);
+		for(i = 0;i < length;i++)
+			decrypt[i] += 13;
+		return(decrypt);
+	}
+	else
+		return(NULL);
 }
 
 
 static void
 CryptString(STRPTR target, STRPTR source)
 {
-	while (*source)
-		*(target++) = *(source++) - 13;
+    uint8 i = 0;
+
+	if(source)
+		while (*source && i < 63)
+		{
+			*(target++) = *(source++) - 13;
+			i++;
+		}
+	*(target) = 0;
 }
 
 
@@ -415,6 +430,7 @@ LoadCells(struct IFFHandle *iff, LONG context, struct Page *page, struct MinList
 			if (tf && !tf->tf_Text && !(tf->tf_Flags & TFF_FONTSET)) // alte Zelle zurücksetzen
 			{
 				FreeFontInfo(tf->tf_FontInfo);
+//DebugPrintF("LoadCells (NULL, %0X, FA_Family, %0X, FA_PointHeight, %0X, TAG_END)\n", page->pg_DPI,page->pg_Family,page->pg_PointHeight);
 				tf->tf_FontInfo = NewFontInfo(NULL,page->pg_DPI,FA_Family,     page->pg_Family,
 																FA_PointHeight,page->pg_PointHeight,
 																TAG_END);
@@ -1027,10 +1043,10 @@ LoadFonts(struct IFFHandle *iff)
 						|| !strcmp(font->ln_Name, "Helvetica")
 						|| !strcmp(font->ln_Name, "Times")
 						|| !strcmp(font->ln_Name, "Times New Roman")) {
-						ln->ln_Name = (char *)font;
-						break;
+							ln->ln_Name = (char *)font;
+							break;
+						}	
 					}
-				}
 				if (ln->ln_Name == NULL) {
 					// still nothing found, be a bit more generic
 					foreach (&families, font) {
@@ -1038,22 +1054,22 @@ LoadFonts(struct IFFHandle *iff)
 							|| strstr(font->ln_Name, "CG Triumvirate")
 							|| strstr(font->ln_Name, "Helvetica")
 							|| strstr(font->ln_Name, "Times")) {
-							ln->ln_Name = (char *)font;
-							break;
+								ln->ln_Name = (char *)font;
+								break;
+							}
 						}
-					}
 					if (ln->ln_Name == NULL) {
 						// well, just take the first one
 						ln->ln_Name = (char *)families.mlh_Head;
+						}
 					}
 				}
-			}
+//DebugPrintF("LoadFonts->Font:<%s> ergänzt\n", ((struct Node *)(ln->ln_Name))->ln_Name);
 			MyAddTail(&io_fonts, ln);
 		}
 		pos += strlen(family) + 1;
 	}
 }
-
 
 static long ASM
 StandardLoadProject(REG(d0, BPTR dat), REG(a0, struct Mappe *mp))
@@ -1421,7 +1437,7 @@ MakeCellStream(struct Page *page, struct tableField *tf, uint8 tag, struct table
 	}
 	if (reftf->tf_WidthSet != tf->tf_WidthSet)
 	{
-		if (tf->tf_WidthSet == ~0)
+		if (tf->tf_WidthSet == (uint16)~0)
 			WriteBytes(CELL_NOWIDTH, NULL, 0, &buffer);
 		else
 			WriteValue(CELL_BYTEWIDTH, tf->tf_WidthSet, &buffer);
@@ -1471,7 +1487,6 @@ MakeCellStream(struct Page *page, struct tableField *tf, uint8 tag, struct table
 	if ((tf->tf_Original || (tf->tf_Flags & TFF_FORMATSET) != 0) && reftf->tf_Format != tf->tf_Format)
 	{
 		struct NumberLink *nl;
-
 		//bug("write: (%ld:%ld) \"%s\" (text = \"%s\"), %s\n", tf->tf_Col, tf->tf_Row, tf->tf_Format, tf->tf_Original, fullnames ? "full names" : "links");
 		if (tf->tf_Format && fullnames)
 			WriteString(CELL_FORMATNAME, tf->tf_Format, &buffer);
@@ -1517,7 +1532,6 @@ SaveCells(struct IFFHandle *iff, struct Page *pg, ULONG handle, int32 mode)
 		if (!(refs = AllocPooled(pool, sizeof(APTR) * ((max = ci->ci_MaxCol) + 1 - (min = ci->ci_Col)))))
 			return IFFERR_NOMEM;
 	}
-
 	if (!(ntf = MakeTableField(pg, 0, 0)))
 	{
 		FreePooled(pool, refs, sizeof(APTR) * (max + 1 - min));
@@ -1738,7 +1752,11 @@ SavePage(struct IFFHandle *iff,struct Page *pg)
 
 		if ((handle = GetCellIterator(pg, NULL, FALSE)) != 0)
 		{
+#ifdef __amigaos4__
+			error = SaveCells(iff, pg, handle, IO_STANDARD_SAVE|IO_SAVE_FULL_NAMES); //Sonst keine Speicherung von merkmalen einer Zelle
+#else
 			error = SaveCells(iff, pg, handle, IO_STANDARD_SAVE);
+#endif
 			FreeCellIterator(handle);
 		}
 	}
@@ -1766,7 +1784,7 @@ SaveDatabases(struct IFFHandle *iff, struct Mappe *mp)
 
 		WriteChunkString(iff, db->db_Node.ln_Name);
 		WriteChunkString(iff, db->db_Content);
-		i = FindListEntry(&mp->mp_Pages, db->db_Page);
+		i = FindListEntry(&mp->mp_Pages, (struct MinNode *)db->db_Page);
 		WriteChunkBytes(iff, &i, sizeof(LONG));
 
 		i = CountNodes(&db->db_Fields);
@@ -1819,7 +1837,7 @@ SaveDatabases(struct IFFHandle *iff, struct Mappe *mp)
 					b = 2;
 					WriteChunkBytes(iff, &b, 1);
 				}
-				i = ma->ma_Page ? FindListEntry(&mp->mp_Pages, ma->ma_Page) : 0;
+				i = ma->ma_Page ? FindListEntry(&mp->mp_Pages, (struct MinNode *)ma->ma_Page) : 0;
 				WriteChunkBytes(iff, &i, 4);
 
 				i = CountNodes(&ma->ma_Fields);
@@ -2436,9 +2454,66 @@ const APTR io_functable[] = {
 	NULL
 };  /* to be continued */
 
+#ifdef __amigaos4__
+void InitIOType(struct IOType *io)
+{
+	BOOL * ASM (*initIOSegment)(REG(a0, APTR), REG(a1, APTR *), REG(a2, APTR), REG(a3, APTR), REG(a6, APTR),
+		REG(d0, APTR), REG(d1, APTR), REG(d2, APTR), REG(d3, APTR), REG(d4, long));
+	BPTR dir,olddir;//,segment;
+	Elf32_Handle elfhandle;
+	Elf32_Handle filehandle;
+	struct Elf32_SymbolQuery query;
 
-void
-InitIOType(struct IOType *io)
+	if (io->io_Segment || !io->io_Filename)
+		return;
+
+	if ((dir = Lock(CLASSES_PATH,ACCESS_READ)) != 0)
+	{
+		olddir = CurrentDir(dir);
+		if ((io->io_Segment = LoadSeg(io->io_Filename)) != 0)
+		{
+			//Get ELF handler
+			GetSegListInfoTags(io->io_Segment,GSLI_ElfHandle,&elfhandle,TAG_DONE);
+	
+			if (elfhandle != NULL) {//Find the ELF handler?
+				//Reopen the ELF file
+				if((filehandle = OpenElfTags(OET_ElfHandle,elfhandle,TAG_DONE))) {
+					//Check version first
+					query.Flags = ELF32_SQ_BYNAME;
+					query.Name = "Version";
+					if (SymbolQuery(filehandle, 1, &query) != 0) {
+						if ((*(LONG*)query.Value) == 1) {//If the version is 1 then this plugin is compatible
+							//Let's query for the symbol name "Operator"
+							query.Name = "InitModule";
+							if (SymbolQuery(filehandle, 1, &query) != 0) {
+								//Close the opened ELF file
+								CloseElfTags(filehandle, CET_CloseInput, TRUE, TAG_DONE);
+								//Store the address of the Function
+								initIOSegment = (void*)query.Value;
+								if (!initIOSegment((APTR)io, (APTR)io_functable, (APTR)pool, (APTR)IExec, (APTR)IDOS, (APTR)IUtility, (APTR)ILocale, NULL, NULL, MAKE_ID('I','G','N',0)))
+									UnLoadSeg(io->io_Segment);
+							}
+							else
+								UnLoadSeg(io->io_Segment);
+						}
+						else
+							UnLoadSeg(io->io_Segment);
+					}
+					else
+						UnLoadSeg(io->io_Segment);
+				}
+				else
+					UnLoadSeg(io->io_Segment);
+			}
+		}
+		else
+			ErrorRequest(GetString(&gLocaleInfo, MSG_ADD_ON_NOT_FOUND_ERR),io->io_Node.ln_Name,io->io_Filename);
+		CurrentDir(olddir);
+		UnLock(dir);
+	}
+}
+#else
+void InitIOType(struct IOType *io)
 {
 	BOOL * ASM (*initIOSegment)(REG(a0, APTR), REG(a1, APTR *), REG(a2, APTR), REG(a3, APTR), REG(a6, APTR),
 		REG(d0, APTR), REG(d1, APTR), REG(d2, APTR), REG(d3, APTR), REG(d4, long));
@@ -2465,7 +2540,7 @@ InitIOType(struct IOType *io)
 		UnLock(dir);
 	}
 }
-
+#endif
 
 static bool
 BuildGObjectOrder(struct Page *page)
@@ -2580,7 +2655,11 @@ LoadProject(struct Mappe *mp, struct IOType *type)
 					UWORD  oldcalcflags = calcflags;
 
 					D(bug("Load-DataType %s.\n", io->io_Node.ln_Name));
+#ifdef __amigaos4__
+					ChangeFilePosition(dat, 0, OFFSET_BEGINNING);
+#else
 					Seek(dat, 0, OFFSET_BEGINNING);
+#endif
 
 					MyNewList(&io_fonts);
 					MyNewList(&io_fvs);
@@ -2829,7 +2908,11 @@ SaveProject(struct Mappe *mp, struct IOType *io, bool confirmOverwrite)
 	if ((prefs.pr_File->pf_Flags & PFF_BACKUP) && (s = AllocPooled(pool,strlen(t) + 5))) {
 		strcpy(s, t);
 		strcat(s, ".bak");
+#ifdef __amigaos4__
+		Delete(s);
+#else
 		DeleteFile(s);
+#endif
 		Rename(t, s);
 		FreeString(s);
 	}
@@ -2878,7 +2961,7 @@ SaveProject(struct Mappe *mp, struct IOType *io, bool confirmOverwrite)
 						struct FontInfo *fi;
 
 						if (GetGObjectAttr(go, gi->gi_Tag, (ULONG *)&fi)) {
-							if (!FindListEntry(&io_fonts, fi->fi_Family))
+							if (!FindListEntry(&io_fonts, (struct MinNode *)fi->fi_Family))
 								AddNumberLink(&io_fonts, fi->fi_Family);
 						}
 					}
@@ -2926,7 +3009,11 @@ SaveProject(struct Mappe *mp, struct IOType *io, bool confirmOverwrite)
 					}
 					if (dio) {
 						if (!dio->do_DefaultTool || !strlen(dio->do_DefaultTool)) {
+#ifdef __amigaos4__
+							if (GetCliCurrentDirName(s, 256)) {
+#else
 							if (GetCurrentDirName(s, 256)) {
+#endif
 								AddPart(s, "ignition", 256);
 								dio->do_DefaultTool = s;
 							} else
@@ -2964,7 +3051,7 @@ initStandardIOTypes(void)
 		MakeLocaleStrings(&io->io_Description,
 			MSG_IO_STANDARD_FORMAT_1_DESCR,
 			MSG_IO_STANDARD_FORMAT_2_DESCR,
-			NULL);
+			TAG_END);
 
 		MyEnqueue(&iotypes, io);
 	}
@@ -3193,7 +3280,11 @@ closeIO(void)
 void
 initIO(void)
 {
+#ifdef __amigaos4__
+	struct AnchorPath *ap;
+#else
 	struct AnchorPath ALIGNED ap;
+#endif
 	BPTR   dir,olddir,file;
 	long   rc,i;
 	struct IOType *io;
@@ -3202,6 +3293,15 @@ initIO(void)
 	initStandardIOTypes();
 	if ((dir = Lock(CLASSES_PATH,ACCESS_READ)) != 0) {
 		olddir = CurrentDir(dir);
+#ifdef __amigaos4__
+		ap = AllocDosObjectTags(DOS_ANCHORPATH, ADO_Mask, SIGBREAKF_CTRL_C, ADO_Strlen, 1024L, TAG_END ); 
+		for (rc = MatchFirst("#?.iodescr",ap); !rc; rc = MatchNext(ap)) {
+			if ((file = Open(ap->ap_Info.fib_FileName, MODE_OLDFILE)) != 0) {
+				if ((io = AllocPooled(pool, sizeof(struct IOType))) != 0) {
+					MyNewList(&io->io_Description);
+					if ((io->io_Filename = AllocPooled(pool,i = strlen(ap->ap_Info.fib_FileName)-4)) != 0)
+						CopyMem(ap->ap_Info.fib_FileName,io->io_Filename,i-1);
+#else
 		memset(&ap,0,sizeof(struct AnchorPath));
 		for (rc = MatchFirst("#?.iodescr",&ap); !rc; rc = MatchNext(&ap)) {
 			if ((file = Open(ap.ap_Info.fib_FileName, MODE_OLDFILE)) != 0) {
@@ -3209,14 +3309,19 @@ initIO(void)
 					MyNewList(&io->io_Description);
 					if ((io->io_Filename = AllocPooled(pool,i = strlen(ap.ap_Info.fib_FileName)-4)) != 0)
 						CopyMem(ap.ap_Info.fib_FileName,io->io_Filename,i-1);
-
+#endif
 					LoadIOTypeDescription(io,file);
 					MyEnqueue(&iotypes, io);
 				}
 				Close(file);
 			}
 		}
+#ifdef __amigaos4__
+		MatchEnd(ap);
+		FreeDosObject(DOS_ANCHORPATH,ap);
+#else
 		MatchEnd(&ap);
+#endif
 		CurrentDir(olddir);
 		UnLock(dir);
 	}

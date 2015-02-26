@@ -3,10 +3,14 @@
  * Copyright 1996-2008 pinc Software. All Rights Reserved.
  * Licensed under the terms of the GNU General Public License, version 3.
  */
-
+ 
 
 #include "types.h"
 #include "funcs.h"
+#ifdef __amigaos4__
+	#include <proto/gtdrag.h>
+	#include <stdarg.h>
+#endif
 
 
 struct coordPkt actcp;
@@ -332,7 +336,173 @@ SetAlignment(struct Page *page, BYTE alignH, BYTE alignV)
 	SetBusy(FALSE, BT_APPLICATION);
 }
 
+#ifdef __amigaos4__
+void UpdatePageFontA(struct Page *page, struct TagItem *tags)
+{
+	struct FontFamily *ff;
+	struct TagItem *styletag;
+	ULONG style,height;
+	WORD rotate,shear;
+	struct tableField *tf = NULL;
+	long maxcol = 0;
+	char t[256],s[16];
 
+	if (!page)
+		return;
+
+	SetBusy(TRUE, BT_APPLICATION);
+
+	ff = (struct FontFamily *)GetTagData(FA_Family, ~0L, (struct TagItem *)tags);
+	height = GetTagData(FA_PointHeight, ~0L, (struct TagItem *)tags);
+
+	if (ff != (APTR)~0L)
+		page->pg_Family = (struct Node *)ff;		/* Auswahl für folgende übernehmen */
+	if (height != ~0L) {
+		// limit maximal font size to 128 pt
+		if (height > (128L << 16)) {
+			height = 128L << 16;
+#if  0
+		// limit maximal font size to 72 pt (because of MorphOS broken ft2.library)
+		if (height > (72L << 16)) {
+			height = 72L << 16;
+#endif
+
+			styletag = FindTagItem(FA_PointHeight, (struct TagItem *)tags);
+			if (styletag)
+				styletag->ti_Data = height;
+		}
+
+		page->pg_PointHeight = height;
+	}
+
+	if (page->pg_Gad.DispPos != PGS_NONE || page->pg_MarkCol != -1) {
+		if ((styletag = FindTagItem(FA_Style, (struct TagItem *)tags)) != 0)
+			style = styletag->ti_Data;
+		else
+			style = ~0L;
+		rotate = GetTagData(FA_Rotate, ~0L, (struct TagItem *)tags);
+		shear = GetTagData(FA_Shear, ~0L, (struct TagItem *)tags);
+
+		/********** Undo/Redo Text erstellen **********/
+
+		t[0] = 0;
+		if (ff != (APTR)~0L) {
+			strcpy(t, GetString(&gLocaleInfo, MSG_FONT_UNDO));
+			strcat(t, ff->ff_Node.ln_Name);
+			if (height != ~0L || style != ~0L || rotate != ~0L || shear != ~0L)
+				strcat(t, "/");
+		}
+		if (height != ~0L) {
+			sprintf(t + strlen(t), "%s %ldpt", ff == (APTR)~0L ? "Schrifthöhe" : "Höhe", height >> 16);
+			if (style != ~0L || rotate != ~0L || shear != ~0L)
+				strcat(t, "/");
+
+			if (prefs.pr_Table->pt_Flags & PTF_AUTOCELLSIZE) {
+				while ((tf = GetMarkedFields(page, tf, FALSE)) != 0) {
+					if (tf->tf_Text)
+						maxcol = 1;
+				}
+
+				if (maxcol) {
+					sprintf(s, "%ld pt", ((height*4) >> 16)/3);
+					ChangeCellSize(page,NULL,s,CCS_MINHEIGHT,NULL);
+					maxcol = 0;
+				}
+			}
+		}
+
+		if (style != ~0L) {
+			sprintf(t+strlen(t),"%s ",ff == (APTR)~0L && height == ~0L ? "Schriftstil" : "Stil");
+			if (rotate != ~0L || shear != ~0L)
+				strcat(t,"/");
+			if (style == FS_PLAIN)
+				strcat(t,GetString(&gLocaleInfo, MSG_FONT_PLAIN_NAME));
+			else {
+				BOOL last = FALSE;
+
+				if (style & FS_BOLD) {
+					strcat(t, GetString(&gLocaleInfo, MSG_FONT_BOLD_NAME));
+					last = TRUE;
+				}
+				if (style & FS_ITALIC) {
+					if (last)
+						strcat(t, "/");
+					else
+						last = TRUE;
+					strcat(t, GetString(&gLocaleInfo, MSG_FONT_ITALICS_NAME));
+				}
+				if (style & (FS_UNDERLINED | FS_DOUBLE_UNDERLINED | FS_STRIKE_THROUGH)) {
+					if (last)
+						strcat(t, "/");
+				}
+				if (style & FS_UNDERLINED)
+					strcat(t, GetString(&gLocaleInfo, MSG_FONT_UNDERLINED_NAME));
+				else if (style & FS_DOUBLE_UNDERLINED)
+					strcat(t, GetString(&gLocaleInfo, MSG_FONT_DOUBLE_UNDERLINED_UNDO));
+				else if (style & FS_STRIKE_THROUGH)
+					strcat(t, GetString(&gLocaleInfo, MSG_FONT_STRIKE_THROUGH_UNDO));
+			}
+		}
+		if (rotate != ~0L) {
+			if (shear != ~0L)
+				strcat(t,"/");
+			sprintf(t+strlen(t), GetString(&gLocaleInfo, MSG_FONT_ROTATION_UNDO), rotate);
+		}
+		if (shear != ~0L)
+			sprintf(t+strlen(t), GetString(&gLocaleInfo, MSG_FONT_SHEAR_UNDO), shear);
+
+		/********** Änderungen durchführen **********/
+
+		BeginUndo(page, UNDO_BLOCK, t);
+
+		while ((tf = GetMarkedFields(page, tf, TRUE /*FALSE*/)) != 0) {
+			if (style != ~0L) {
+				if (style & FS_ALLBITS)
+					styletag->ti_Data = style & ~FS_ALLBITS;
+				else if (style & FS_UNSET)
+					styletag->ti_Data = tf->tf_FontInfo->fi_Style & ~style;
+				else if (style & (FS_UNDERLINED | FS_DOUBLE_UNDERLINED | FS_STRIKE_THROUGH))
+					styletag->ti_Data = (tf->tf_FontInfo->fi_Style & ~(FS_UNDERLINED | FS_DOUBLE_UNDERLINED | FS_STRIKE_THROUGH)) | style;
+				else
+					styletag->ti_Data = tf->tf_FontInfo->fi_Style | style;
+
+				if (style == FS_PLAIN)
+					styletag->ti_Data = FS_PLAIN;
+			}
+
+			tf->tf_FontInfo = SetFontInfoA(tf->tf_FontInfo, page->pg_DPI, (struct TagItem *)tags);
+			tf->tf_Flags |= TFF_FONTSET;
+
+			if (maxcol < tf->tf_Col+tf->tf_Width) // Breite vorher
+				maxcol = tf->tf_Col+tf->tf_Width;
+
+			SetTFWidth(page, tf);
+
+			if (maxcol < tf->tf_Col+tf->tf_Width) // Breite nachher
+				maxcol = tf->tf_Col+tf->tf_Width;
+		}
+		EndUndo(page);
+		RefreshMarkedTable(page, maxcol, TRUE);
+	}
+	else
+		RefreshToolBar(page);
+
+	SetBusy(false, BT_APPLICATION);
+}
+
+void VARARGS68K UpdatePageFont(struct Page *page,...);
+void UpdatePageFont(struct Page *page,...)
+{
+	va_list ap;
+	struct TagItem *tags;
+
+	va_startlinear(ap, page);
+	tags = va_getlinearva(ap, struct TagItem *);
+	UpdatePageFontA(page, tags);
+	return;
+}
+
+#else
 void
 UpdatePageFont(struct Page *page, ULONG tag,...)
 {
@@ -353,12 +523,12 @@ UpdatePageFont(struct Page *page, ULONG tag,...)
 	height = GetTagData(FA_PointHeight, ~0L, (struct TagItem *)&tag);
 
 	if (ff != (APTR)~0L)
-		page->pg_Family = ff;		/* Auswahl für folgende übernehmen */
+		page->pg_Family = (struct Node *)ff;		/* Auswahl für folgende übernehmen */
 	if (height != ~0L) {
 		// limit maximal font size to 128 pt
 		if (height > (128L << 16)) {
 			height = 128L << 16;
-#if 0
+#if  0
 		// limit maximal font size to 72 pt (because of MorphOS broken ft2.library)
 		if (height > (72L << 16)) {
 			height = 72L << 16;
@@ -486,9 +656,9 @@ UpdatePageFont(struct Page *page, ULONG tag,...)
 
 	SetBusy(false, BT_APPLICATION);
 }
+#endif
 
-
-void
+void 
 DisposePage(struct Page *page)
 {
 	struct gGroup *gg;
@@ -540,8 +710,8 @@ SetMapName(struct Mappe *mp, STRPTR name)
 
 	if ((tn = FindTreeSpecial(&prefstree.tl_Tree, mp)) != 0) {
 		tn->tn_Node.in_Name = mp->mp_Node.ln_Name;
-		RefreshLockList(&prefstree);
-		RefreshLockList(&gProjects);
+		RefreshLockList((struct MinList *)&prefstree);
+		RefreshLockList((struct MinList *)&gProjects);
 	}
 }
 
@@ -566,7 +736,7 @@ DisposeProject(struct Mappe *mp)
 			return false;
 	}
 
-	RemoveFromLockedList(&gProjects, mp);
+	RemoveFromLockedList(&gProjects, (struct MinNode *)mp);
 	FreeLockList(mp);
 		// frees all locks related to this map
 
@@ -597,7 +767,7 @@ DisposeProject(struct Mappe *mp)
 	}
 
 	if ((tn = FindTreeSpecial(&prefstree.tl_Tree, mp)) != 0) {
-		RemoveFromLockedList(&prefstree, (struct Node *)tn);
+		RemoveFromLockedList((struct MinList *)&prefstree, (struct MinNode *)tn);
 
 		FreeTreeNodes(pool, &tn->tn_Nodes);
 		FreePooled(pool, tn, sizeof(struct TreeNode));
@@ -660,12 +830,12 @@ NewProject(void)
 		InitPrefs(&mp->mp_Prefs);
 		PropagatePrefsToMap(&prefs, mp);
 
-		if (LockList(&prefstree, LNF_ADD)) {
+		if (LockList((struct MinList *)&prefstree, LNF_ADD)) {
 			if ((tn = AddTreeNode(pool,&((struct TreeNode *)prefstree.tl_Tree.mlh_Head)->tn_Nodes,mp->mp_Node.ln_Name,NULL,TNF_CONTAINER | TNF_NOSUBDIRS)) != 0) {
 				mp->mp_Prefs.pr_TreeNode = tn;
 				tn->tn_Special = mp;
 			}
-			UnlockList(&prefstree,LNF_ADD);
+			UnlockList((struct MinList *)&prefstree,LNF_ADD);
 		}
 
 		if ((mp->mp_Title = AllocPooled(pool,strlen(mp->mp_Node.ln_Name)+4)) != 0) {
@@ -674,7 +844,7 @@ NewProject(void)
 		}
 		RefreshMapPrefs(mp);
 
-		AddLockedTail(&gProjects, mp);
+		AddLockedTail(&gProjects, (struct MinNode *)mp);
 	}
 	return mp;
 }
@@ -756,10 +926,30 @@ SetMark(struct Page *page, long col, long row, long width, long height)
 
 	if (col != -1)
 		setTableCoord(page, (struct Rect32 *)&page->pg_MarkX1, col, row, width, height);
-
 	CopyMem(&page->pg_MarkCol, &old, sizeof(struct Rect32));
+#ifdef __amigaos4__
+	//if (col != -1)
+	//{
+	    //struct Rect32 tmp;
+	    //
+	    //tmp.MinX =page->pg_MarkX1;
+	    //tmp.MinY =page->pg_MarkY1;
+	    //tmp.MaxX =page->pg_MarkX2;
+	    //tmp.MaxY =page->pg_MarkY2;
+	    //
+		//setTableCoord(page, &tmp, col, row, width, height);
+	//}
+	//old.MinX = page->pg_MarkCol;
+	//old.MinY = page->pg_MarkRow;
+	//old.MaxX = page->pg_MarkWidth;
+	//old.MaxY = page->pg_MarkHeight;
+	page->pg_MarkCol 	= col;
+	page->pg_MarkRow 	= row;
+	page->pg_MarkWidth	= width;
+	page->pg_MarkHeight = height;
+#else
 	CopyMem(&col, &page->pg_MarkCol, sizeof(struct Rect32));
-	
+#endif	
 	// make selection visible if necessary
 
 	if (!page->pg_Window)
@@ -836,7 +1026,14 @@ SetSelect(struct Page *page, long col, long row, long width, long height, BYTE o
 		setTableCoord(page, &page->pg_Select, col, row, width, height);
 
 	CopyMem(&page->pg_SelectCol,&old,sizeof(struct Rect32));
+#ifdef __amigaos4__
+	page->pg_SelectCol 		= col;
+	page->pg_SelectRow 		= row;
+	page->pg_SelectWidth 	= width;
+	page->pg_SelectHeight 	= height;
+#else
 	CopyMem(&col,&page->pg_SelectCol,sizeof(struct Rect32));
+#endif
 	col = old.MinX;  row = old.MinY;  width = old.MaxX;  height = old.MaxY;
 	if (col != -1)
 		setTableCoord(page,&old,col,row,width,height);
@@ -916,7 +1113,11 @@ insertFormel(struct Page *page, STRPTR t)
 		if (source) {
 			if (!pos && *source == '=')
 				pos++;
+#ifdef __amigaos4__
+			Strlcpy(in, source, pos + 1);
+#else
 			stccpy(in, source, pos + 1);
+#endif
 		}
 		offset = pos;
 
@@ -965,7 +1166,7 @@ EditFuncCopy(struct Page *page, struct tablePos *tp, BOOL textonly)
 	if ((ptf = page->pg_Gad.tf) != 0)
 		maxCol += ptf->tf_Width;
 
-	if ((handle = GetCellIterator(page, tp, (UBYTE)page->pg_Gad.tf)) != 0) {
+	if ((handle = (ULONG)GetCellIterator(page, tp, (UBYTE)((long)(page->pg_Gad.tf)))) != 0) {
 		while ((tf = NextCell(handle)) != 0) {
 			if (ptf == tf)
 				continue;
@@ -1187,7 +1388,7 @@ EditFunc(struct Page *page, UBYTE func, struct tablePos *tp)
 	}
 
 	if (func != PTEF_COPY)
-		CreateTabGadget(page, tp->tp_Col, tp->tp_Row, FALSE);
+		printf("EditFunc \n"), CreateTabGadget(page, tp->tp_Col, tp->tp_Row, FALSE);
 
 	RecalcTableFields(page);
 }
@@ -1196,7 +1397,7 @@ EditFunc(struct Page *page, UBYTE func, struct tablePos *tp)
 int ha_pos;
 
 
-/** Ensures that all elements are hidden that would leave drawing artifacts
+/*  Ensures that all elements are hidden that would leave drawing artifacts
  *	during scrolling.
  *	This function is called before and after the actual scrolling action.
  *
@@ -1240,13 +1441,13 @@ HideTableSpecials(struct Page *page, long mode)
 			}
 			break;
 		case PWA_CELLSIZE:
-			drawline(page,(BOOL)wd->wd_ExtData[5],ha_pos,ha_pos);
+			drawline(page,(BOOL)((long)wd->wd_ExtData[5]),ha_pos,ha_pos);
 			break;
 	}
 }
 
 
-/** Scrolls the table depending on the mouse position, and uses
+/*  Scrolls the table depending on the mouse position, and uses
  *  HideTableSpecials() to remove drawing artifacts.
  */
 void
@@ -1282,7 +1483,7 @@ handleAntis(struct Page *page, BOOL horiz)
 	BOOL mark = FALSE;
 	BYTE ende = 0;
 
-	wd->wd_ExtData[5] = (APTR)horiz;
+	wd->wd_ExtData[5] = (APTR)((long)horiz);
 	cp = getCoordPkt(page,imsg.MouseX-wd->wd_TabX,imsg.MouseY-wd->wd_TabY);
 	cp.cp_X += wd->wd_TabX;  cp.cp_Y += wd->wd_TabY;
 
@@ -1513,16 +1714,16 @@ HandleBars(void)
 					sepln.ln_Type = newln.ln_Type = POPUP_NO_SELECT_BARLABEL;
 					MyAddTail(list, &sepln);  MyAddTail(list, &newln);
 
-					i = PopUpList(win, GadgetAddress(win, GID_PAGE), list, TAG_END);
-					ln = FindListNumber(list, i);
+					i = PopUpList(win, GadgetAddress(win, GID_PAGE), (struct MinList *)list, TAG_END);
+					ln = FindListNumber((struct MinList *)list, i);
 
 					// remove special entries
 					MyRemove(&sepln);  MyRemove(&newln);
 
 					if (ln != NULL) {
 						if (ln == &newln)
-							ln = NewPage(page->pg_Mappe);
-						if (ln != &sepln && ln != page)
+							ln = (struct Node *)NewPage(page->pg_Mappe);
+						if (ln != (struct Node *)&sepln && ln != (struct Node *)page)
 							UpdateProjPage(win,rxpage = (struct Page *)ln);
 					}
 					break;
@@ -1608,7 +1809,7 @@ HandleBars(void)
 }
 
 
-/** Sorgt für notwendige Änderungen, wenn der Fokus von den Zellen
+/*  Sorgt für notwendige Änderungen, wenn der Fokus von den Zellen
  *  auf ein Objekt übergeht:
  *  Zell-Markierungen werden aufgelöst, die aktive Zelle deaktiviert
  *  und PWA_OBJECT gesetzt.
@@ -1629,7 +1830,7 @@ ProjectToGObjects(struct Page *page, struct winData *wd)
 }
 
 
-/** Testet, welcher Mauszeiger an der aktuellen Position benutzt
+/*  Testet, welcher Mauszeiger an der aktuellen Position benutzt
  *  werden sollte.
  */
 int32

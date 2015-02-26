@@ -7,12 +7,16 @@
 
 #include "types.h"
 #include "funcs.h"
+#ifdef __amigaos4__
+	#include <proto/gtdrag.h>
+	#include <stdarg.h>
+#endif
 
 
 struct LockNode *nextln;
 bool gLockStop;
 
-
+/*
 struct LockNode *
 FindLockNodeA(struct MinList *list, ULONG length, ULONG *data)
 {
@@ -33,7 +37,7 @@ FindLockNode(struct MinList *list, ULONG length, ...)
 {
 	return FindLockNodeA(list, length, &length + 1);
 }
-
+*/
 
 void
 RemLockNode(struct LockNode *ln)
@@ -51,6 +55,7 @@ RemLockNode(struct LockNode *ln)
 }
 
 
+/*
 void
 RemLockNodeData(struct MinList *list,ULONG length,...)
 {
@@ -59,12 +64,19 @@ RemLockNodeData(struct MinList *list,ULONG length,...)
 	if ((ln = FindLockNodeA(list, length, &length + 1)) != 0)
 		RemLockNode(ln);
 }
-
+*/
 
 struct LockNode *
 AddLockNode(struct MinList *list,BYTE pri,APTR func,ULONG length,...)
 {
 	struct LockNode *ln;
+#ifdef __amigaos4__
+	va_list ap;
+	ULONG *longs;
+
+	va_startlinear(ap, length);
+	longs = va_getlinearva(ap, ULONG *);
+#endif
 
 	if ((ln = AllocPooled(pool, sizeof(struct LockNode))) != 0) {
 		ln->ln_Node.ln_Pri = pri;
@@ -72,7 +84,11 @@ AddLockNode(struct MinList *list,BYTE pri,APTR func,ULONG length,...)
 		ln->ln_Function = func;
 
 		if ((ln->ln_Length = length) && (ln->ln_Data = AllocPooled(pool,length)))
-			CopyMem(&length+1,ln->ln_Data,length);
+#ifdef __amigaos4__
+			CopyMem(longs, ln->ln_Data, length);
+#else
+			CopyMem(&length+1, ln->ln_Data, length);
+#endif
 
 		MyEnqueue(&locks, ln);
 	}
@@ -294,7 +310,7 @@ ListViewLock(REG(a0, struct LockNode *ln), REG(a1, struct MinNode *node), REG(d0
 			long   i = ~0L;
 
 			if ((node = ((struct Gadget *)ln->ln_Data[1])->UserData) != 0) {
-				if ((i = FindListEntry(ln->ln_List,node)) == ~0L)
+				if ((i = FindListEntry(ln->ln_List,(struct MinNode *)node)) == ~0L)
 					((struct Gadget *)ln->ln_Data[1])->UserData = NULL;
 			}
 //	  GT_SetGadgetAttrs(ln->ln_Data[1],ln->ln_Data[0],NULL,GTLV_Labels,ln->ln_List,node ? GTLV_Selected : TAG_IGNORE,i,TAG_END);

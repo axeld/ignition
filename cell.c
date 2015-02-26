@@ -348,6 +348,7 @@ CopyCell(struct Page *page,struct tableField *tf)
 		ctf->tf_Text = AllocString(tf->tf_Text);
 		ctf->tf_Format = AllocString(tf->tf_Format);
 		ctf->tf_Note = AllocString(tf->tf_Note);
+//DebugPrintF("CopyCell (%0X, %0X, TAG_END)\n", tf->tf_FontInfo,page->pg_DPI);
 		ctf->tf_FontInfo = NewFontInfo(tf->tf_FontInfo,page->pg_DPI,TAG_END);   /* take new DPI into account */
 		ctf->tf_Root = CopyTree(tf->tf_Root);
 		ctf->tf_Reference = NULL;
@@ -397,6 +398,7 @@ MakeTableField(struct Page *page,long col,long row)
 	struct tableField *tf;
 	struct FontInfo *fi;
 	
+//DebugPrintF("MakeTableField (NULL, %0X, FA_Family, %0X, FA_PointHeight, %0X, TAG_END)\n", page->pg_DPI,page->pg_Family,page->pg_PointHeight);
 	if ((fi = NewFontInfo(NULL, page->pg_DPI,
 			FA_Family, page->pg_Family,
 			FA_PointHeight, page->pg_PointHeight,

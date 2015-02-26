@@ -207,7 +207,6 @@ struct CreateWinData {
 
 extern struct CreateWinData gCreateWinData[];
 
-
 /*************************** Prototypes ***************************/
 
 // gadgets.c
@@ -232,8 +231,16 @@ extern void SetPattern(struct RastPort *rp,UBYTE pattern,UBYTE x,UBYTE y);
 extern void PUBLIC PatternPopper(REG(a0, struct RastPort *rp),REG(d0, UWORD x),REG(d1, UWORD y),REG(d2, UWORD cols),REG(d3, UWORD rows));
 extern void PUBLIC ColorPopper(REG(a0, struct RastPort *rp),REG(d0, UWORD x),REG(d1, UWORD y),REG(d2, UWORD cols),REG(d3, UWORD rows));
 extern long PopColors(struct Window *win,struct Gadget *gad);
+#ifdef __amigaos4__
+extern long PopUpTable(struct Window *win,struct Gadget *refgad,UWORD cols,UWORD rows,APTR func,...) VARARGS68K;
+#else
 extern long PopUpTable(struct Window *win,struct Gadget *refgad,UWORD cols,UWORD rows,APTR func,ULONG tag1,...) VARARGS68K;
+#endif
+#ifdef __amigaos4__
+extern long PopUpList(struct Window *,struct Gadget *,struct MinList *,...) VARARGS68K;
+#else
 extern long PopUpList(struct Window *,struct Gadget *,struct MinList *,ULONG tag1,...) VARARGS68K;
+#endif
 extern void ClosePopUpText(void);
 extern void ShowPopUpText(STRPTR t,long wx,long wy);
 
@@ -259,11 +266,19 @@ extern struct TextFont *OpenBitmapFont(struct TextAttr *textAttr);
 extern void StandardNewSize(void (*create)(struct winData *,long,long));
 extern BOOL WindowIsProjectDependent(long type);
 extern void RefreshAppWindow(struct Window *win,struct winData *wd);
+#ifdef __amigaos4__
+extern struct Window *OpenAppWindow(long type,...) VARARGS68K;
+#else
 extern struct Window *OpenAppWindow(long type,ULONG tag1,...) VARARGS68K;
+#endif
 extern void CloseAppWindow(struct Window *win,BOOL);
 extern void DisableGadget(struct Gadget *gad,struct Window *win,BOOL disable);
 extern long CountGadToolGads(struct Window *win);
+#ifdef __amigaos4__
+extern APTR NewObj(struct winData *,short type,APTR,STRPTR,...) VARARGS68K;
+#else
 extern APTR NewObj(struct winData *,short type,APTR,STRPTR,ULONG tag1,...) VARARGS68K;
+#endif
 extern void DrawDithRect(struct RastPort *rp,long x1,long y1,long x2,long y2);
 extern void DrawGroupBorder(struct RastPort *rp, CONST_STRPTR t,long x, long y, long w, long h);
 extern void PUBLIC DrawRect(REG(a0, struct RastPort *rp),REG(d0, long x),REG(d1, long y),REG(d2, long w),REG(d3, long h));

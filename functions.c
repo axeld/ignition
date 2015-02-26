@@ -536,9 +536,9 @@ cfAuswahl(struct Result *r, struct List *args)
 {
     struct FuncArg *fa;
 
-    if ((fa = (APTR)FindListNumber(args, 0)) != 0)
+    if ((fa = (APTR)FindListNumber((struct MinList *)args, 0)) != 0)
     {
-        if ((fa = (APTR)FindListNumber(args, (long)TreeValue(fa->fa_Root))) != 0)
+        if ((fa = (APTR)FindListNumber((struct MinList *)args, (long)TreeValue(fa->fa_Root))) != 0)
 			return CalcTree(r, fa->fa_Root);
     }
 	return CT_OK;
@@ -550,13 +550,13 @@ cfWenn(struct Result *r,struct MinList *args)
 {
     struct FuncArg *fa;
 
-    if ((fa = (APTR)FindListNumber((struct List *)args, 0)) != 0)
+    if ((fa = (APTR)FindListNumber((struct MinList *)args, 0)) != 0)
     {
         long num = 2;
 
         if (TreeValue(fa->fa_Root))
             num = 1;
-        if ((fa = (APTR)FindListNumber((struct List *)args, num)) != 0)
+        if ((fa = (APTR)FindListNumber((struct MinList *)args, num)) != 0)
 			return CalcTree(r, fa->fa_Root);
 
 		return CT_OK;
@@ -793,13 +793,13 @@ cfEndKapitalEinfach(struct MinList *args)
     struct FuncArg *fa;
     double start,zins,jahre;
 
-    if ((fa = (APTR)FindListNumber((struct List *)args, 0)) != 0)
+    if ((fa = (APTR)FindListNumber(args, 0)) != 0)
     {
         start = TreeValue(fa->fa_Root);
-        if ((fa = (APTR)FindListNumber((struct List *)args, 1)) != 0)
+        if ((fa = (APTR)FindListNumber(args, 1)) != 0)
         {
             zins = TreeValue(fa->fa_Root);
-            if ((fa = (APTR)FindListNumber((struct List *)args, 2)) != 0)
+            if ((fa = (APTR)FindListNumber(args, 2)) != 0)
             {
                 jahre = TreeValue(fa->fa_Root);
 				return start * (1 + zins * jahre);
@@ -816,13 +816,13 @@ cfEndKapitalZZ(struct MinList *args)
     struct FuncArg *fa;
     double start,zins,jahre;
 
-    if ((fa = (APTR)FindListNumber((struct List *)args,0)))
+    if ((fa = (APTR)FindListNumber(args,0)))
     {
         start = TreeValue(fa->fa_Root);
-        if ((fa = (APTR)FindListNumber((struct List *)args,1)))
+        if ((fa = (APTR)FindListNumber(args,1)))
         {
             zins = TreeValue(fa->fa_Root);
-            if ((fa = (APTR)FindListNumber((struct List *)args,2)))
+            if ((fa = (APTR)FindListNumber(args,2)))
             {
                 jahre = TreeValue(fa->fa_Root);
 				return start * pow(1 + zins, jahre);
@@ -839,13 +839,13 @@ cfStartKapitalZZ(struct MinList *args)
     struct FuncArg *fa;
 	double start, zins, jahre;
 
-    if ((fa = (APTR)FindListNumber((struct List *)args,0)))
+    if ((fa = (APTR)FindListNumber(args,0)))
     {
         start = TreeValue(fa->fa_Root);
-        if ((fa = (APTR)FindListNumber((struct List *)args,1)))
+        if ((fa = (APTR)FindListNumber(args,1)))
         {
             zins = TreeValue(fa->fa_Root);
-            if ((fa = (APTR)FindListNumber((struct List *)args,2)))
+            if ((fa = (APTR)FindListNumber(args,2)))
             {
                 jahre = TreeValue(fa->fa_Root);
 				return start / pow(1 + zins, jahre);
@@ -862,13 +862,13 @@ cfLaufzeitZZ(struct MinList *args)
     struct FuncArg *fa;
 	double start, end, zins;
 
-    if ((fa = (APTR)FindListNumber((struct List *)args, 0)) != 0)
+    if ((fa = (APTR)FindListNumber(args, 0)) != 0)
     {
         start = TreeValue(fa->fa_Root);
-        if ((fa = (APTR)FindListNumber((struct List *)args, 1)) != 0)
+        if ((fa = (APTR)FindListNumber(args, 1)) != 0)
         {
             end = TreeValue(fa->fa_Root);
-            if ((fa = (APTR)FindListNumber((struct List *)args, 2)) != 0)
+            if ((fa = (APTR)FindListNumber(args, 2)) != 0)
             {
                 zins = TreeValue(fa->fa_Root);
 				return (double)((log10(end)-log10(start)) / log10(1 + zins));
@@ -996,10 +996,10 @@ cfPattern(struct MinList *args)
     STRPTR t,pattern;
     long   cmp = 0;
 
-    if ((fa = (APTR)FindListNumber((struct List *)args, 0)) != 0)
+    if ((fa = (APTR)FindListNumber(args, 0)) != 0)
     {
         pattern = TreeText(fa->fa_Root);
-        if ((fa = (APTR)FindListNumber((struct List *)args, 1)) != 0)
+        if ((fa = (APTR)FindListNumber(args, 1)) != 0)
         {
             char dest[256];
 
@@ -1048,9 +1048,9 @@ cfWert(struct MinList *args)
     STRPTR t = NULL,fvt = NULL;
     double val = 0.0;
 
-    if ((fa = (APTR)FindListNumber((struct List *)args, 0)) != 0)
+    if ((fa = (APTR)FindListNumber(args, 0)) != 0)
         t = TreeText(fa->fa_Root);
-    if (t && (fa = (APTR)FindListNumber((struct List *)args,1)))
+    if (t && (fa = (APTR)FindListNumber(args,1)))
         fvt = TreeText(fa->fa_Root);
     if (!(fvt && (fv = (APTR)FindLinkName(&calcpage->pg_Mappe->mp_Formats,fvt)) && CheckFormat(fv,t,&val) == 1L))
         GetFormatOfValue(t,&val);
@@ -1069,10 +1069,10 @@ cfText(struct MinList *args)
     STRPTR t = NULL,fvt = NULL;
     double val;
 
-    if ((fa = (APTR)FindListNumber((struct List *)args, 0)) != 0)
+    if ((fa = (APTR)FindListNumber(args, 0)) != 0)
     {
         val = TreeValue(fa->fa_Root);
-        if ((fa = (APTR)FindListNumber((struct List *)args,1)))
+        if ((fa = (APTR)FindListNumber(args,1)))
             fvt = TreeText(fa->fa_Root);
         t = AllocString(FitValueInFormat(val,NULL,fvt,-1,ITA_NONE));
         FreeString(fvt);
@@ -1088,9 +1088,9 @@ cfPosition(struct MinList *args)
     STRPTR t1,t2;
     long   l = 0,i,len1,len2;
 
-    if ((fa = (APTR)FindListNumber((struct List *)args, 0)) != 0)
+    if ((fa = (APTR)FindListNumber(args, 0)) != 0)
     {
-        if ((t1 = TreeText(fa->fa_Root)) && (fa = (APTR)FindListNumber((struct List *)args, 1)) != 0)
+        if ((t1 = TreeText(fa->fa_Root)) && (fa = (APTR)FindListNumber(args, 1)) != 0)
         {
             if ((t2 = TreeText(fa->fa_Root)) != 0)
             {
@@ -1414,12 +1414,12 @@ cfDatumRechnen(struct MinList *args)
     {
         datum = (long)TreeValue(fa->fa_Root);
         tagedatum(datum,NULL,&month,&jahr);
-        if ((fa = (APTR)FindListNumber((struct List *)args, 1)) != 0) // Tag
+        if ((fa = (APTR)FindListNumber(args, 1)) != 0) // Tag
             datum += (long)TreeValue(fa->fa_Root);
-        if ((fa = (APTR)FindListNumber((struct List *)args, 2)) != 0) // Monat
+        if ((fa = (APTR)FindListNumber(args, 2)) != 0) // Monat
         {
             i = (long)TreeValue(fa->fa_Root);
-            if ((fa = (APTR)FindListNumber((struct List *)args, 3)) != 0) // Jahr
+            if ((fa = (APTR)FindListNumber(args, 3)) != 0) // Jahr
                 i += (long)TreeValue(fa->fa_Root)*12;
             if (i > 0)
             {
@@ -1454,9 +1454,9 @@ cfMonthlength(struct MinList *args)
     struct FuncArg *fa;
     long   m = 1,j = 1;
 
-    if ((fa = (struct FuncArg *)FindListNumber((struct List *)args, 0)) != 0)
+    if ((fa = (struct FuncArg *)FindListNumber(args, 0)) != 0)
         m = (long)TreeValue(fa->fa_Root);
-    if ((fa = (struct FuncArg *)FindListNumber((struct List *)args, 1)) != 0)
+    if ((fa = (struct FuncArg *)FindListNumber(args, 1)) != 0)
         j = (long)TreeValue(fa->fa_Root);
 
 	return (double)monthlength(m,j);
@@ -1497,12 +1497,12 @@ cfDbPosition(struct MinList *args)
     struct Database *db = NULL,*pdb = NULL;
     long   pos = 0,*refs;
 
-    if ((fa = (struct FuncArg *)FindListNumber((struct List *)args, 0)) != 0)
+    if ((fa = (struct FuncArg *)FindListNumber(args, 0)) != 0)
     {
         if (fa->fa_Root && (fa->fa_Root->t_Op == OP_TEXT || fa->fa_Root->t_Op == OP_NAME))
             db = (APTR)FindTag(&calcpage->pg_Mappe->mp_Databases,fa->fa_Root->t_Text);
     }
-    if (db && (fa = (struct FuncArg *)FindListNumber((struct List *)args,1)))
+    if (db && (fa = (struct FuncArg *)FindListNumber(args,1)))
     {
         if (fa->fa_Root && (fa->fa_Root->t_Op == OP_TEXT || fa->fa_Root->t_Op == OP_NAME))
             pdb = (APTR)FindTag(&calcpage->pg_Mappe->mp_Databases,fa->fa_Root->t_Text);
@@ -1536,12 +1536,12 @@ cfDbSize(struct MinList *args)
     struct Database *db = NULL,*pdb = NULL;
     long   size = 0,*refs;
 
-    if ((fa = (struct FuncArg *)FindListNumber((struct List *)args, 0)) != 0)
+    if ((fa = (struct FuncArg *)FindListNumber(args, 0)) != 0)
     {
         if (fa->fa_Root && (fa->fa_Root->t_Op == OP_TEXT || fa->fa_Root->t_Op == OP_NAME))
             db = (APTR)FindTag(&calcpage->pg_Mappe->mp_Databases,fa->fa_Root->t_Text);
     }
-    if (db && (fa = (struct FuncArg *)FindListNumber((struct List *)args,1)))
+    if (db && (fa = (struct FuncArg *)FindListNumber(args,1)))
     {
         if (fa->fa_Root && (fa->fa_Root->t_Op == OP_TEXT || fa->fa_Root->t_Op == OP_NAME))
             pdb = (APTR)FindTag(&calcpage->pg_Mappe->mp_Databases,fa->fa_Root->t_Text);
@@ -1560,7 +1560,7 @@ cfDbSize(struct MinList *args)
             else
                 size = 0;
         }
-        else if ((in = db->db_Filter) || (in = db->db_Index))
+        else if ((in = (struct Index *)db->db_Filter) || (in = (struct Index *)db->db_Index))
             size = in->in_Size;
         else
             size = db->db_TablePos.tp_Height+1;

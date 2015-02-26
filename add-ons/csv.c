@@ -4,8 +4,16 @@
  * Licensed under the terms of the GNU General Public License, version 3.
  */
 
+#ifdef __amigaos4__
+	#include <exec/exec.h>
+	#include <proto/exec.h>
+	#include <proto/dos.h>
+	#include <proto/utility.h>
 
-#include <stdlib.h>
+	#include <string.h>
+#else
+	#include <stdlib.h>
+#endif
 
 #include "iotype.h"
 
@@ -20,6 +28,25 @@ char *separator = ";,\t ";
 short loadprefs = PREFS_GUESS;
 short saveprefs = '\t';
 
+#ifdef __amigaos4__
+	STRPTR Strchr(STRPTR t, char c)
+	{
+		int i;
+	
+		for(i = 0; t[i] != '\0'; i++)
+			if(t[i] == c)
+				return &t[i];
+		return NULL;
+	}
+	#undef  strlen
+	#undef  stricmp
+	#undef  strnicmp
+	#undef  strchr
+	#define strlen   Strlen
+	#define stricmp  Stricmp
+	#define strnicmp Strnicmp
+	#define strchr   Strchr
+#endif
 
 void PUBLIC
 closePrefsGUI(void)
@@ -55,7 +82,11 @@ getPrefs(void)
   static char t[32];
 
   setPrefsString(loadprefs,t);
+#ifdef __amigaos4__
+  Strlcat(t,"&", 32);
+#else
   strcat(t,"&");
+#endif
   setPrefsString(saveprefs,t+strlen(t));
 
   return t;

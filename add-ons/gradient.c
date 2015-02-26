@@ -13,15 +13,36 @@
 #endif
 
 #define CATCOMP_NUMBERS
-#include "ignition_strings.h"
-
+#ifdef __amigaos4__
+	#include "../ignition_strings.h"
+#else
+	#include "ignition_strings.h"
+#endif
 
 const char *version = "$VER: gradient.gc 0.3 (7.8.2003)";
 
+#ifdef __amigaos4__
+	#ifdef __GNUC__
+		#ifdef __PPC__
+			#pragma pack(2)
+		#endif
+	#elif defined(__VBCC__)
+		#pragma amiga-align
+	#endif
+#endif
 struct Gradient {
     ULONG g_FirstPen, g_SecondPen;
 	UBYTE g_Direction;
 };
+#ifdef __amigaos4__
+	#ifdef __GNUC__
+		#ifdef __PPC__
+			#pragma pack()
+		#endif
+	#elif defined(__VBCC__)
+		#pragma default-align
+	#endif
+#endif
 
 #define G_HORIZONTAL 0
 #define G_VERTICAL 1
@@ -37,7 +58,7 @@ struct gInterface interface[] = {
 	{GGA_FirstPen,    NULL /*"First Colour:"*/, GIT_PEN, NULL, "firstpen"},
 	{GGA_SecondPen,   NULL /*"Second Colour:"*/, GIT_PEN, NULL, "secondpen"},
 	{GGA_Direction,   NULL /*"Direction:"*/, GIT_CYCLE, sAlignmentLabels, "direction"},
-    {NULL,            NULL,NULL,NULL,NULL}
+    {0,            NULL,0,NULL,NULL}
 };
 
 const STRPTR superClass = "root";

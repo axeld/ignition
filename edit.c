@@ -7,6 +7,9 @@
 
 #include "types.h"
 #include "funcs.h"
+#ifdef __amigaos4__
+	#include <proto/gtdrag.h>
+#endif
 
 #define RIGHTOFFSET 10
 
@@ -522,7 +525,6 @@ HandleTabGadget(struct Page *page)
 
 	col = page->pg_Gad.cp.cp_Col;
 	row = page->pg_Gad.cp.cp_Row;
-
 	if (page->pg_Gad.DispPos == PGS_FRAME) {
 		if (imsg.Class == IDCMP_VANILLAKEY && imsg.Code != 13) {
 			if (imsg.Class == IDCMP_VANILLAKEY && imsg.Code == 9)

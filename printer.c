@@ -738,6 +738,13 @@ PrintPage(union printerIO *pio,struct PrinterExtendedData *ped,struct wdtPrintSt
 }
 
 
+#ifdef __amigaos4__
+void
+ResumeTask(struct Task *task)
+{
+	RestartTask(task, 0);
+}
+#else
 void
 ResumeTask(struct Task *task)
 {
@@ -747,8 +754,9 @@ ResumeTask(struct Task *task)
 	MyAddHead(&SysBase->TaskReady,task);
 	Enable();
 }
+#endif
 
-
+#ifndef __amigaos4__
 void
 SuspendTask(struct Task *task)
 {
@@ -758,7 +766,7 @@ SuspendTask(struct Task *task)
 	MyAddHead(&SysBase->IntrList,task);
 	Enable();
 }
-
+#endif
 
 static void
 Print_SetHighTrueColor(struct RastPort *rp, ULONG color)
@@ -1004,22 +1012,38 @@ Print(struct List *list, struct wdtPrinter *wp, WORD unit, struct wdtPrintStatus
 	struct RastPort *rp;
 	struct BitMap *bm;
 
+#ifdef __amigaos4__
+	if (!(port = AllocSysObjectTags(ASOT_PORT, TAG_END)))
+#else
 	if (!(port = CreateMsgPort()))
+#endif
 		return;
  
 	rp = AllocPooled(pool, sizeof(struct RastPort));
 	if (rp == NULL) {
+#ifdef __amigaos4__
+		FreeSysObject(ASOT_PORT, port);
+#else
 		DeleteMsgPort(port);
+#endif
 		return;
 	}
 
 	if (!OpenPrintScreen(&screenContext, mp, rp, &colorContext)) {
+#ifdef __amigaos4__
+		FreeSysObject(ASOT_PORT, port);
+#else
 		DeleteMsgPort(port);
+#endif
 		FreePooled(pool, rp, sizeof(struct RastPort));
 		return;
 	}
 
+#ifdef __amigaos4__
+	if ((pio = (union printerIO *)AllocSysObjectTags(ASOT_IOREQUEST, ASOIOR_ReplyPort, port, ASOIOR_Size, sizeof(union printerIO), TAG_END)) != 0)
+#else
 	if ((pio = (union printerIO *)CreateExtIO(port, sizeof(union printerIO))) != 0)
+#endif
 	{
 		if (!OpenDevice("printer.device", unit, (struct IORequest *)pio, 0))
 		{
@@ -1095,7 +1119,11 @@ Print(struct List *list, struct wdtPrinter *wp, WORD unit, struct wdtPrintStatus
 
 							if (wps && wps->wps_ProjectBar)
 							{
+#ifdef __amigaos4__
+								Strlcpy(t, swp->wp_Page->pg_Node.ln_Name, 50);
+#else
 								stccpy(t, swp->wp_Page->pg_Node.ln_Name, 50);
+#endif
 								sprintf(t + strlen(t), " (%ld/%ld)", index + 1, count);
 								UpdateProgressBar(wps->wps_ProjectBar, t, (float)(1.0 * (++index) / count));
 							}
@@ -1133,19 +1161,31 @@ Print(struct List *list, struct wdtPrinter *wp, WORD unit, struct wdtPrintStatus
 		else
 			ErrorRequest(GetString(&gLocaleInfo, MSG_OPEN_PRINTER_UNIT_ERR), (long)unit);
 
+#ifdef __amigaos4__
+		FreeSysObject(ASOT_IOREQUEST, pio);
+#else
 		DeleteExtIO((struct IORequest *)pio);
+#endif
 	}
 
 	ClosePrintScreen(&screenContext);
 	FreePooled(pool, rp, sizeof(struct RastPort));
+#ifdef __amigaos4__
+		FreeSysObject(ASOT_PORT, port);
+#else
 	DeleteMsgPort(port);
+#endif
 
 	{
 		BOOL suspended = FALSE;
 
 		if (asp_maintask && FindTask(NULL) != asp_maintask)  // Memory-Pools sind nicht multithreading-fähig
 		{
+#ifdef __amigaos4__
+			SuspendTask(asp_maintask, 0);
+#else
 			SuspendTask(asp_maintask);
+#endif
 			suspended = TRUE;
 		}
 
@@ -1221,7 +1261,11 @@ AsyncPrint(void)
 	}
 	ClosePrintWindow(asp_wps);
 
+#ifdef __amigaos4__
+	SuspendTask(asp_maintask, 0);
+#else
 	SuspendTask(asp_maintask);
+#endif
 
 	while((ap = (struct AsyncPrint *)MyRemHead(&list)))
 		FreePooled(pool, ap, sizeof(struct AsyncPrint));
@@ -1520,7 +1564,7 @@ UpdatePrinterGadgets(struct Window *win, struct winData *wd)
 
 	if ((wp = (APTR)wd->wd_ExtData[2]) != 0)
 	{
-		GT_SetGadgetAttrs(wd->wd_ExtData[0], win, NULL, GTLV_Selected, FindListEntry(wd->wd_ExtData[1], wp), TAG_END);
+		GT_SetGadgetAttrs(wd->wd_ExtData[0], win, NULL, GTLV_Selected, FindListEntry(wd->wd_ExtData[1], (struct MinNode *)wp), TAG_END);
 
 		GT_SetGadgetAttrs(GadgetAddress(win, 8), win, NULL, GTST_String, wp->wp_Range,
 			GA_Disabled, wp->wp_PageMode == PRTPM_RANGE ? FALSE : TRUE, TAG_END);
@@ -1580,10 +1624,10 @@ HandlePrinterIDCMP(REG(a0, struct TagItem *tag))
 
 					/*** Liste anzeigen und auswählen ***/
 
-					i = PopUpList(win, gad = GadgetAddress(win, 1), &list, TAG_END);
+					i = PopUpList(win, gad = GadgetAddress(win, 1), (struct MinList *)&list, TAG_END);
 					if (i != ~0L)
 					{
-						ln = FindListNumber(&list,i);
+						ln = FindListNumber((struct MinList *)&list,i);
 						wd->wd_ExtData[5] = ln->ln_Name;  ln->ln_Name = NULL;
 						wd->wd_ExtData[4] = (APTR)i;
 
@@ -1636,7 +1680,7 @@ HandlePrinterIDCMP(REG(a0, struct TagItem *tag))
 				case 4:
 					wp = (struct wdtPrinter *)((struct Gadget *)wd->wd_ExtData[0])->UserData;
 
-					if (wp && imsg.Code == FindListEntry(wd->wd_ExtData[1], wp))
+					if (wp && imsg.Code == FindListEntry(wd->wd_ExtData[1], (struct MinNode *)wp))
 					{
 						GT_SetGadgetAttrs(wd->wd_ExtData[0], win, NULL, GTLV_Labels, ~0L, TAG_END);
 						wp->wp_Node.ln_Type = (!wp->wp_Node.ln_Type) & 1;
@@ -1669,7 +1713,7 @@ HandlePrinterIDCMP(REG(a0, struct TagItem *tag))
 					GT_SetGadgetAttrs(wd->wd_ExtData[0], win, NULL, GTLV_Labels, wd->wd_ExtData[1], TAG_END);
 					break;
 				case 7:   // Einstellungen gelten für alle Tabellen
-					wd->wd_ExtData[3] = (APTR)imsg.Code;
+					wd->wd_ExtData[3] = (APTR)((long)imsg.Code);
 					if (!imsg.Code)
 						UpdatePrinterGadgets(win, wd);
 					break;
@@ -1716,8 +1760,8 @@ HandlePrinterIDCMP(REG(a0, struct TagItem *tag))
 				case 16:  // Ok
 				{
 					struct Mappe *mp = ((struct Page *)wd->wd_Data)->pg_Mappe;
-					BOOL   one = (BOOL)wd->wd_ExtData[3];
-					WORD   unit = (WORD)wd->wd_ExtData[4];
+					BOOL   one = (BOOL)((long)wd->wd_ExtData[3]);
+					WORD   unit = (WORD)((long)wd->wd_ExtData[4]);
 					struct List *list;
 					LONG   flags;
 

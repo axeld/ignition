@@ -7,7 +7,6 @@
 #ifndef IGN_CALC_H
 #define IGN_CALC_H
 
-
 /*************************** Formats ***************************/
 
 struct FormatVorlage {

@@ -6,8 +6,16 @@
 #define IGN_GADGETS_H
 
 
-#include <gadgets/TextEdit.h>
-#include <gadgets/Scroller.h>
+#ifdef __amigaos4__
+//	#include "libs/textedit/include/gadgets/TextEdit.h"
+#else
+	#include <gadgets/TextEdit.h>
+#endif
+#ifdef __amigaos4__
+//	#include "libs/scroller/include/gadgets/Scroller.h"
+#else
+	#include <gadgets/Scroller.h>
+#endif
 
 /*************************** PopUp-Gadget ***************************/
 
@@ -165,7 +173,6 @@ struct Link {
 	APTR   l_Link;
 	ULONG  ASM (*l_HookFunction)(REG(a0, APTR), REG(a2, APTR), REG(a1, struct LVDrawMsg *));
 };
-
 
 #endif  /* IGN_GADGETS_H */
 

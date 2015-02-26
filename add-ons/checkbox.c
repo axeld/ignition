@@ -13,12 +13,30 @@
 #endif
 
 #define CATCOMP_NUMBERS
-#include "ignition_strings.h"
+#ifdef __amigaos4__
+	#include "../ignition_strings.h"
+#else
+	#include "ignition_strings.h"
+#endif
 
 #include <string.h>
 
+#ifdef __amigaos4__
+	#undef  strcmp
+	#define strcmp  Stricmp
+#endif
+
 const char *version = "$VER: checkbox.gc 0.3 (6.8.2003)";
 
+#ifdef __amigaos4__
+	#ifdef __GNUC__
+		#ifdef __PPC__
+			#pragma pack(2)
+		#endif
+	#elif defined(__VBCC__)
+		#pragma amiga-align
+	#endif
+#endif
 struct Checkbox
 {
   STRPTR cb_Text;
@@ -27,6 +45,15 @@ struct Checkbox
   ULONG  cb_TextPen,cb_CheckPen;
   UBYTE  cb_Checked,cb_TextPlacement;
 };
+#ifdef __amigaos4__
+	#ifdef __GNUC__
+		#ifdef __PPC__
+			#pragma pack()
+		#endif
+	#elif defined(__VBCC__)
+		#pragma default-align
+	#endif
+#endif
 
 #define GCA_ShadowPen GOA_TagUser + 1
 #define GCA_ShinePen  GOA_TagUser + 2

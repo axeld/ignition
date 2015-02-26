@@ -28,7 +28,11 @@
 #include <intuition/cghooks.h>
 #include <gadgets/colorwheel.h>
 #include <gadgets/gradientslider.h>
-#include <gadgets/TextEdit.h>
+#ifdef __amigaos4__
+	#include <amiga_compiler.h>
+#else
+	#include <gadgets/TextEdit.h>
+#endif
 #include <graphics/gfx.h>
 #include <graphics/gfxmacros.h>
 #include <datatypes/datatypes.h>
@@ -72,6 +76,18 @@
 #	include <proto/pTextEdit.h>
 #	include <proto/mathieeedoubbas.h>
 #	include <proto/mathieeedoubtrans.h>
+#endif
+#ifdef __amigaos4__
+#	include <interfaces/cybergraphics.h>
+#	include <proto/cybergraphics.h>
+#	include <proto/console.h>
+#	include <proto/bullet.h>
+	//#include <pragmas/amigaguide_pragmas.h>
+	//#include "libs/textedit/include/pragmas/TextEdit_pragmas.h"
+	//#include "libs/gtdrag/include/pragmas/gtdrag_pragmas.h"
+	//#include "libs/textedit/include/clib/TextEdit_protos.h"
+	//#include <proto/mathieeedoubbas.h>
+	//#include <proto/mathieeedoubtrans.h>
 #else
 #	include <cybergraphics/cybergraphics.h>
 #	include <pragmas/cybergraphics_pragmas.h>
@@ -118,8 +134,25 @@ typedef ULONG uint32;
 #   define false FALSE
 #endif
 
-#include "SDI_compiler.h"
-#include "SDI_endian.h"
+#ifdef __amigaos4__
+	#define PI 3.14159265
+	#define PUBLIC ASM SAVEDS
+	#define ALIGNED
+	#define IPTR ULONG
+	#define SETHOOK(hookname, funcname) hookname.h_Entry = (HOOKFUNC)funcname
+	#define SETDISPATCHER(classname, funcname) classname->cl_Dispatcher.h_Entry = (HOOKFUNC)funcname
+	#define min(a,b) ((a)<(b)?(a):(b))
+	#define max(a,b) ((a)>(b)?(a):(b))
+  	#define WORD2BE(w) (w)
+  	#define LONG2BE(l) (l)
+  	#define BE2WORD(w) (w)
+  	#define BE2LONG(l) (l)
+
+	#include <proto/gtdrag.h>
+#else
+	#include "SDI_compiler.h"
+	#include "SDI_endian.h"
+#endif
 
 #include "debug.h"
 
@@ -184,7 +217,11 @@ struct NewContextMenu {
 #include "graphic.h"
 #include "font.h"
 #include "io.h"
-#include "compatibility.h"
+#ifdef __amigaos4__
+	#include "include/compatibility.h"
+#else
+	#include "compatibility.h"
+#endif
 																
 /*************************** Locale stuff ***************************/
 
@@ -196,7 +233,9 @@ struct NewContextMenu {
 
 #include "ignition_strings.h"
 
+#ifndef __amigaos4__
 CONST_STRPTR ASM GetString(REG(a0, struct LocaleInfo *li), REG(d0, LONG stringNum));
+#endif
  
 /*************************** Printer ***************************/
 
@@ -525,13 +564,38 @@ struct AppCmd {
     BYTE   ac_Locked;
 };
 
+#ifdef __amigaos4__
+	#ifdef __GNUC__
+   		#ifdef __PPC__
+    		#pragma pack(2)
+   		#endif
+	#elif defined(__VBCC__)
+   		#pragma amiga-align
+	#endif
+#endif
 struct Command {
     struct Command *cmd_Succ;
     struct Command *cmd_Pred;
+#if defined(__AROS__)
+  #warning FIXME when V1 ABI is out
+    char   *cmd_Name;
+    UBYTE  cmd_Type;
+    BYTE   cmd_Pri;
+#else
     UBYTE  cmd_Type;
     BYTE   cmd_Pri;
     char   *cmd_Name;
+#endif
 };
+#ifdef __amigaos4__
+	#ifdef __GNUC__
+   		#ifdef __PPC__
+    		#pragma pack()
+   		#endif
+	#elif defined(__VBCC__)
+   		#pragma default-align
+	#endif
+#endif
 
 #define CMDT_INTERN 0
 #define CMDT_AREXX 1
@@ -564,17 +628,16 @@ struct RexxScript {
 */
 
 /*************************** Menü ***************************/
-
-struct AppMenu {
+struct AppMenue {
     struct Node am_Node;
-    struct MinList am_Items;
+   	struct MinList am_Items;
 };
 
-struct AppMenuEntry {
-    struct Node am_Node;
-    STRPTR am_AppCmd;
+struct AppMenueEntry {
+   	struct Node am_Node;
+   	STRPTR am_AppCmd;
     STRPTR am_ShortCut;
-    struct MinList am_Subs;
+   	struct MinList am_Subs;
 };
 
 #define AMT_NORMAL 0
@@ -669,7 +732,9 @@ extern struct Locale *loc;
 extern struct Library *GTDragBase,*TextEditBase,*CyberGfxBase;
 extern struct Library *ColorWheelBase,*GradientSliderBase;
 extern struct Library *BulletBase;
-extern struct ExecBase *SysBase;
+#ifndef __amigaos4__
+//	extern struct ExecBase *SysBase;
+#endif
 extern struct LocaleInfo gLocaleInfo;
 extern bool   noabout;
 

@@ -4,7 +4,9 @@
  */
 
 #include "include/compatibility.h"
-#include "SDI_compiler.h"
+#ifndef __amigaos4__
+	#include "SDI_compiler.h"
+#endif
 
 #include <strings.h>
 #include <stdlib.h>

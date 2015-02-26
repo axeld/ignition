@@ -7,7 +7,9 @@
 
 #include "types.h"
 #include "funcs.h"
-
+#ifdef __amigaos4__
+	#include <gadgets/texteditor.h>
+#endif
 
 extern void CreateGClassesGadgets(struct winData *wd, long wid, long hei);
 extern void CreateScriptsGadgets(struct winData *wd, long wid, long hei);
@@ -98,7 +100,7 @@ HandleBorderIDCMP(REG(a0, struct TagItem *tag))
                     break;
                 case 5:
                 case 6:
-                    wd->wd_ExtData[4] = (APTR)gad->GadgetID;
+                    wd->wd_ExtData[4] = (APTR)((long)gad->GadgetID);
                     wd->wd_ExtData[5] = NULL;
                     break;
             }
@@ -106,7 +108,7 @@ HandleBorderIDCMP(REG(a0, struct TagItem *tag))
         case IDCMP_GADGETUP:
 			switch (id = (gad = (struct Gadget *)imsg.IAddress)->GadgetID) {
                 case 1:   // Border-Cycle
-                    wd->wd_Data = (APTR)imsg.Code;
+                    wd->wd_Data = (APTR)((long)imsg.Code);
                     wb = (struct wdtBorder *)wd->wd_ExtData[imsg.Code];
                     updateBorderGadgets(wb);
                 /*  GT_SetGadgetAttrs(GadgetAddress(win,2),win,NULL,GTCB_Checked,wb->wb_Adopt,TAG_END);
@@ -173,7 +175,7 @@ HandleBorderIDCMP(REG(a0, struct TagItem *tag))
 
                 GT_GetGadgetAttrs(GadgetAddress(win,wd->wd_ShortCuts[0]),win,NULL,GTCB_Checked,&border,TAG_END);
 
-                SetBorder(rxpage,border,wbwd(0)->wb_Adopt ? wbwd(0)->wb_Color : ~0L,wbwd(0)->wb_Point >> 11,wbwd(1)->wb_Adopt ? wbwd(1)->wb_Color : ~0L,wbwd(1)->wb_Point >> 11,wbwd(2)->wb_Adopt ? wbwd(2)->wb_Color : ~0L,wbwd(2)->wb_Point >> 11,wbwd(3)->wb_Adopt ? wbwd(3)->wb_Color : ~0L,wbwd(3)->wb_Point >> 11);
+                SetBorder(rxpage, border,wbwd(0)->wb_Adopt ? wbwd(0)->wb_Color : ~0L,wbwd(0)->wb_Point >> 11, wbwd(1)->wb_Adopt ? wbwd(1)->wb_Color : ~0L,wbwd(1)->wb_Point >> 11,wbwd(2)->wb_Adopt ? wbwd(2)->wb_Color : ~0L,wbwd(2)->wb_Point >> 11,wbwd(3)->wb_Adopt ? wbwd(3)->wb_Color : ~0L,wbwd(3)->wb_Point >> 11);
                 if (id == wd->wd_ShortCuts[1])  // Fenster schließen bei "Ok", nicht bei Doppelklick oder "Zuweisen"
                     CloseAppWindow(win,TRUE);
             }
@@ -405,7 +407,11 @@ HandleDocInfoIDCMP(REG(a0, struct TagItem *tag))
                 GT_SetString(GadgetAddress(win,2),&mp->mp_Version);
                 GT_SetString(GadgetAddress(win,3),&mp->mp_CatchWords);
 
+#ifdef __amigaos4__
+				note = (STRPTR)DoGadgetMethod (wd->wd_ExtData[1],win,NULL,GM_TEXTEDITOR_ExportText,NULL);
+#else
                 GetAttr(EGA_Text, wd->wd_ExtData[1], (IPTR *)&note);
+#endif
                 if (note != NULL)
                 {
                     FreeString(mp->mp_Note);
@@ -483,7 +489,7 @@ UpdateEventGadgets(struct Mappe *mp, UBYTE event)
 {
     char t[16];
 
-    if (event == ~0L)
+    if (event == (UBYTE)~0L)
         return;
 
     GT_SetGadgetAttrs(wd->wd_ExtData[4],win,NULL,GTLV_Labels,~0L,TAG_END);
@@ -557,7 +563,7 @@ HandleDocumentIDCMP(REG(a0, struct TagItem *tag))
                 /********** Ereignisse ***********/
 
                 case 12:   // Liste
-                    ((struct Gadget *)wd->wd_ExtData[4])->UserData = (APTR)imsg.Code;
+                    ((struct Gadget *)wd->wd_ExtData[4])->UserData = (APTR)((long)imsg.Code);
                     if (imsg.Code == evt)
                     {
                         GT_SetGadgetAttrs(wd->wd_ExtData[4],win,NULL,GTLV_Labels,~0L,TAG_END);
@@ -653,6 +659,9 @@ HandlePageIDCMP(REG(a0, struct TagItem *tag))
     struct Node *ln;
     STRPTR t;
 	long   j, i = 0;
+#ifdef __amigaos4__
+	bool ok_pressed = FALSE;  //Notwendig, bis das mit den Dokumentenschutz geklärt ist. Welcher zusammenhang besteht mit übernahme der Änderungen!
+#endif
 
 	switch (imsg.Class)
     {
@@ -677,6 +686,9 @@ HandlePageIDCMP(REG(a0, struct TagItem *tag))
 			switch ((gad = imsg.IAddress)->GadgetID)
             {
                 case 5:     // Ok (apply page changes)
+#ifdef __amigaos4__
+					ok_pressed = TRUE;
+#endif
                     GT_GetGadgetAttrs(GadgetAddress(win, 1), win, NULL, GTST_String, &t, TAG_END);
                     if (!page->pg_Node.ln_Name || strcmp(page->pg_Node.ln_Name,t))
                     {
@@ -740,13 +752,16 @@ HandlePageIDCMP(REG(a0, struct TagItem *tag))
 
 						GT_GetGadgetAttrs(GadgetAddress(win, 2), win, NULL, GTCY_Active, &i, TAG_END);
 						page->pg_Flags &= ~PGF_SECURITY;
-
 						if (i == 1)
 							page->pg_Flags |= PGF_IMMUTABLE;
                     }
                 case 6:
                     CloseAppWindow(win, TRUE);
+#ifdef __amigaos4__
+					if(ok_pressed)
+#else
                     if (i)
+#endif
                         DrawTable(page->pg_Window);
                     break;
             }
@@ -942,17 +957,28 @@ handleNotesIDCMP(REG(a0, struct TagItem *tag))
                     long   len;
 
                     wn = (struct wdtNote *)FindListNumber(wd->wd_ExtData[0],i);
+#ifdef __amigaos4__
+					s = (STRPTR)DoGadgetMethod ((gad = wd->wd_ExtData[1]),win,NULL,GM_TEXTEDITOR_ExportText,TAG_END);
+#else
                     GetAttr(EGA_Text, (Object*)(gad = wd->wd_ExtData[1]), (IPTR *)&s);
-
+#endif
                     if (s && wn->wn_Note && (t = AllocPooled(pool,len = strlen(s)+strlen(wn->wn_Note)+1)))
                     {
                         strcpy(t,s);
                         strcat(t,wn->wn_Note);
+#ifdef __amigaos4__
+                        SetGadgetAttrs(gad, win, NULL, GA_TEXTEDITOR_Contents, t, TAG_END);
+#else
                         SetGadgetAttrs(gad,win,NULL,EGA_Text,t,TAG_END);
+#endif
                         FreePooled(pool,t,len);
                     }
                     else
+#ifdef __amigaos4__
+                        SetGadgetAttrs(gad, win, NULL, GA_TEXTEDITOR_Contents, wn->wn_Note, TAG_END);
+#else
                         SetGadgetAttrs(gad,win,NULL,EGA_Text,wn->wn_Note,TAG_END);
+#endif
                     ActivateGadget(gad,win,NULL);
                 }
                 break;
@@ -970,8 +996,11 @@ handleNotesIDCMP(REG(a0, struct TagItem *tag))
                 STRPTR note = NULL;
 
                 id = wd->wd_ShortCuts[1] == id ? 1 : 2;
+#ifdef __amigaos4__
+				note = (STRPTR)DoGadgetMethod (wd->wd_ExtData[1],win,NULL,GM_TEXTEDITOR_ExportText,NULL);
+#else
                 GetAttr(EGA_Text, wd->wd_ExtData[1], (IPTR *)&note);
-
+#endif
                 if (id == 1 && note && (i = strlen(note)))
                 {
                     strcpy(t,GetString(&gLocaleInfo, MSG_ATTACH_NOTE_UNDO));
@@ -1408,9 +1437,13 @@ HandleGGadget(struct Page *page, struct gObject *go)
                                                 ASLFR_TitleText,     GetString(&gLocaleInfo, MSG_SELECT_FILE_NAME_TITLE),
                                                 ASLFR_InitialDrawer, path,
                                                 ASLFR_InitialFile,   name ? name : (STRPTR)"",
-                                                ASLFR_InitialPattern,"#?",
                                                 ASLFR_DoSaveMode,    FALSE,
+#ifdef __amigaos4__
+												ASLFR_AcceptPattern, "#?.iff", //Vorerst nur IFF
+#else
+                                                ASLFR_InitialPattern,"#?",
                                                 ASLFR_DoPatterns,    FALSE,
+#endif
                                                 ASLFR_DrawersOnly,   FALSE,
                                                 TAG_END))
                     {
@@ -1631,18 +1664,23 @@ CloseFileTypeWindow(REG(a0, struct Window *win), REG(d0, BOOL clean))
     }
 }
 
-
+#ifdef __amigaos4__
+//Notlösung, da das genutzte verfahren unter OS4.x nicht mehr geht und zu crahses führt.
+//muß eine bessere Lösung gefunden werden.
+//Allerdings geht unter OS4.x auch die 68k Version nicht!
 void PUBLIC
 HandleFileTypeIDCMP(REG(a0, struct Hook *h), REG(a2, struct FileRequester *fr), REG(a1, struct IntuiMessage *msg))
 {
-    struct winData *wd;
+   	struct winData *wd;
 	struct Window *typeWindow = msg->IDCMPWindow;
     struct IOType *io;
     long   i;
+    static long pos = 0;		//Aktuell gewähltes Modul
+    long npos;					//Anz. der vorhandenen Module
 
 	if ((wd = (APTR)typeWindow->UserData) == NULL || wd->wd_Type != WDT_FILETYPE)
 		return;
-
+		
 	switch (msg->Class) {
 		case IDCMP_RAWKEY:
 			if (msg->Code == 95) {
@@ -1651,17 +1689,26 @@ HandleFileTypeIDCMP(REG(a0, struct Hook *h), REG(a2, struct FileRequester *fr), 
 				imsg.MouseY = msg->MouseY;
 
 				ProcessAppCmd(rxpage, "HELP");
-			}
+				}
 			break;
 
         case IDCMP_GADGETUP:
             if ((gad = msg->IAddress)->GadgetID == 1)
             {
 				struct IOTypeLink *iol;
+				UWORD value;
+				
+				//Anz. der speicher-module bestimmen
+				npos = CountNodes(((struct MinList *)wd->wd_ExtData[1])) - 1;
 
-				for (iol = (APTR)((struct List *)wd->wd_ExtData[1])->lh_Head, i = 0; i < msg->Code; iol = (APTR)iol->iol_Node.ln_Succ, i++);
+				//Ein Option weiter und beim Ende, wieder auf die Erste
+				if(++pos > npos)
+					pos = 0;
+				StripIntuiMessages(NULL, typeWindow);
+				for (iol = (APTR)((struct List *)wd->wd_ExtData[1])->lh_Head, i = 0; i < pos; iol = (APTR)iol->iol_Node.ln_Succ, i++);
 				wd->wd_ExtData[0] = io = iol->iol_Link;
 
+				GT_SetGadgetAttrs(GadgetAddress(typeWindow, 1), typeWindow, NULL, GTLV_Selected ,pos, TAG_END);
 				GT_SetGadgetAttrs(GadgetAddress(typeWindow, 2), typeWindow, NULL, GTLV_Labels, &iol->iol_Description, TAG_END);
 				GT_SetGadgetAttrs(GadgetAddress(typeWindow, 3), typeWindow, NULL, GA_Disabled, !(io->io_Flags & IOF_HASPREFSGUI), TAG_END);
             }
@@ -1681,6 +1728,57 @@ HandleFileTypeIDCMP(REG(a0, struct Hook *h), REG(a2, struct FileRequester *fr), 
     }
     /* Tastaturbedienung... */
 }
+#else
+void PUBLIC
+HandleFileTypeIDCMP(REG(a0, struct Hook *h), REG(a2, struct FileRequester *fr), REG(a1, struct IntuiMessage *msg))
+{
+    struct winData *wd;
+	struct Window *typeWindow = msg->IDCMPWindow;
+    struct IOType *io;
+    long   i;
+
+	if ((wd = (APTR)typeWindow->UserData) == NULL || wd->wd_Type != WDT_FILETYPE)
+	return;
+
+	switch (msg->Class) {
+		case IDCMP_RAWKEY:
+			if (msg->Code == 95) {
+				win = typeWindow;
+				imsg.MouseX = msg->MouseX;
+				imsg.MouseY = msg->MouseY;
+
+				ProcessAppCmd(rxpage, "HELP");
+				}
+			break;
+
+        case IDCMP_GADGETUP:
+            if ((gad = msg->IAddress)->GadgetID == 1)
+            {
+				struct IOTypeLink *iol;
+
+				for (iol = (APTR)((struct List *)wd->wd_ExtData[1])->lh_Head, i = 0; i < msg->Code; iol = (APTR)iol->iol_Node.ln_Succ, i++);
+				wd->wd_ExtData[0] = io = iol->iol_Link;
+
+				GT_SetGadgetAttrs(GadgetAddress(typeWindow, 2), typeWindow, NULL, GTLV_Labels, &iol->iol_Description, TAG_END);
+				GT_SetGadgetAttrs(GadgetAddress(typeWindow, 3), typeWindow, NULL, GA_Disabled, !(io->io_Flags & IOF_HASPREFSGUI), TAG_END);
+            }
+            else if (gad->GadgetID == 3)  // Einstellungen...
+            	{
+				struct IOType *io = wd->wd_ExtData[0];
+				
+				if (io == NULL)
+					break;
+
+                InitIOType(io);
+
+                if (io->io_OpenPrefsGUI)
+                    io->io_OpenPrefsGUI(scr);
+            }
+            break;
+    }
+    /* Tastaturbedienung... */
+}
+#endif
 
 extern struct Gadget *cellPages[];
 
@@ -1746,7 +1844,7 @@ void ASM handleCellIDCMP(REG(a0, struct TagItem *tag))
                     if ((i = PopColors(win,gad)) != ~0L)
                     {
                         wd->wd_ExtData[7] = (APTR)i;
-                        DrawPatternField(win->RPort,PageGadget(cellPages[1],23),i,(UBYTE)wd->wd_Data);
+                        DrawPatternField(win->RPort,PageGadget(cellPages[1],23),i,(UBYTE)((long)wd->wd_Data));
                         GT_SetGadgetAttrs(PageGadget(cellPages[1],22),win,NULL,GTCB_Checked,TRUE,TAG_END);
                     }
                     wd->wd_ExtData[2] = (APTR)((LONG)wd->wd_ExtData[2] | 2);  // Änderungen auf Seite markieren
@@ -1809,7 +1907,7 @@ void ASM handleCellIDCMP(REG(a0, struct TagItem *tag))
                     if (tf->tf_Format != NULL)
                     {
                         ln = (struct Node *)FindLinkWithName(&rxpage->pg_Document->mp_Formats,tf->tf_Format);
-                        i = FindListEntry(&rxpage->pg_Document->mp_Formats,ln);
+                        i = FindListEntry(&rxpage->pg_Document->mp_Formats,(struct MinNode *)ln);
                     }
                     else
                     {
@@ -2013,7 +2111,7 @@ void ASM handleCellIDCMP(REG(a0, struct TagItem *tag))
                     struct Node *ln,*font;
                     long   alignH,alignV,size,style,space,width,patcol,security;
                     WORD   rotate,shear;
-                    BYTE   iskomma,komma,pages = (BYTE)wd->wd_ExtData[2],kerning,pattern = -1;
+                    BYTE   iskomma,komma,pages = (BYTE)((long)wd->wd_ExtData[2]),kerning,pattern = -1;
 
                     /************* remember changes **************/
 
@@ -2028,7 +2126,7 @@ void ASM handleCellIDCMP(REG(a0, struct TagItem *tag))
 
                         if (GetCheckBoxFlag(PageGadget(cellPages[1],22),win,TRUE))
                         {
-                            pattern = (UBYTE)wd->wd_Data;
+                            pattern = (UBYTE)((long)wd->wd_Data);
                             patcol = (long)wd->wd_ExtData[7];
                         }
 
@@ -2247,7 +2345,11 @@ SetScriptText(struct winData *wd, struct RexxScript *rxs)
     if (!rxs)
         return;
 
+#ifdef __amigaos4__
+	if(t = (STRPTR)DoGadgetMethod (wd->wd_ExtData[1], wd->wd_Mother, NULL, GM_TEXTEDITOR_ExportText, NULL)){
+#else
 	if (GetAttr(EGA_Text, wd->wd_ExtData[1], (IPTR *)&t)) {
+#endif
         FreeRexxScriptData(rxs);
         rxs->rxs_Data = AllocString(t);
 		rxs->rxs_DataLength = zstrlen(t) + 1;
@@ -2274,11 +2376,15 @@ UpdateScriptsGadgets(struct Window *win, struct RexxScript *rxs)
 	if (rxs) {
         struct Mappe *mp = wd->wd_Data;
 
-		GT_SetGadgetAttrs(wd->wd_ExtData[0], win, NULL, GTLV_Selected, FindListEntry(&mp->mp_RexxScripts, rxs), TAG_END);
+		GT_SetGadgetAttrs(wd->wd_ExtData[0], win, NULL, GTLV_Selected, FindListEntry(&mp->mp_RexxScripts, (struct MinNode *)rxs), TAG_END);
 		GT_SetGadgetAttrs(GadgetAddress(win, 3), win, NULL, GA_Disabled, FALSE, TAG_END);
 		GT_SetGadgetAttrs(GadgetAddress(win, 4), win, NULL, GTST_String, rxs->rxs_Node.ln_Name, TAG_END);
 		GT_SetGadgetAttrs(GadgetAddress(win, 5), win, NULL, GTST_String, rxs->rxs_Description, GA_Disabled, FALSE, TAG_END);
+#ifdef __amigaos4__
+		SetGadgetAttrs (wd->wd_ExtData[1], win, NULL, GA_Disabled, FALSE, GA_TEXTEDITOR_Contents, rxs->rxs_Data, GA_TEXTEDITOR_CursorX, 0, GA_TEXTEDITOR_CursorY, 1, TAG_END);
+#else
 		SetGadgetAttrs(wd->wd_ExtData[1], win, NULL, EGA_Text, rxs->rxs_Data, GA_Disabled, FALSE, TAG_END);
+#endif
 		GT_SetGadgetAttrs(GadgetAddress(win, 7),win, NULL, GA_Disabled, FALSE, TAG_END);
 	} else {
 		GT_SetGadgetAttrs(GadgetAddress(win, 3),win, NULL, GA_Disabled, TRUE, TAG_END);

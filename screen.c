@@ -13,10 +13,10 @@
 void
 FreeArrows(void)
 {
-    DisposeObject(upImg);
-    DisposeObject(downImg);
-    DisposeObject(rightImg);
-    DisposeObject(leftImg);
+    DisposeObject((Object *)upImg);
+    DisposeObject((Object *)downImg);
+    DisposeObject((Object *)rightImg);
+    DisposeObject((Object *)leftImg);
 }
 
 
@@ -29,11 +29,11 @@ AllocArrows(void)
 				if ((downImg = (struct Image *)NewObject(NULL, "sysiclass", SYSIA_Which, DOWNIMAGE, SYSIA_DrawInfo, dri, TAG_END)) != 0)
                     return true;
 
-                DisposeObject(upImg);
+                DisposeObject((Object *)upImg);
             }
-            DisposeObject(leftImg);
+            DisposeObject((Object *)leftImg);
         }
-        DisposeObject(rightImg);
+        DisposeObject((Object *)rightImg);
     }
     return false;
 }
@@ -176,44 +176,63 @@ OpenAppScreen(void)
     struct Screen *scr = NULL;
     long   depth;
     struct Rectangle dims;
+     
+#ifdef __amigaos4__
+			ULONG dispid;
+#endif
 
 	switch (prefs.pr_Screen->ps_Type) {
         case PST_OWN:
             if ((scr = OpenScreenTags(NULL,SA_LikeWorkbench, TRUE,
                                           SA_PubName,       pubname,
 										  SA_Title,         SCREEN_TITLE,
-                                          SA_Interleaved,   TRUE,
-                                          SA_Colors32,      standardPalette,
+#ifndef __amigaos4__
+	                                      SA_Interleaved,   TRUE,
+	                                      SA_Colors32,      standardPalette,
+#endif
                                           SA_Font,          &prefs.pr_Screen->ps_TextAttr,
                                           SA_DisplayID,     prefs.pr_Screen->ps_ModeID,
                                           SA_Width,         prefs.pr_Screen->ps_Width,
                                           SA_Height,        prefs.pr_Screen->ps_Height,
                                           SA_Depth,         prefs.pr_Screen->ps_Depth,
+#ifndef __amigaos4__
                                           SA_BackFill,      prefs.pr_Screen->ps_BackFill ? &fillHook : NULL,
+#endif 
                                           SA_PubTask,       FindTask(NULL),
 										  SA_PubSig,        SIGBREAKB_CTRL_C,
                                           TAG_END)) != 0)
                 scr->UserData = (APTR)iport;
             break;
-        case PST_LIKEWB:
+        case PST_LIKEWB:            
 			if ((scr = LockPubScreen("Workbench")) != 0) {
 				// if the depth of the Workbench screen is lower than 3 (fewer than 8 colours),
 				// we will set our amount of colours to a minimum of 8 colours.
 				if ((depth = scr->RastPort.BitMap->Depth) < 3)
                     depth = 3;
+#ifdef __amigaos4__
+				dispid = GetVPModeID(&scr->ViewPort);
+#endif
+                    
 				UnlockPubScreen(NULL, scr);
             }
             if ((scr = OpenScreenTags(NULL,SA_LikeWorkbench, TRUE,
+#ifdef __amigaos4__
+                                          SA_DisplayID,     dispid,
+#endif
 										  SA_PubName,       pubname,
 										  SA_Title,         SCREEN_TITLE,
+#ifndef __amigaos4__
 	                                      SA_Interleaved,   TRUE,
 	                                      SA_Colors32,      standardPalette,
+#endif
 	                                      SA_Depth,         depth,
+#ifndef __amigaos4__
 	                                      SA_BackFill,      prefs.pr_Screen->ps_BackFill ? &fillHook : NULL,
+#endif
                                           SA_PubTask,       FindTask(NULL),
 										  SA_PubSig,        SIGBREAKB_CTRL_C,
 	                                      TAG_END)) != 0)
-                scr->UserData = (APTR)iport;
+            scr->UserData = (APTR)iport;
             break;
         case PST_PUBLIC:
             scr = LockPubScreen(prefs.pr_Screen->ps_PubName);
@@ -235,6 +254,8 @@ OpenAppScreen(void)
 			PubScreenStatus(scr, 0);
 			for (depth = 0; depth < 8; depth++) {
 				ObtainPen(scr->ViewPort.ColorMap, depth, 0, 0, 0, /*PEN_EXCLUSIVE |*/ PEN_NO_SETCOLOR);
+			//for (depth = 0; depth < 8; depth++) {
+				//ObtainPen(scr->ViewPort.ColorMap, depth, standardPalette[depth * 3 + 1], standardPalette[depth * 3 + 2], standardPalette[depth * 3 + 3], PEN_EXCLUSIVE | PEN_NO_SETCOLOR);
 			}
         }
         ObtainAppColors(scr,TRUE);

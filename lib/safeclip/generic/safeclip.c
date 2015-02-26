@@ -24,7 +24,11 @@ static LONG Clip2d (LONG n);
 ULONG SafeInit (ULONG nvertmax)
 {
 	clp_nvertmax = nvertmax;
+#ifdef __amigaos4__
+	clp_vert = AllocVecTags(nvertmax * sizeof(struct CLP_Vert), AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE );
+#else
 	clp_vert = AllocVec(nvertmax * sizeof(struct CLP_Vert), MEMF_ANY);
+#endif
 	if (clp_vert)
 		return 0;
 	else {

@@ -21,38 +21,55 @@
 #	include <pragmas/dos_pragmas.h>
 #endif
 
-#include <string.h>
-#include <math.h>
-/*#include <mieeedoub.h>*/
-
-struct Mappe;
-
+#ifndef __amigaos4__
+	#include <string.h>
+	#include <math.h>
+	/*#include <mieeedoub.h>*/
+	struct Mappe;
+	#include "SDI_compiler.h"
+#endif
 #include "iotype.h"
-#include "SDI_compiler.h"
 
 // Must always be in sync with the definition in io.h !!!
-
+#ifdef __amigaos4__
+	#ifdef __GNUC__
+		#ifdef __PPC__
+			#pragma pack(2)
+		#endif
+	#elif defined(__VBCC__)
+		#pragma amiga-align
+	#endif
+#endif
 struct IOType {
-  struct Node io_Node;
-  struct MinList io_Descr;
-  STRPTR io_Filename;
-  STRPTR io_Pattern;
-  ULONG  io_BytesUsed;
-  char   io_Bytes[32];
-  STRPTR io_OriginalBytes;
-  UBYTE  io_Flags;
-  BPTR   io_Segment;
-  long   ASM (*io_Load)(REG(d0, BPTR), REG(a0, struct Mappe *));
-  long   ASM (*io_Save)(REG(d0, BPTR), REG(a0, struct Mappe *));
-  long   ASM (*io_SetPrefs)(REG(a0, STRPTR));
-  STRPTR ASM (*io_GetPrefs)(void);
-  void   ASM (*io_OpenPrefsGUI)(REG(a0, struct Screen *));
-  void   ASM (*io_ClosePrefsGUI)(void);
-  STRPTR io_Short;
-  STRPTR io_Prefs;
-  STRPTR io_Suffix;
-  UBYTE  io_ReadOver;
-};
+	struct Node io_Node;
+	struct MinList io_Descr;
+	STRPTR io_Filename;
+	STRPTR io_Pattern;
+	ULONG  io_BytesUsed;
+	char   io_Bytes[32];
+	STRPTR io_OriginalBytes;
+	UBYTE  io_Flags;
+	BPTR   io_Segment;
+	long   ASM (*io_Load)(REG(d0, BPTR), REG(a0, struct Mappe *));
+	long   ASM (*io_Save)(REG(d0, BPTR), REG(a0, struct Mappe *));
+	long   ASM (*io_SetPrefs)(REG(a0, STRPTR));
+	STRPTR ASM (*io_GetPrefs)(void);
+	void   ASM (*io_OpenPrefsGUI)(REG(a0, struct Screen *));
+	void   ASM (*io_ClosePrefsGUI)(void);
+	STRPTR io_Short;
+	STRPTR io_Prefs;
+	STRPTR io_Suffix;
+	UBYTE  io_ReadOver;
+	};
+#ifdef __amigaos4__
+	#ifdef __GNUC__
+		#ifdef __PPC__
+			#pragma pack()
+		#endif
+	#elif defined(__VBCC__)
+		#pragma default-align
+	#endif
+#endif
 
 #define IOF_WRITEABLE 1
 #define IOF_READABLE 2
@@ -62,12 +79,20 @@ struct IOType {
 #define IOF_NODEFAULT 32
 
 
-struct ExecBase *SysBase;
-#ifndef __SASC
-struct Library *DOSBase;
+#ifdef __amigaos4__
+	struct ExecIFace *IExec;
+	struct DOSIFace *IDOS; 
+	struct UtilityIFace *IUtility;
+	struct LocaleIFace *ILocale;
+#else
+	struct ExecBase *SysBase;
+	#ifndef __SASC
+		struct Library *DOSBase;
+	#endif
+	struct Library *MathIeeeDoubBasBase, *MathIeeeDoubTransBase;
+	struct Library *UtilityBase, *LocaleBase;
 #endif
-struct Library *MathIeeeDoubBasBase, *MathIeeeDoubTransBase;
-struct Library *UtilityBase, *LocaleBase;
+
 APTR   pool, ioBase;
 
 /* Modul-Funktionen*/
@@ -80,6 +105,27 @@ extern UBYTE PUBLIC hasPrefsGUI(void);
 extern void PUBLIC openPrefsGUI(REG(a0, struct Screen *scr));
 extern void PUBLIC closePrefsGUI(void);
 
+#ifdef __amigaos4__
+__attribute__((used)) const LONG Version=1;
+
+
+__attribute__((used)) BOOL 
+InitModule(struct IOType *io, APTR *functable, APTR mainpool, 
+		struct ExecIFace *execIF, 
+		struct DOSIFace  *dosIF,
+		struct UtilityIFace *utilif,
+		struct LocaleIFace *localeif, 
+		APTR mathBase, 
+		APTR mathtransBase, 
+		long magic)
+{
+
+	//Library-Pointer
+	IExec = execIF;
+	IDOS = dosIF;
+	IUtility = utilif;
+	ILocale = localeif;
+#else
 #define MAKE_ID(a,b,c,d) ((a << 24) | (b << 16) | (c << 8) | d)
 
 BOOL PUBLIC
@@ -101,7 +147,7 @@ InitModule(REG(a0, struct IOType *io), REG(a1, APTR *functable), REG(a2, APTR ma
 	MathIeeeDoubBasBase = mathBase;
 	MathIeeeDoubTransBase = mathtransBase;
 	LocaleBase = localeBase;
-
+#endif
 	io->io_Load = load;
 	io->io_Save = save;
 	io->io_SetPrefs = setPrefs;
@@ -134,3 +180,11 @@ InitModule(REG(a0, struct IOType *io), REG(a1, APTR *functable), REG(a2, APTR ma
 	return TRUE;
 }
 
+#ifdef __amigaos4__
+LONG _start(STRPTR args, LONG arglen, struct ExecBase *SysBase)
+{
+  //For stupid users who started the lib from CLI
+
+  return RETURN_FAIL;
+}
+#endif

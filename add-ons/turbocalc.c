@@ -4,7 +4,12 @@
  * Licensed under the terms of the GNU General Public License, version 3.
  */
 
-#include <stdio.h>
+#ifdef __amigaos4__
+	#include <proto/exec.h>
+	#include <proto/utility.h>
+#else
+	#include <stdio.h>
+#endif
 
 #include "iotype.h"
 #include "turbocalc.h"
@@ -12,6 +17,10 @@
 
 extern APTR ioBase;
 
+#ifdef __amigaos4__
+	#undef  strlen
+	#define strlen  Strlen
+#endif
 
 const STRPTR __version = "$VER: turbocalc.io 0.2 (4.3.2001)";
 
@@ -51,11 +60,19 @@ ConvertTCFormula(struct Cell *c,STRPTR t,long len)
 				col = *(WORD *)(t+i+1);	row = *(WORD *)(t+i+3);	i += 4;
 				a = *(t+i) == 0x0a || *(t+i) == 0x08;
 				b = *(t+i) == 0x09 || *(t+i) == 0x08;
+#ifdef __amigaos4__
+				Strlcat(dest,Coord2String(a,(a ? 0 : c->c_Col)+col,b,(b ? 0 : c->c_Row)+row), len * 2);
+#else
 				strcat(dest,Coord2String(a,(a ? 0 : c->c_Col)+col,b,(b ? 0 : c->c_Row)+row));
+#endif
 			} else if (*(t+i) == 0x04) {
 				/* Function */
 				if (MapTCFuncs(*(t+ ++i)))
+#ifdef __amigaos4__
+					Strlcat(dest,MapTCFuncs(*(t+i)), len * 2);
+#else
 					strcat(dest,MapTCFuncs(*(t+i)));
+#endif
 			} else if (*(t+i) < ' ') {
 				D(bug("unknown: %ld\n",*(t+i)));
 				break;
@@ -87,6 +104,9 @@ load(REG(d0, BPTR dat), REG(a0, struct Mappe *mp))
 	double d;
 	UWORD w;
 	UBYTE b,*cell,ieeemode,r,g;
+#ifdef __amigaos4__
+	STRPTR sp;
+#endif
 
 	page = NewPage(mp);
 	while (FRead(dat,&th,sizeof(struct THeader),1)) {
@@ -158,15 +178,27 @@ load(REG(d0, BPTR dat), REG(a0, struct Mappe *mp))
 						switch(b)
 						{
 							case TCT_TIME:
+#ifdef __amigaos4__
+								sp = ASPrintf("%ld:%02ld:%02ld",(l/3600),((l/60) % 60),(l % 60));
+								c->c_Text = AllocString(sp);
+								FreeVec(sp);
+#else
 								sprintf(t,"%ld:%02ld:%02ld",l/3600,(l/60) % 60,l % 60);
 								c->c_Text = AllocString(t);
+#endif
 								break;
 							case TCT_FLOAT:
 								c->c_Text = AllocString(ita(d,-1,ITA_NONE));
 								break;
 							case TCT_INT:
+#ifdef __amigaos4__
+								sp = ASPrintf("%ld",l);
+								c->c_Text = AllocString(sp);
+								FreeVec(sp);
+#else
 								sprintf(t,"%ld",l);
 								c->c_Text = AllocString(t);
+#endif
 								break;
 							case TCT_DATE:
 								D(bug("date: %ld\n",l));

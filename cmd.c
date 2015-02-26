@@ -8,8 +8,12 @@
 #include "types.h"
 #include "funcs.h"
 
-
-#define ConsoleDevice conDevice
+#ifdef __amigaos4__
+	#include <devices/conunit.h>
+	struct ConsoleIFace *IConsole;
+#else
+	#define ConsoleDevice conDevice
+#endif
 
 struct Library *conDevice = NULL;
 struct Node **intCmdArray;
@@ -146,7 +150,6 @@ FindVanillaName(STRPTR t, UWORD code)
     return TRUE;
 }
 
-
 void
 SetAppKeyName(struct AppKey *ak)
 {
@@ -156,8 +159,16 @@ SetAppKeyName(struct AppKey *ak)
     UWORD  code,qual;
     UBYTE  t[64],buffer[8];
 
+#ifdef __amigaos4__
+	if (!ak || OpenDevice("console.device", CONU_LIBRARY, (struct IORequest *)&conReq, 0))
+    	return;
+    	
+    struct ConsoleDevice *ConsoleDevice = (struct ConsoleDevice *)conReq.io_Device;
+    IConsole = (struct ConsoleIFace*)GetInterface((struct Library*)ConsoleDevice, "main", 1, NULL);
+#else
     if (!ak || OpenDevice("console.device",-1,(struct IORequest *)&conReq,0))
         return;
+#endif
     if ((ievent = AllocPooled(pool, sizeof(struct InputEvent))) != 0)
     {
         conDevice = (struct Library *)conReq.io_Device;
@@ -242,8 +253,13 @@ SetAppKeyName(struct AppKey *ak)
         }
         ak->ak_Node.ln_Name = AllocString(t);
     }
+#ifdef __amigaos4__
+    DropInterface((struct Interface *)IConsole);
+    CloseDevice((struct IORequest *)&conReq);
+#else
     ConsoleDevice = NULL;
     CloseDevice((struct IORequest *)&conReq);
+#endif
 }
 
 
@@ -549,7 +565,7 @@ ProcessAppCmd(struct Page *page, STRPTR t)
     struct AppCmd *ac;
     struct Command *cmd,*scmd;
     struct List l;
-    BPTR   out = NULL;
+    BPTR   out = (BPTR)NULL;
 
     if (!t)
         return -1;
@@ -583,7 +599,11 @@ ProcessAppCmd(struct Page *page, STRPTR t)
                 RunRexxScript(RXS_EXTERN,cmd->cmd_Name);
                 break;
             case CMDT_DOS:
-                Execute(cmd->cmd_Name,NULL,rxout);
+#ifdef __amigaos4__
+				SystemTags((CONST_STRPTR)cmd->cmd_Name, SYS_Input, NULL, SYS_Output, rxout, TAG_DONE);
+#else
+                Execute((CONST_STRPTR)cmd->cmd_Name,(BPTR)NULL,rxout);
+#endif
                 break;
         }
     }

@@ -8,6 +8,10 @@
 #include "types.h"
 #include "funcs.h"
 
+#ifdef __amigaos4__
+	#include <stdarg.h>
+#endif
+
 
 extern struct MinList io_fvs;
 
@@ -28,7 +32,11 @@ FreeToolTypes(STRPTR *tooltype)
 STRPTR *
 AllocToolTypes(long num)
 {
+#ifdef __amigaos4__
+	return AllocVecTags((num + 1) * sizeof(STRPTR), AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE );
+#else
 	return AllocVec((num + 1) * sizeof(STRPTR), MEMF_CLEAR | MEMF_PUBLIC);
+#endif
 }
 
 
@@ -101,9 +109,27 @@ SetToolTypes(STRPTR name, STRPTR tt1, ...)
 	{
 		if ((tt = CopyToolTypes(oldtt = dio->do_ToolTypes)) != 0)
 		{
+#ifdef __amigaos4__
+			va_list args;
+			STRPTR varg, *tooltype2;
+			int8 i=0;
+			
+			va_start(args, tt1);
+
+			tooltype = &tt1;
+			while(*tooltype != (STRPTR)TAG_END)
+			{
+				varg = va_arg(args, STRPTR);
+				tooltype2 = &varg;
+				SetToolType(&tt,*tooltype,*tooltype2);
+				varg = va_arg(args, STRPTR);
+				tooltype = &varg;
+			}
+			va_end(args);
+#else
 			for(tooltype = &tt1;*tooltype;tooltype += 2)
 				SetToolType(&tt,*tooltype,*(tooltype+1));
-
+#endif
 			dio->do_ToolTypes = tt;
 			PutDiskObject(name,dio);
 			dio->do_ToolTypes = oldtt;
@@ -133,7 +159,7 @@ spDisp(struct IFFHandle *iff, struct Prefs *pr)
 	WriteChunkBytes(iff,&pr->pr_Disp->pd_FormBar,1);
 	WriteChunkBytes(iff,&pr->pr_Disp->pd_ShowAntis,1);
 
-	WriteChunkString(iff,pr->pr_Disp->pd_AntiAttr.ta_Name);
+	WriteChunkString(iff,(STRPTR)pr->pr_Disp->pd_AntiAttr.ta_Name);
 	store2 = WORD2BE(pr->pr_Disp->pd_AntiAttr.ta_YSize);
 	WriteChunkBytes(iff, &store2, 2);
 	PopChunk(iff);
@@ -193,7 +219,7 @@ spScreen(struct IFFHandle *iff)
 	store4 = LONG2BE(prefs.pr_Screen->ps_mmHeight);
 	WriteChunkBytes(iff, &store4, 4);
 
-	WriteChunkString(iff, prefs.pr_Screen->ps_TextAttr.ta_Name);
+	WriteChunkString(iff, (STRPTR)prefs.pr_Screen->ps_TextAttr.ta_Name);
 
 	store2 = WORD2BE(prefs.pr_Screen->ps_TextAttr.ta_YSize);
 	WriteChunkBytes(iff, &store2, 2);
@@ -300,8 +326,8 @@ spKeys(struct IFFHandle *iff,struct Prefs *pr)
 static void
 spMenu(struct IFFHandle *iff,struct Prefs *pr)
 {
-	struct AppMenu *am;
-	struct AppMenuEntry *ame,*same;
+	struct AppMenue *am;
+	struct AppMenueEntry *ame,*same;
 	UBYTE  type;
 
 	SetPrefsModule(pr,WDT_PREFMENU,FALSE);
@@ -435,7 +461,7 @@ spNames(struct IFFHandle *iff,struct Prefs *pr,struct MinList *list)
 		WriteChunkString(iff, nm->nm_Content);
 		WriteChunkBytes(iff, &nm->nm_Node.ln_Type, 1);
 		if (mp)
-			i = FindListEntry(&mp->mp_Pages, nm->nm_Page);
+			i = FindListEntry(&mp->mp_Pages, (struct MinNode *)nm->nm_Page);
 		else
 			i = 0L;
 		store4 = LONG2BE(i);
@@ -576,7 +602,7 @@ SavePrefs(struct Prefs *pr, STRPTR name, long flags)
 			PopChunk(iff);
 
 			CloseIFF(iff);
-			Close((void*)iff->iff_Stream);
+			Close((BPTR)iff->iff_Stream);
 		}
 		FreeIFF(iff);
 	}
@@ -611,7 +637,7 @@ lpDisp(struct IFFHandle *iff, LONG context, struct Prefs *pr)
 	if ((sp = FindProp(iff, context, ID_DISP)) != 0) {
 		lpPreamble(pr, WDT_PREFDISP, TRUE);
 
-		FreeString(pr->pr_Disp->pd_AntiAttr.ta_Name);
+		FreeString((STRPTR)pr->pr_Disp->pd_AntiAttr.ta_Name);
 
 		t = sp->sp_Data;
 		pr->pr_Disp->pd_Rasta = *t++;
@@ -639,7 +665,7 @@ lpScreen(struct IFFHandle *iff)
 	if ((sp = FindProp(iff, ID_IGNP, ID_SCREEN)) != 0) {
 		lpPreamble(&prefs, WDT_PREFSCREEN, TRUE);
 
-		FreeString(prefs.pr_Screen->ps_TextAttr.ta_Name);
+		FreeString((STRPTR)prefs.pr_Screen->ps_TextAttr.ta_Name);
 
 		t = sp->sp_Data;
 		prefs.pr_Screen->ps_Width = BE2WORD(*(UWORD *)t);
@@ -784,7 +810,7 @@ lpCmds(struct IFFHandle *iff, LONG context, struct Prefs *pr, BYTE add, BYTE kee
 				while((ac = (struct AppCmd *)MyRemHead(&list)) != 0)
 					FreeAppCmd(ac);
 			}
-			sortList(&pr->pr_AppCmds);
+			sortList(&pr->pr_AppCmds); // GURU-MELDUNG
 			UnlockList(&pr->pr_AppCmds,LNF_REFRESH);
 		}
 		RefreshPrefsModule(pr, NULL, WDT_PREFCMDS);
@@ -796,8 +822,8 @@ void
 lpMenu(struct IFFHandle *iff, LONG context, struct Prefs *pr)
 {
 	struct StoredProperty *sp;
-	struct AppMenu *am;
-	struct AppMenuEntry *ame,*same;
+	struct AppMenue *am;
+	struct AppMenueEntry *ame,*same;
 	STRPTR t;
 	long   pos = 0;
 
@@ -806,16 +832,16 @@ lpMenu(struct IFFHandle *iff, LONG context, struct Prefs *pr)
 		lpPreamble(pr,WDT_PREFMENU,TRUE);
 		FreeAppMenus(&pr->pr_AppMenus);
 
-		for(t = sp->sp_Data;sp->sp_Size-1 > pos;)
+		for(t = sp->sp_Data; sp->sp_Size-1 > pos;)
 		{
-			if (*t == NM_TITLE && (am = AllocPooled(pool,sizeof(struct AppMenu))))
+			if (*t == NM_TITLE && (am = AllocPooled(pool,sizeof(struct AppMenue))))
 			{
 				am->am_Node.ln_Name = AllocString(t+1);
 				pos += strlen(t+1)+2;  t = pos+(UBYTE *)sp->sp_Data;
 				MyNewList(&am->am_Items);
 				MyAddTail(&pr->pr_AppMenus, am);
 			}
-			if (*t == NM_ITEM && am && (ame = AllocPooled(pool,sizeof(struct AppMenuEntry))))
+			if (*t == NM_ITEM && am && (ame = AllocPooled(pool,sizeof(struct AppMenueEntry))))
 			{
 				ame->am_Node.ln_Name = AllocString(t+1);
 				pos += strlen(t+1)+2;  t = pos+(UBYTE *)sp->sp_Data;
@@ -826,7 +852,7 @@ lpMenu(struct IFFHandle *iff, LONG context, struct Prefs *pr)
 				MyNewList(&ame->am_Subs);
 				MyAddTail(&am->am_Items, ame);
 			}
-			if (*t == NM_SUB && am && ame && (same = AllocPooled(pool,sizeof(struct AppMenuEntry))))
+			if (*t == NM_SUB && am && ame && (same = AllocPooled(pool,sizeof(struct AppMenueEntry))))
 			{
 				same->am_Node.ln_Name = AllocString(t+1);
 				pos += strlen(t+1)+2;  t = pos+(UBYTE *)sp->sp_Data;
@@ -926,10 +952,11 @@ lpIcon(struct IFFHandle *iff, LONG context, struct Prefs *pr)
 			{
 				if (*t)
 				{
-					struct AppCmd *ac = (APTR)MyFindName(&pr->pr_AppCmds, t);
+					struct AppCmd *ac = (APTR)MyFindName(&(pr->pr_AppCmds), t);
 
 					if (!ac && pr != &prefs)
 						ac = (APTR)MyFindName(&prefs.pr_AppCmds, t);
+
 					AddIconObj(&pr->pr_IconObjs,ac,-1);
 				}
 				else
@@ -1020,14 +1047,14 @@ lpFormat(struct IFFHandle *iff, LONG context, struct Prefs *pr, struct MinList *
 
 		for (fv = (APTR)pr->pr_Formats.mlh_Head; (nfv = (APTR)fv->fv_Node.ln_Succ); fv = nfv)  // Vergleich über zwei sortierte Listen
 		{
-			while (sfv->fv_Node.ln_Succ && FormatSort(&sfv, &fv) < 0) {
+			while (sfv->fv_Node.ln_Succ && FormatSort((struct Node **)&sfv, (struct Node **)&fv) < 0) {
 				sfv = (APTR)sfv->fv_Node.ln_Succ;
 			}
   
 			if (!sfv->fv_Node.ln_Succ)
 				break;
  
-			if (!FormatSort(&sfv, &fv)
+			if (!FormatSort((struct Node **)&sfv, (struct Node **)&fv)
 				&& sfv->fv_Alignment == fv->fv_Alignment
 				&& sfv->fv_Flags == fv->fv_Flags
 				&& sfv->fv_Komma == fv->fv_Komma
@@ -1214,7 +1241,8 @@ LoadPrefsWithHandle(struct IFFHandle *iff, struct Prefs *pr, long flags)
 	lpKeys(iff, ID_IGNP, pr);
 	lpCmds(iff, ID_IGNP, pr, add, keep);
 	lpMenu(iff, ID_IGNP, pr);
-	lpIcon(iff, ID_IGNP, pr);
+	lpIcon(iff, ID_IGNP, pr); //GURU-MELDUNG
+
 	lpFile(iff);
 	lpFormat(iff, ID_IGNP, pr, NULL);
 	lpNames(iff, ID_IGNP, pr);
@@ -1242,7 +1270,7 @@ LoadPrefs(struct Prefs *prefs, STRPTR name, BPTR lock, long flags)
 			CloseIFF(iff);
 			rc = TRUE;
 		}
-		Close((void*)iff->iff_Stream);
+		Close((BPTR)iff->iff_Stream);
 	}
 	else if (!name && lock)
 		UnLock(lock);

@@ -10,45 +10,39 @@
 ** All Rights Reserved
 */
 
-
 #include <utility/tagitem.h>
 #include <intuition/intuition.h>
-#include <libraries/gtdrag.h>
+
+#ifdef __amigaos4__
+	#include "../libs/gtdrag-OS4/include/libraries/gtdrag.h"
+#else
+	#include <libraries/gtdrag.h>
+#endif
 
 #include <proto/graphics.h>
 #include <proto/utility.h>
 #include <proto/locale.h>
 
-#include "SDI_compiler.h"
+#ifndef __amigaos4__
+	#include "SDI_compiler.h"
+#endif
 
 extern APTR gcBase;
 
 #ifndef CELL_H
-#include "cell.h"
+	#include "cell.h"
 #endif
-
 
 /*** class ***/
-
-struct gClass
-{
-  struct ImageNode gc_Node;   /* Name und Icon (nur für nicht Diagramme) */
-  struct gClass *gc_Super;    /* Zeiger zur Super-Klasse */
-  ULONG  gc_InstOffset;
-  ULONG  gc_InstSize;
-  ULONG  gc_Flags;
-  struct gInterface *gc_Interface;
-#if 0
-  BPTR   gc_Segment;
-  ULONG  ASM (*gc_Dispatch)(REG(a0, struct gClass *), REG(a2, APTR), REG(a1, Msg));
-  ULONG  ASM (*gc_Draw)(REG(a0, struct Page *), REG(a1, struct gObject *), REG(a2, struct RastPort *), REG(d0, long), REG(d1, long));
-  ULONG  (*gc_FreeClass)(void);
-  STRPTR gc_ClassName;        /* interner Zugriff (Dateiname) */
+#ifdef __amigaos4__
+	#ifdef __GNUC__
+		#ifdef __PPC__
+			#pragma pack(2)
+		#endif
+	#elif defined(__VBCC__)
+		#pragma amiga-align
+	#endif
 #endif
-};
-
-#define GINST_DATA(gc,go) (APTR)((UBYTE *)(go)+((struct gClass *)gc)->gc_InstOffset)
-
 
 /*** object base ***/
 
@@ -70,6 +64,11 @@ struct gObject
   LONG   go_Pos;              /* <- eher Unique-ID mit Liste */
   struct MinList go_ReferencedBy;
 };
+
+
+#define GINST_DATA(gc,go) (APTR)((UBYTE *)(go)+((struct gClass *)gc)->gc_InstOffset)
+
+
 
 #define GOF_SELECTED 1
 #define GOF_CONTINUALCMD 2
@@ -138,7 +137,7 @@ struct gcpSetLinkAttr  /* GCDM_SETLINKATTR */
 struct gInterface
 {
   ULONG  gi_Tag;         /* eigener oder vordefinierter Tag für GCM_SET/GCM_GET */
-  CONST_STRPTR gi_Label; /* Bezeichner beim Gadget */
+  STRPTR gi_Label; 	/* Bezeichner beim Gadget */
   ULONG  gi_Type;        /* Typ des Gadgets (Checkbox, Cycle, String, ...) */
   APTR   gi_Special;     /* z.B. Auswahl bei Cycle-Gadgets */
   STRPTR gi_Name;        /* für REXX/Funktions-Interface */
@@ -377,14 +376,32 @@ struct gcapGetBorders
   LONG   *gcap_StorageLeft,*gcap_StorageRight,*gcap_StorageYOrigin;
 };
 
-struct gcapGetCoord
-{
-  ULONG  MethodID;
-  double gcap_Y;      // value to transform
-  LONG   gcap_Row;    // row of value
-  LONG   gcap_Scale;  // which scale to use (1 or 2) (not yet implemented)
+#ifdef __amigaos4__
+#ifdef __GNUC__
+   #ifdef __PPC__
+    #pragma pack()
+   #endif
+#elif defined(__VBCC__)
+   #pragma default-align
+#endif
+#endif
+
+struct gcapGetCoord {
+ULONG  MethodID;
+double gcap_Y;// value to transform
+LONG   gcap_Row;// row of value
+LONG   gcap_Scale;// which scale to use (1 or 2) (not yet implemented)
 };
 
+#ifdef __amigaos4__
+#ifdef __GNUC__
+   #ifdef __PPC__
+    #pragma pack(2)
+   #endif
+#elif defined(__VBCC__)
+   #pragma amiga-align
+#endif
+#endif
 /** Axes - Attributes **/
 
 #define GAA_TagBase     GOA_TagBase+100
@@ -402,5 +419,47 @@ struct gcapGetCoord
 // suggested offset between different depths
 #define GA_DEPTH_OFFSET 1536
 
+struct gClass
+{
+  struct ImageNode gc_Node;   /* Name und Icon (nur für nicht Diagramme) */
+  struct gClass *gc_Super;    /* Zeiger zur Super-Klasse */
+  ULONG  gc_InstOffset;
+  ULONG  gc_InstSize;
+  ULONG  gc_Flags;
+  struct gInterface *gc_Interface;
+#if 0
+  BPTR   gc_Segment;
+  ULONG  ASM (*gc_Dispatch)(REG(a0, struct gClass *), REG(a2, APTR), REG(a1, Msg));
+  ULONG  ASM (*gc_Draw)(REG(a0, struct Page *), REG(a1, struct gObject *), REG(a2, struct RastPort *), REG(d0, long), REG(d1, long));
+  ULONG  (*gc_FreeClass)(void);
+  STRPTR gc_ClassName;        /* interner Zugriff (Dateiname) */
+#endif
+#ifdef __amigaos4__
+  BPTR   gc_Segment;
+  ULONG  ASM (*gc_Dispatch)(REG(a0, struct gClass *), REG(a2, APTR), REG(a1, /*Msg*/APTR));
+  ULONG  ASM (*gc_Draw)(REG(d0, struct Page *), REG(d1, ULONG), REG(a0, struct RastPort *), REG(a1, struct gClass *), REG(a2, struct gObject *), REG(a3, struct gBounds *));
+  ULONG  ASM (*gc_FreeClass)(REG(a0, struct gClass *));
+  STRPTR gc_ClassName;        /* interner Zugriff (Dateiname) */
+#endif
+};
+
+#ifdef __amigaos4__
+	#ifdef __GNUC__
+		#ifdef __PPC__
+			#pragma pack()
+		#endif
+	#elif defined(__VBCC__)
+		#pragma default-align
+	#endif
+#endif
+
+#ifdef __amigaos4__
+	#define PUBLIC
+	extern struct ExecIFace *IExec;
+	extern struct DOSIFace *IDOS; 
+	extern struct UtilityIFace *IUtility;
+	extern struct LocaleIFace *ILocale;
+	//extern struct GraphicIFace * IGraphics;
+#endif
 #endif  /* GCLASS_H */
 

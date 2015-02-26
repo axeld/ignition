@@ -26,7 +26,7 @@ fillHookFunc(REG(a0, struct Hook *h), REG(a2, struct RastPort *rastp), REG(a1, s
 {
 	if (prefs.pr_Screen->ps_BackFill) {
 		rect = (struct Rectangle *)((ULONG *)rect + 1);
-		RectFill(&scrRp,rect->MinX,rect->MinY,rect->MaxX,rect->MaxY);
+		//RectFill(&scrRp,rect->MinX,rect->MinY,rect->MaxX,rect->MaxY); //GURU-MELDUNG
 	}
 }
 
@@ -64,7 +64,7 @@ WriteHookText(struct RastPort *rp, struct Rectangle *bounds, STRPTR name, ULONG 
 	ULONG  fit;
 	WORD   x,y,slack;
 
-	fit = TextFit(rp,name,name ? strlen(name) : 0,&extent,NULL,1,bounds->MaxX-bounds->MinX-5,bounds->MaxY-bounds->MinY+1);
+	fit = TextFit(rp, name, (name ? strlen(name) : 0), &extent, NULL, 1, bounds->MaxX-bounds->MinX-5, bounds->MaxY-bounds->MinY+1);
 	slack = (bounds->MaxY - bounds->MinY) - (extent.te_Extent.MaxY - extent.te_Extent.MinY);
 
 	x = bounds->MinX - extent.te_Extent.MinX + 4;

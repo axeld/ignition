@@ -8,7 +8,7 @@
 #include "types.h"
 #include "funcs.h"
 #include "classes.h"
-#include "safeclip.h"
+//#include "lib/safeclip/sasc-68k/safeclip.h"
 
 #define AREABUFFERS 300
 
@@ -20,6 +20,76 @@ static struct AreaInfo sAreaInfo;
 static PLANEPTR sTempBitmap = NULL;
 static APTR *sAreaBuffer = NULL;
 
+#ifdef __amigaos4__
+
+#define PI 3.14159265
+#define DEGREE_STEPS PI/128
+double
+gcalcllength(double vx, double vy)
+{
+    return sqrt(vx*vx + vy*vy);
+}
+
+void
+gAreaArcMove(struct RastPort *rp, long x, long y, long xradius, long yradius, double degree)
+{
+    gAreaDraw(rp, (long)(x + sin(degree) * xradius + 0.5), (long)(y + cos(degree) * yradius + 0.5));
+}
+
+
+void
+gAreaArc(struct RastPort *rp, long x, long y, long xradius, long yradius, double degree)
+{
+    gAreaDraw(rp, (long)(x + sin(degree) * xradius + 0.5), (long)(y + cos(degree) * yradius + 0.5));
+}
+
+
+void
+DrawArc(struct RastPort *rp, long x, long y, long xradius, long yradius, double start, double end)
+{
+    double degree;
+
+    start = start * PI / 180.0;
+    end = end * PI / 180.0;
+
+    gAreaMove(rp, x, y);
+
+	for (degree = start; degree < end; degree += DEGREE_STEPS) {
+        gAreaArc(rp, x, y, xradius, yradius, degree);
+    }
+
+    if (degree > end)
+        gAreaArc(rp, x, y, xradius, yradius, end);
+
+    gAreaEnd(rp);
+}
+
+
+void
+drawSide(struct RastPort *rp, long x, long y, long xradius, long yradius, long height, double start, double end)
+{
+    double degree;
+
+    start = start * PI / 180.0;
+    end = end * PI / 180.0;
+
+    gAreaArcMove(rp, x, y + height, xradius, yradius, start);
+    gAreaArc(rp, x, y, xradius, yradius, start);
+
+    for (degree = start; degree < end; degree += DEGREE_STEPS)
+        gAreaArc(rp, x, y, xradius, yradius, degree);
+
+    if (degree > end)
+        gAreaArc(rp, x, y, xradius, yradius, end);
+
+    gAreaArc(rp, x, y + height, xradius, yradius, end);
+
+    for (degree = end; degree > start; degree -= DEGREE_STEPS)
+        gAreaArc(rp, x, y + height, xradius, yradius, degree);
+
+    gAreaEnd(rp);
+}
+#endif
 
 void
 gInitArea(long xmin, long ymin, long xmax, long ymax)
@@ -147,7 +217,11 @@ MakeTmpRas(long width, long height)
 	long bytes = ((width + 15) >> 3)*height;
 
 	FreeTmpRas();
+#ifdef __amigaos4__
+	if ((sTempBitmap = AllocVecTags(bytes, AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE)) != 0)
+#else
 	if ((sTempBitmap = AllocVec(bytes, MEMF_CHIP | MEMF_CLEAR)) != 0)
+#endif
 	{
 		InitTmpRas(&sTempRaster, sTempBitmap, bytes);
 		grp->TmpRas = &sTempRaster;
@@ -245,6 +319,16 @@ InitGraphics(void)
 		AddColor(&colors, NULL,  97,  97,  97);   // dark grey
 	}
 
+	//Standardfarben für ignition GUI setzen
+#ifdef __amigaos4__
+	struct Screen *scr;
+	
+	if ((scr = LockPubScreen("Workbench")) != 0) {
+		GetRGB32(scr->ViewPort.ColorMap,0,8,(ULONG *)&standardPalette[1]);
+		UnlockPubScreen(NULL, scr);
+        }
+#endif
+	
 	MyNewList(&scrcolors);
 	for (i = 0; i < 8; i++) {
 		if ((cp = AllocPooled(pool, sizeof(struct colorPen))) != 0) {
@@ -308,6 +392,13 @@ const APTR gClassFuncTable[] = {
 	/* 32 */ FreeString,
 	/* 33 */ AllocString,
 	/* 34 */ AllocStringLength,
+#ifdef __amigaos4__
+	/* 35 */ gAreaArcMove,
+	/* 36 */ gAreaArc,
+	/* 37 */ DrawArc,
+	/* 38 */ drawSide,
+	/* 39 */ gcalcllength,
+#endif
 	NULL
 };
 

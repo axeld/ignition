@@ -7,6 +7,9 @@
 
 #include "types.h"
 #include "funcs.h"
+#ifdef __amigaos4__
+	#include <proto/gtdrag.h>
+#endif
 
 
 void PUBLIC ProjectsMenuLock(REG(a0, struct LockNode *ln), REG(a1, struct MinNode *node), REG(d0, UBYTE flags));
@@ -19,7 +22,7 @@ long cmis_num;
 bool
 CheckMenuItemSpecial(struct MenuItem *item, STRPTR t)
 {
-	struct AppMenuEntry *ame;
+	struct AppMenueEntry *ame;
 	long   len;
 	STRPTR s;
 
@@ -123,7 +126,7 @@ FreeMenuList(struct MenuSpecial *ms)
 		next = item->NextItem;
 
 		if (item->Flags & ITEMTEXT) {
-			FreeString(((struct IntuiText *)item->ItemFill)->IText);
+			FreeString((STRPTR)((struct IntuiText *)item->ItemFill)->IText);
 			FreePooled(pool, item->ItemFill, sizeof(struct IntuiText));
 		}
 		FreePooled(pool, item, sizeof(struct SpecialMenuItem));
@@ -139,7 +142,7 @@ FindSpecialMenuItem(struct MenuItem *first, STRPTR label)
 	while (item) {
 		// ToDo: check item type
 		//if (item->
-		if (!zstrcmp(((struct IntuiText *)item->ItemFill)->IText, label))
+		if (!zstrcmp((STRPTR)((struct IntuiText *)item->ItemFill)->IText, label))
 			return item;
 
 		item = item->NextItem;
@@ -192,7 +195,11 @@ MakeMenuList(struct MinList *list, APTR parent, UBYTE type, ULONG id, struct Men
 							pathSource = ((struct Mappe *)ln)->mp_Path;
 						
 						if (pathSource != NULL)
+#ifdef __amigaos4__
+							Strlcpy(path, pathSource, sizeof(path));
+#else
 							stccpy(path, pathSource, sizeof(path));
+#endif
 						else
 							path[0] = '\0';
 					}
@@ -330,8 +337,8 @@ ProjectsMenuLock(REG(a0, struct LockNode *ln), REG(a1, struct MinNode *node), RE
 void
 FreeAppMenus(struct MinList *l)
 {
-	struct AppMenu *am;
-	struct AppMenuEntry *ame,*same;
+	struct AppMenue *am;
+	struct AppMenueEntry *ame,*same;
 
 	while ((am = (APTR)MyRemHead(l)) != 0)
 	{
@@ -341,14 +348,14 @@ FreeAppMenus(struct MinList *l)
 			{
 				FreeString(same->am_Node.ln_Name);
 				FreeString(same->am_AppCmd);
-				FreePooled(pool,same,sizeof(struct AppMenuEntry));
+				FreePooled(pool,same,sizeof(struct AppMenueEntry));
 			}
 			FreeString(ame->am_Node.ln_Name);
 			FreeString(ame->am_AppCmd);
-			FreePooled(pool,ame,sizeof(struct AppMenuEntry));
+			FreePooled(pool,ame,sizeof(struct AppMenueEntry));
 		}
 		FreeString(am->am_Node.ln_Name);
-		FreePooled(pool,am,sizeof(struct AppMenu));
+		FreePooled(pool,am,sizeof(struct AppMenue));
 	}
 }
 
@@ -356,15 +363,15 @@ FreeAppMenus(struct MinList *l)
 void
 CopyAppMenus(struct MinList *from,struct MinList *to)
 {
-	struct AppMenu *am,*sam;
-	struct AppMenuEntry *ame,*same,*mame,*smame;
+	struct AppMenue *am,*sam;
+	struct AppMenueEntry *ame,*same,*mame,*smame;
 
 	if (!from || !to)
 		return;
 
 	foreach(from,am)
 	{
-		if ((sam = AllocPooled(pool,sizeof(struct AppMenu))) != 0)
+		if ((sam = AllocPooled(pool,sizeof(struct AppMenue))) != 0)
 		{
 			sam->am_Node.ln_Name = AllocString(am->am_Node.ln_Name);
 			MyNewList(&sam->am_Items);
@@ -372,7 +379,7 @@ CopyAppMenus(struct MinList *from,struct MinList *to)
 
 			foreach(&am->am_Items,ame)
 			{
-				if ((same = AllocPooled(pool,sizeof(struct AppMenuEntry))) != 0)
+				if ((same = AllocPooled(pool,sizeof(struct AppMenueEntry))) != 0)
 				{
 					same->am_Node.ln_Name = AllocString(ame->am_Node.ln_Name);
 					same->am_AppCmd = AllocString(ame->am_AppCmd);
@@ -382,7 +389,7 @@ CopyAppMenus(struct MinList *from,struct MinList *to)
 
 					foreach(&ame->am_Subs,mame)
 					{
-						if ((smame = AllocPooled(pool,sizeof(struct AppMenuEntry))) != 0)
+						if ((smame = AllocPooled(pool,sizeof(struct AppMenueEntry))) != 0)
 						{
 							smame->am_Node.ln_Name = AllocString(mame->am_Node.ln_Name);
 							smame->am_AppCmd = AllocString(mame->am_AppCmd);
@@ -403,27 +410,26 @@ CreateAppMenu(struct Prefs *pr)
 {
 	struct Menu *menu = NULL;
 	struct NewMenu *nmenu;
-	struct AppMenu *am;
-	struct AppMenuEntry *amItem,*amSub;
+	struct AppMenue *am;
+	struct AppMenueEntry *amItem,*amSub;
 	long   i = 1;
 
 	/** NewMenu-Arraygröße berechnen **/
 
-	for(am = (struct AppMenu *)pr->pr_AppMenus.mlh_Head;am->am_Node.ln_Succ;i++, am = (struct AppMenu *)am->am_Node.ln_Succ)
-		for(amItem = (struct AppMenuEntry *)am->am_Items.mlh_Head;amItem->am_Node.ln_Succ;i++, amItem = (struct AppMenuEntry *)amItem->am_Node.ln_Succ)
-			for(amSub = (struct AppMenuEntry *)amItem->am_Subs.mlh_Head;amSub->am_Node.ln_Succ;i++, amSub = (struct AppMenuEntry *)amSub->am_Node.ln_Succ);
+	for(am = (struct AppMenue *)pr->pr_AppMenus.mlh_Head;am->am_Node.ln_Succ;i++, am = (struct AppMenue *)am->am_Node.ln_Succ)
+		for(amItem = (struct AppMenueEntry *)am->am_Items.mlh_Head;amItem->am_Node.ln_Succ;i++, amItem = (struct AppMenueEntry *)amItem->am_Node.ln_Succ)
+			for(amSub = (struct AppMenueEntry *)amItem->am_Subs.mlh_Head;amSub->am_Node.ln_Succ;i++, amSub = (struct AppMenueEntry *)amSub->am_Node.ln_Succ);
 
 	/** Array nach Preferences füllen **/
 
 	if ((nmenu = AllocPooled(pool, sizeof(struct NewMenu) * i)) != 0)
 	{
-		for(i = 0,am = (struct AppMenu *)pr->pr_AppMenus.mlh_Head;am->am_Node.ln_Succ;i++, am = (struct AppMenu *)am->am_Node.ln_Succ)
+		for(i = 0,am = (struct AppMenue *)pr->pr_AppMenus.mlh_Head;am->am_Node.ln_Succ;i++, am = (struct AppMenue *)am->am_Node.ln_Succ)
 		{
 			(*(nmenu+i)).nm_Type = NM_TITLE;
 			(*(nmenu+i)).nm_Label = am->am_Node.ln_Name;
 			(*(nmenu+i)).nm_Flags = 0;
 			(*(nmenu+i)).nm_MutualExclude = 0;
-
 			foreach(&am->am_Items,amItem)
 			{
 				i++;
@@ -519,7 +525,7 @@ RefreshMenu(struct Prefs *pr)
 void
 HandleMenu(void)
 {
-	struct AppMenuEntry *ame;
+	struct AppMenueEntry *ame;
 	struct MenuItem *item;
 
 	if ((item = ItemAddress(imsg.IDCMPWindow->MenuStrip,imsg.Code)) != 0) {

@@ -16,9 +16,13 @@ void
 FreeImageObj(struct ImageObj *io)
 {
 	if (io->io_Image->Depth == CUSTOMIMAGEDEPTH)
-		DisposeObject(io->io_Image);
+		DisposeObject((Object *)io->io_Image);
 	else {
+#ifdef __amigaos4__
+		FreeVec(io->io_Image->ImageData);
+#else
 		FreeMem(io->io_Image->ImageData, (((io->io_Image->Width + 15) >> 4) << 1) * io->io_Image->Height * 3);
+#endif
 		FreePooled(pool, io->io_Image, sizeof(struct Image));
 	}
 	FreeString(io->io_Node.ln_Name);
@@ -78,27 +82,44 @@ AddImageObj(STRPTR t, struct Image *im)
 struct Image *
 InternalLoadImage(STRPTR t)
 {
+#ifdef __amigaos4__
+	struct ExamineData *edata;
+#else
 	struct FileInfoBlock ALIGNED fib;
+#endif
 	struct Image *im;
 	long w, h, width;
 	STRPTR buffer;
 	APTR data;
 	BPTR dat;
 
-	if ((im = NewObject(pictureiclass, NULL, DTA_Name, t, PIA_DelayLoad, TRUE, TAG_END)) != 0)
+	if ((im = (struct Image *)NewObject(pictureiclass, NULL, DTA_Name, t, PIA_DelayLoad, TRUE, TAG_END)) != 0)
 		AddImageObj(t, im);
+#ifdef __amigaos4__
+	else if ((dat = Open(t, MODE_OLDFILE)) && (edata = ExamineObjectTags(EX_FileHandleInput, dat, TAG_END))) {
+		/* TODO: remove this?? */
+		if ((buffer = AllocPooled(pool, edata->FileSize)) != 0) {
+			if (edata->FileSize == Read(dat, buffer, edata->FileSize)) {
+				Close(dat);  dat = (BPTR)NULL;
+#else
 	else if ((dat = Open(t, MODE_OLDFILE)) && ExamineFH(dat, &fib)) {
 		/* TODO: remove this?? */
 		if ((buffer = AllocPooled(pool, fib.fib_Size)) != 0) {
 			if (fib.fib_Size == Read(dat, buffer, fib.fib_Size)) {
-				Close(dat);  dat = NULL;
+				Close(dat);  dat = (BPTR)NULL;
+#endif
 				if (!strncmp(buffer, "ign-icon", 8)) {
 					// special ignition icon
 
 					width = *(long *)(buffer + 8);
 					w = ((width+15) >> 4) << 1;
 					h = *(long *)(buffer+12);
+#ifdef __amigaos4__
+					if ((data = AllocVecTags(w * h * 3, AVT_Type, MEMF_CHIP, AVT_ClearWithValue, 0, TAG_DONE )) != 0) {
+				
+#else
 					if ((data = AllocMem(w*h*3,MEMF_CLEAR | MEMF_CHIP)) != 0) {
+#endif
 						CopyMem(buffer + 16, data, w * h * 3);
 
 						if ((im = AllocPooled(pool, sizeof(struct Image))) != 0) {
@@ -109,16 +130,28 @@ InternalLoadImage(STRPTR t)
 							im->PlanePick = 0x0007;
 							im->PlaneOnOff = 0x0000;
 							if (AddImageObj(t, im)) {
+#ifdef __amigaos4__
+								FreePooled(pool, buffer, edata->FileSize);
+#else
 								FreePooled(pool, buffer, fib.fib_Size);
+#endif
 								return im;
 							}
 							FreePooled(pool, im, sizeof(struct Image));
 						}
+#ifdef __amigaos4__
+						FreeVec(data);
+#else
 						FreeMem(data, w * h * 3);
+#endif
 					}
 				}
 			}
-			FreePooled(pool, buffer, fib.fib_Size);
+#ifdef __amigaos4__
+		FreePooled(pool, buffer, edata->FileSize);
+#else
+		FreePooled(pool, buffer, fib.fib_Size);
+#endif
 		}
 		if (dat)
 			Close(dat);
@@ -160,10 +193,10 @@ FreeImages(void)
 {
 	long i;
 
-	DisposeObject(popImage);
+	DisposeObject((Object *)popImage);
 
 	for (i = 0; i < 9; i++) {
-		DisposeObject(toolImage[i]);
+		DisposeObject((Object *)toolImage[i]);
 	}
 }
 
@@ -196,7 +229,7 @@ AllocBitmapImage(struct Screen *screen, struct BitMap **bmA, struct BitMap **bmB
 		if ((*bmB = AllocBitMap(width, height, depth, BMF_MINPLANES, screen->RastPort.BitMap)) != 0) {
 			struct Image *img;
 
-			if ((img = NewObject(bitmapiclass, NULL,
+			if ((img = (struct Image *)NewObject(bitmapiclass, NULL,
 						IA_Width,           width,
 						IA_Height,          height,
 						BIA_Bitmap,         *bmA,

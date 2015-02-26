@@ -17,7 +17,17 @@
 
 
 /*************************** formats ***************************/
-
+/*
+#ifdef __amigaos4__
+	#ifdef __GNUC__
+		#ifdef __PPC__
+			#pragma pack(2)
+		#endif
+	#elif defined(__VBCC__)
+		#pragma amiga-align
+	#endif
+#endif
+*/
 struct FormatVorlage
 {
   struct Node fv_Node;
@@ -25,6 +35,7 @@ struct FormatVorlage
   BYTE   fv_Alignment;
   BYTE   fv_Flags;
   ULONG  fv_NegativePen;
+  BYTE   fv_Komma;
 };
 
 /* fv_Node.ln_Pri -> Kommas */
@@ -49,6 +60,8 @@ struct tableSize
 {
   UWORD ts_Pixel;
   ULONG ts_mm;
+  STRPTR ts_Title;
+  struct Cell *ts_Cell;
 };
 
 struct Cell
@@ -112,7 +125,16 @@ struct coordPkt
  * X,Y,W,H - geben Werte in Pixeln an
  * Col,Row,Width,Height - in Felderpositionen
  */
-
-
+/*
+#ifdef __amigaos4__
+	#ifdef __GNUC__
+		#ifdef __PPC__
+			#pragma pack()
+		#endif
+	#elif defined(__VBCC__)
+		#pragma default-align
+	#endif
+#endif
+*/
 #endif  /* CELL_H */
 

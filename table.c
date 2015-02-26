@@ -8,7 +8,11 @@
 #include "types.h"
 #include "funcs.h"
 
-#define TRACE_TABLE 0
+#ifdef __amigaos4__
+	#include <clib/macros.h>
+#endif
+
+#define TRACE_TABLE 1
 #if TRACE_TABLE
 #	define TRACE(x) D(bug x)
 #else
@@ -56,6 +60,7 @@ AllocTableSize(REG(a0, struct Page *page), REG(d0, long w),REG(d1, long h))
 			(page->pg_tfWidth+i)->ts_Pixel = page->pg_StdWidth;
 			(page->pg_tfWidth+i)->ts_mm = page->pg_mmStdWidth;
 		}
+//for(i = 0;i < w;i++)
 		if (tsw)
 		{
 			CopyMem(tsw,page->pg_tfWidth,sizeof(struct tableSize)*page->pg_Cols);
@@ -70,6 +75,7 @@ AllocTableSize(REG(a0, struct Page *page), REG(d0, long w),REG(d1, long h))
 			(page->pg_tfHeight+i)->ts_Pixel = page->pg_StdHeight;
 			(page->pg_tfHeight+i)->ts_mm = page->pg_mmStdHeight;
 		}
+//for(i = 0;i < h;i++)
 		if (tsh)
 		{
 			CopyMem(tsh,page->pg_tfHeight,sizeof(struct tableSize)*page->pg_Rows);
@@ -184,7 +190,6 @@ SetBorder(struct Page *page,BOOL block,long col,long point,long col1,long point1
 
 	if (!page)
 		return;
-
 	BeginUndo(page,UNDO_BLOCK,GetString(&gLocaleInfo, MSG_CHANGE_FRAME_UNDO));
 	if (block && (page->pg_MarkCol != -1 || page->pg_Gad.tf))
 	{
@@ -242,17 +247,31 @@ SetBorder(struct Page *page,BOOL block,long col,long point,long col1,long point1
 			}
 		}
 	}
-	else
+	else //Not a block 
 	{
+#ifdef __amigaos4__
+	    long column[4], points[4];
+	    
+		column[0] = col; column[1] = col1; column[2] = col2; column[3] = col3;
+		points[0] = point; points[1] = point1; points[2] = point2; points[3] = point3;
+#endif
 		while ((tf = GetMarkedFields(page, tf, TRUE)) != 0)
 		{
 			for(i = 0;i < 4;i++)
 			{
+#ifdef __amigaos4__
+				if (column[i] != ~0L)
+				{
+					tf->tf_BorderColor[i] = column[i];
+					tf->tf_Border[i] = points[i] > 255 ? 255 : points[i];
+				}
+#else
 				if (*(&col+i*2) != ~0L)
 				{
 					tf->tf_BorderColor[i] = *(&col+i*2);
 					tf->tf_Border[i] = *(&point+i*2) > 255 ? 255 : *(&point+i*2);
 				}
+#endif
 			}
 		}
 	}
@@ -296,6 +315,7 @@ InReCeKn(struct Term *t,long offset,long diff,long comp,long first,long last)
 }
 
 
+//Insert and Remove Cells
 long
 InReCells(struct Page *page, UBYTE mode, long col, long row, long width, long height, LONG *mm)
 {
@@ -306,7 +326,7 @@ InReCells(struct Page *page, UBYTE mode, long col, long row, long width, long he
 	struct Mask *ma;
 	short  offset = 0;
 
-	if (!page || DocumentSecurity(page, NULL))
+	if (!page || DocumentSecurity(page, NULL) || (!page->pg_tfHeight &&  mode == UNT_REMOVE_VERT_CELLS) ||  (!page->pg_tfWidth &&  mode == UNT_REMOVE_HORIZ_CELLS))
 		return 0;
 
 	if (mode == UNT_INSERT_VERT_CELLS || mode == UNT_REMOVE_VERT_CELLS)
@@ -333,6 +353,9 @@ InReCells(struct Page *page, UBYTE mode, long col, long row, long width, long he
 			last = row + height;
 		}
 	}
+//printf("InReCells: col:%d row:%d width:%d height:%d mode:%d\n", col, row, width, height, mode);
+//printf("InReCells: pg_Cols:%d pg_Rows:%d\n",page->pg_Cols, page->pg_Rows);
+//printf("InReCells: offset:%d first:%d last:%d diff:%d comp:%d\n", offset, first, last, diff, comp);
 
 	/********************* Zellgrößen aktualisieren ***********************/
 
@@ -349,7 +372,11 @@ InReCells(struct Page *page, UBYTE mode, long col, long row, long width, long he
 
 		if (mode == UNT_INSERT_VERT_CELLS && width == -1)
 		{
+#ifdef __amigaos4__
+			MoveMem(page->pg_tfHeight+comp, page->pg_tfHeight + comp + diff, (page->pg_Rows-comp-diff) * sizeof(struct tableSize)); //src / dest bei memmove falsch, hier korrigiert
+#else
 			memmove(page->pg_tfHeight+comp, page->pg_tfHeight + comp + diff, (page->pg_Rows-comp-diff) * sizeof(struct tableSize));
+#endif
 			for(col = 0;col < diff;col++)
 			{
 				if (mm)
@@ -362,11 +389,16 @@ InReCells(struct Page *page, UBYTE mode, long col, long row, long width, long he
 					(page->pg_tfHeight+comp+col)->ts_Pixel = pixel(page,page->pg_mmStdHeight,FALSE);
 					(page->pg_tfHeight+comp+col)->ts_mm = page->pg_mmStdHeight;
 				}
+				(page->pg_tfHeight+comp)->ts_Title = NULL; 
 			}
 		}
 		else if (mode == UNT_INSERT_HORIZ_CELLS && height == -1)
 		{
+#ifdef __amigaos4__
+			MoveMem(page->pg_tfWidth + comp, page->pg_tfWidth+comp + diff, (page->pg_Cols-comp-diff) * sizeof(struct tableSize)); //src / dest bei memmove falsch, hier korrigiert 
+#else
 			memmove(page->pg_tfWidth + comp, page->pg_tfWidth+comp + diff, (page->pg_Cols-comp-diff) * sizeof(struct tableSize));
+#endif
 			for (col = 0; col < diff; col++)
 			{
 				if (mm)
@@ -379,25 +411,39 @@ InReCells(struct Page *page, UBYTE mode, long col, long row, long width, long he
 					(page->pg_tfWidth+comp+col)->ts_Pixel = pixel(page,page->pg_mmStdWidth,TRUE);
 					(page->pg_tfWidth+comp+col)->ts_mm = page->pg_mmStdWidth;
 				}
+				(page->pg_tfWidth+comp)->ts_Title = NULL; 
 			}
 		}
 	}
 	else if (mode == UNT_REMOVE_VERT_CELLS && width == -1)
 	{
+#ifdef __amigaos4__
+		MoveMem(page->pg_tfHeight + comp + diff - 1, page->pg_tfHeight + comp - 1, (page->pg_Rows-comp-diff + 1) * sizeof(struct tableSize)); //src / dest bei memmove falsch, hier korrigiert
+#else
 		memmove(page->pg_tfHeight + comp + diff - 1, page->pg_tfHeight + comp - 1, (page->pg_Rows-comp-diff) * sizeof(struct tableSize));
+#endif
 		for(col = 0;col < diff;col++)
 		{
 			(page->pg_tfHeight+page->pg_Rows-1-col)->ts_Pixel = page->pg_StdHeight;
 			(page->pg_tfHeight+page->pg_Rows-1-col)->ts_mm = page->pg_mmStdHeight;
+			(page->pg_tfHeight+page->pg_Rows-1-col)->ts_Title = NULL;
 		}
 	}
 	else if (mode == UNT_REMOVE_HORIZ_CELLS && height == -1)
 	{
+#ifdef __amigaos4__
+//printf("1.Marked: %s\n", (page->pg_tfWidth+comp-1)->ts_Title);
+//printf("2.Marked: %s\n", (page->pg_tfWidth+comp+diff-1)->ts_Title);
+//printf("3.Size: %d\n", page->pg_Cols-comp-diff);
+		MoveMem(page->pg_tfWidth + comp + diff - 1, page->pg_tfWidth+comp - 1, (page->pg_Cols- comp - diff + 1)*sizeof(struct tableSize)); //src / dest bei memmove falsch, hier korrigiert
+#else
 		memmove(page->pg_tfWidth+comp+diff-1,page->pg_tfWidth+comp-1,(page->pg_Cols-comp-diff)*sizeof(struct tableSize));
+#endif
 		for(col = 0;col < diff;col++)
 		{
 			(page->pg_tfWidth+page->pg_Cols-1-col)->ts_Pixel = page->pg_StdWidth;
 			(page->pg_tfWidth+page->pg_Cols-1-col)->ts_mm = page->pg_mmStdWidth;
+			(page->pg_tfWidth+page->pg_Cols-1-col)->ts_Title = NULL;
 		}
 	}
 	if (mode == UNT_REMOVE_VERT_CELLS || mode == UNT_REMOVE_HORIZ_CELLS)
@@ -521,6 +567,7 @@ InReCells(struct Page *page, UBYTE mode, long col, long row, long width, long he
 			}
 		}
 	}
+
 	for(tf = (APTR)page->pg_Table.mlh_Head;tf->tf_Node.mln_Succ;tf = (APTR)tf->tf_Node.mln_Succ)
 	{
 		if ((mode == UNT_INSERT_HORIZ_CELLS || mode == UNT_REMOVE_HORIZ_CELLS)
@@ -540,7 +587,6 @@ InReCells(struct Page *page, UBYTE mode, long col, long row, long width, long he
 	page->pg_Gad.cp.cp_X += page->pg_wTabX;  page->pg_Gad.cp.cp_Y += page->pg_wTabY;
 	if (page->pg_MarkCol != -1)
 		setTableCoord(page,(struct Rect32 *)&page->pg_MarkX1,page->pg_MarkCol,page->pg_MarkRow,page->pg_MarkWidth,page->pg_MarkHeight);
-
 	RecalcTableSize(page);
 
 	/********************* Objekte & Diagramme aktualisieren ***********************/
@@ -557,12 +603,10 @@ InReCells(struct Page *page, UBYTE mode, long col, long row, long width, long he
 				gDoMethod(go,GCM_INSERTREMOVECELLS,page,(long)offset,diff,comp,first,last);
 		}
 	}
-
 	RecalcTableFields(page);
 	DrawTable(page->pg_Window);
 	return 0;
 }
-
 
 void
 MakeCellSizeUndo(struct UndoNode *un, UBYTE flags, ULONG mm, long pixel, long pos)
@@ -1620,7 +1664,7 @@ setTableCoord(struct Page *page, struct Rect32 *target, long col, long row, long
 	struct Rect32 rect;
 
 	TRACE(("setTableCoord(col = %ld, row = %ld, width = %ld, height = %ld)\n", col, row, width, height));
-
+		
 	if (!page)
 		return;
 
@@ -1648,7 +1692,7 @@ SetCellCoordPkt(struct Page *page, struct coordPkt *cp, struct tableField *tf, l
 	long   pos, i;
 
 	TRACE(("SetCellCoordPkt(cell = 0x%08lx, col = %ld, row = %ld)\n", tf, col, row));
-
+	
 	if (tf)
 		cp->cp_W = GetTotalWidth(page, tf);
 	else
@@ -1710,7 +1754,7 @@ getCoordPkt(struct Page *page, long mouseX, long mouseY)
 	}
 	if ((tf = GetTableField(page, cp.cp_Col, cp.cp_Row)) != 0)
 		cp.cp_W = GetTotalWidth(page, tf);
-
+//printf("getCoordPkt: row=%d col=%d width=%d height=%d\n",cp.cp_Y,cp.cp_X,cp.cp_W,cp.cp_H);
 	return cp;
 }
 

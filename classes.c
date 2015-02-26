@@ -11,6 +11,10 @@
 
 #include <graphics/scale.h>
 
+#ifdef __amigaos4__
+	#include <proto/elf.h>
+#endif
+
 #define G_POINTS 8
 #define GRLOAD_BUFFERSIZE 2048
 
@@ -203,6 +207,7 @@ LoadGObjectTags(struct gcpIO *gcpio)
 					if ((ln = FindListNumber(gcpio->gcpio_Fonts, number)) != 0) {
 						struct FontInfo *fi;
 
+//DebugPrintF("LoadGObjectTags Name:<%s> Größe:%d Stil:%d\n", ((struct Node *)(ln->ln_Name))->ln_Name, size, style);
 						if ((fi = NewFontInfo(NULL, gDPI, FA_Family,	  ln->ln_Name,
 														 FA_PointHeight, size,
 														 FA_Style,	   style,
@@ -332,7 +337,7 @@ gRootLoad(struct gObject *go,struct gcpIO *gcpio)
 
 		if (go)
 		{
-			if (gDoMethodA(go,gcpio) < 0)
+			if (gDoMethodA(go,(Msg)gcpio) < 0)
 				ErrorRequest(GetString(&gLocaleInfo, MSG_LOAD_OBJECT_ERR),go->go_Node.ln_Name,gc->gc_Node.in_Name);
 		}
 		else if (sp)
@@ -490,7 +495,7 @@ gRootDispatch(REG(a0, struct gClass *gc), REG(a2, struct gObject *go), REG(a1, M
 		{
 			struct gObject *ngo;
 
-			if (((struct gClass *)go)->gc_Dispatch == gRootDispatch)  // keine Instanzen dieser Klasse
+			if (((struct gClass *)go)->gc_Dispatch == (APTR)gRootDispatch)  // keine Instanzen dieser Klasse
 				return 0;
 			if (go && (ngo = AllocPooled(pool,((struct gClass *)go)->gc_InstSize)))
 			{
@@ -690,7 +695,7 @@ gRootDispatch(REG(a0, struct gClass *gc), REG(a2, struct gObject *go), REG(a1, M
 			if (((struct gcpAddPoint *)msg)->gcpa_NumPoints == 2)
 			{
 				struct coord *p = ((struct gcpAddPoint *)msg)->gcpa_Points;
-				WORD   ox = ((struct gcpAddPoint *)msg)->gcpa_Offset.x,oy = ((struct gcpAddPoint *)msg)->gcpa_Offset.y;
+				WORD   ox = ((struct gcpAddPoint *)msg)->gcpa_Offset.x, oy = ((struct gcpAddPoint *)msg)->gcpa_Offset.y;
 
 				DrawRect(((struct gcpAddPoint *)msg)->gcpa_RastPort,p[0].x+ox,p[0].y+oy,p[1].x-p[0].x,p[1].y-p[0].y);
 			}
@@ -728,7 +733,7 @@ gRootDispatch(REG(a0, struct gClass *gc), REG(a2, struct gObject *go), REG(a1, M
 			DrawRect(((struct gcpAddPoint *)msg)->gcpa_RastPort,p[0].x+ox,p[0].y+oy,p[3].x-p[0].x,p[3].y-p[0].y);
 			break;
 		}
-		case GCM_BOX:
+		case GCM_BOX: 
 		{
 			struct point2d *p = go->go_Knobs;
 			LONG   xmin,ymin,xmax,ymax,i;
@@ -738,7 +743,6 @@ gRootDispatch(REG(a0, struct gClass *gc), REG(a2, struct gObject *go), REG(a1, M
 
 			xmin = xmax = p[0].x;
 			ymin = ymax = p[0].y;
-
 			for(i = 1;i < go->go_NumKnobs;i++)
 			{
 				if (p[i].x < xmin)
@@ -923,7 +927,6 @@ gEmbeddedDispatch(REG(a0, struct gClass *gc), REG(a2, struct gObject *go), REG(a
 {
 	struct gEmbedded *ge = GINST_DATA(gc, go);
 	ULONG  rc;
-
 	switch (msg->MethodID)
 	{
 		case GCM_NEW:
@@ -1010,11 +1013,11 @@ gEmbeddedDispatch(REG(a0, struct gClass *gc), REG(a2, struct gObject *go), REG(a
 
 			if ((rgo = ge->ge_References) && rgo->go_Page)
 			{
-				ULONG p = FindListEntry(&rgo->go_Page->pg_Mappe->mp_Pages, rgo->go_Page);
+				ULONG p = FindListEntry(&rgo->go_Page->pg_Mappe->mp_Pages, (struct MinNode *)rgo->go_Page);
 
 				WriteChunkBytes(iff,&p,4);
 				if (ge->ge_Type == GET_DIAGRAM)
-					p = FindListEntry(&rgo->go_Page->pg_gDiagrams, rgo);
+					p = FindListEntry(&rgo->go_Page->pg_gDiagrams, (struct MinNode *)rgo);
 				else
 					p = ge->ge_References->go_Pos;
 
@@ -1374,6 +1377,75 @@ MakeGClass(STRPTR name, UBYTE type, struct gClass *sgc, STRPTR label,
 }
 
 
+#ifdef __amigaos4__
+BOOL
+LoadGClass(struct gClass *gc)
+{
+	BOOL ASM (*initGCSegment)(REG(a0, APTR), REG(a1, APTR *), REG(a2, APTR), REG(a3, APTR), REG(a6, APTR), 	REG(d0, APTR), REG(d1, APTR),REG(d2, APTR), REG(d3, APTR), REG(d4, long));
+	BPTR dir, olddir; //, segment;
+	Elf32_Handle elfhandle;
+	Elf32_Handle filehandle;
+	struct Elf32_SymbolQuery query;
+
+	if (gc->gc_Segment || !gc->gc_ClassName)
+		return TRUE;
+
+	if ((dir = Lock(CLASSES_PATH, ACCESS_READ)) != 0) {
+		olddir = CurrentDir(dir);
+		if ((gc->gc_Segment = LoadSeg(gc->gc_ClassName)) != 0) {
+			//Get ELF handler
+			GetSegListInfoTags(gc->gc_Segment,GSLI_ElfHandle,&elfhandle,TAG_DONE);
+	
+			if (elfhandle != NULL) {//Find the ELF handler?
+				//Reopen the ELF file
+				if((filehandle = OpenElfTags(OET_ElfHandle,elfhandle,TAG_DONE))) {
+					//Check version first
+					query.Flags = ELF32_SQ_BYNAME;
+					query.Name = "Version";
+					if (SymbolQuery(filehandle, 1, &query) != 0) {
+						if ((*(LONG*)query.Value) == 2) {//If the version is 2 then this plugin is a compatible GadgetClass
+							//Let's query for the symbol name "Operator"
+							query.Name = "InitGClass";
+							if (SymbolQuery(filehandle, 1, &query) != 0) {
+								//Close the opened ELF file
+								CloseElfTags(filehandle, CET_CloseInput, TRUE, TAG_DONE);
+								//Store the address of the Function
+								initGCSegment = (void*)query.Value;
+								if (!initGCSegment(gc, (APTR *)gClassFuncTable, pool, IGraphics, (APTR)IExec, NULL, NULL, (APTR)IUtility, (APTR)ILocale, MAKE_ID('I','G','N',0)))
+								{
+									ErrorRequest(GetString(&gLocaleInfo, MSG_INIT_CLASS_ERR), gc->gc_ClassName);
+									UnLoadSeg(gc->gc_Segment);
+								}
+							}
+							else
+								UnLoadSeg(gc->gc_Segment);
+						}
+						else
+							UnLoadSeg(gc->gc_Segment);
+					}
+					else
+						UnLoadSeg(gc->gc_Segment);
+				}
+				else
+					UnLoadSeg(gc->gc_Segment);
+			}
+		} else {
+			ErrorRequest(GetString(&gLocaleInfo, MSG_CLASS_NOT_FOUND_ERR),gc->gc_ClassName);
+		}
+
+		CurrentDir(olddir);
+		UnLock(dir);
+	}
+	if (!gc->gc_Segment) {
+		// remove class
+		RemoveLocked((struct MinNode *)gc);
+		FreeGClass(gc);
+
+		return FALSE;
+	}
+	return TRUE;
+}
+#else
 BOOL
 LoadGClass(struct gClass *gc)
 {
@@ -1408,13 +1480,14 @@ LoadGClass(struct gClass *gc)
 	}
 	if (!gc->gc_Segment) {
 		// remove class
-		RemoveLocked((struct Node *)gc);
+		RemoveLocked((struct MinNode *)gc);
 		FreeGClass(gc);
 
 		return FALSE;
 	}
 	return TRUE;
 }
+#endif
 
 
 void
@@ -1435,7 +1508,11 @@ void
 InitGClasses(void)
 {
 	struct gClass *gc, *dgc;
+#ifdef __amigaos4__
+	struct AnchorPath *ap;
+#else
 	struct AnchorPath ALIGNED ap;
+#endif
 	BPTR dir, olddir, dat;
 	char t[512];
 	long rc, i;
@@ -1447,11 +1524,9 @@ InitGClasses(void)
 	/* initialize internal classes */
 
 	if ((gc = MakeGClass("root", GCT_ROOT | GCT_INTERNAL, NULL, NULL, NULL, gRootDispatch, NULL, gRootInterface, sizeof(struct gObject))) != 0) {
-		if ((dgc = MakeGClass("diagram", GCT_ROOT | GCT_INTERNAL, gc, NULL, NULL, gDiagramDispatch, NULL, gDiagramInterface,
-				sizeof(struct gDiagram) - sizeof(struct gObject))) != 0) {
+		if ((dgc = MakeGClass("diagram", GCT_ROOT | GCT_INTERNAL, gc, NULL, NULL, gDiagramDispatch, NULL, gDiagramInterface, sizeof(struct gDiagram) - sizeof(struct gObject))) != 0) {
 #ifdef ENABLE_DIAGRAM_3D
-			MakeGClass("diagram3d", GCT_ROOT | GCT_INTERNAL, dgc, NULL, NULL, gDiagram3dDispatch, gDiagram3dDraw,
-				NULL, sizeof(struct gDiagram3d) - sizeof(struct gDiagram));
+			MakeGClass("diagram3d", GCT_ROOT | GCT_INTERNAL, dgc, NULL, NULL, gDiagram3dDispatch, gDiagram3dDraw, NULL, sizeof(struct gDiagram3d) - sizeof(struct gDiagram));
 #endif
 		}
 
@@ -1465,7 +1540,26 @@ InitGClasses(void)
 
 	if ((dir = Lock(CLASSES_PATH, ACCESS_READ)) != 0) {
 		olddir = CurrentDir(dir);
+#ifdef __amigaos4__
+	ap = AllocDosObjectTags(	DOS_ANCHORPATH, 
+	                         	  	ADO_Mask, SIGBREAKF_CTRL_C,
+	                         		ADO_Strlen, 1024L,
+	                         		TAG_END ); 
+#else
 		memset(&ap, 0, sizeof(struct AnchorPath));
+#endif
+#ifdef __amigaos4__
+		for (rc = MatchFirst("#?.gcdescr", ap); !rc; rc = MatchNext(ap)) {
+			if ((dat = Open(ap->ap_Info.fib_FileName, MODE_OLDFILE)) != 0) {
+				STRPTR name = NULL, super = NULL, icon = NULL, filename;
+				STRPTR localizedNames[10];
+					// Note: this is not save against changes to the loc_PrefLanguages table
+					//	while parsing the class description file
+				long type = 0;
+
+				if ((filename = AllocPooled(pool, i = strlen(ap->ap_Info.fib_FileName) - 4)) != 0)
+					CopyMem(ap->ap_Info.fib_FileName, filename, i - 1);
+#else
 		for (rc = MatchFirst("#?.gcdescr", &ap); !rc; rc = MatchNext(&ap)) {
 			if ((dat = Open(ap.ap_Info.fib_FileName, MODE_OLDFILE)) != 0) {
 				STRPTR name = NULL, super = NULL, icon = NULL, filename;
@@ -1476,7 +1570,7 @@ InitGClasses(void)
 
 				if ((filename = AllocPooled(pool, i = strlen(ap.ap_Info.fib_FileName) - 4)) != 0)
 					CopyMem(ap.ap_Info.fib_FileName, filename, i - 1);
-				
+#endif				
 				for (i = 0; i < 10; i++)
 					localizedNames[i] = NULL;
 
@@ -1512,7 +1606,12 @@ InitGClasses(void)
 				Close(dat);
 			}
 		}
+#ifdef __amigaos4__
+		MatchEnd(ap);
+		FreeDosObject(DOS_ANCHORPATH,ap);
+#else
 		MatchEnd(&ap);
+#endif
 		CurrentDir(olddir);
 		UnLock(dir);
 	}

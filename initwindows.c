@@ -217,7 +217,7 @@ MakePrefIconAppCmds(struct Prefs *pr,struct List *list)
 		foreach(&prefs.pr_AppCmds,ac)
 			AddPrefIconAppCmd(list,ac);
 	}
-	sortList(list);
+	sortList((struct MinList *)list);
 }
 
 
@@ -378,7 +378,11 @@ InitObjectWindow(REG(a0, struct winData *wd))
 void ASM
 InitDiagramWindow(REG(a0, struct winData *wd))
 {
+#ifdef __amigaos4__
+	wd->wd_Pages = AllocVecTags(sizeof(struct Gadget *) * 6, AVT_ClearWithValue, 0, TAG_DONE);
+#else
 	wd->wd_Pages = AllocVec(sizeof(struct Gadget *) * 6, MEMF_CLEAR);
+#endif
 
 	if ((wd->u.diagram.wd_Gadgets = AllocPooled(pool, sizeof(struct MinList))) != 0)
 		MyNewList(wd->u.diagram.wd_Gadgets);
@@ -517,7 +521,7 @@ initNotes(REG(a0, struct winData *wd))
 			if ((wn = AllocPooled(pool,sizeof(struct wdtNote))) != 0)
 			{
 				wn->wn_Node.ln_Name = AllocString("-");
-				InsertAt(wd->wd_ExtData[0],wn,count);
+				InsertAt(wd->wd_ExtData[0],(struct Node *)wn,count);
 			}
 		}
 	}

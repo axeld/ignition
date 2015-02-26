@@ -10,6 +10,15 @@ struct gFrame;
 
 #define glContext amigamesa_context
 
+#ifdef __amigaos4__
+#ifdef __GNUC__
+   #ifdef __PPC__
+    #pragma pack(2)
+   #endif
+#elif defined(__VBCC__)
+   #pragma amiga-align
+#endif
+#endif
 
 struct gClass {
 	struct ImageNode gc_Node;   /* name und icon (only for non-diagrams) */
@@ -19,7 +28,11 @@ struct gClass {
 	ULONG  gc_Flags;
 	struct gInterface *gc_Interface;
 	BPTR   gc_Segment;
+#ifdef __amigaos4__
+	ULONG  ASM (*gc_Dispatch)(REG(a0, struct gClass *), REG(a2, APTR), REG(a1, Msg));
+#else
 	ULONG  ASM (*gc_Dispatch)(REG(a0, struct gClass *), REG(a2, Msg), REG(a1, APTR));
+#endif
 	ULONG  ASM (*gc_Draw)(REG(d0, struct Page *), REG(d1, ULONG), REG(a0, struct RastPort *), REG(a1, struct gClass *), REG(a2, struct gObject *), REG(a3, struct gBounds *));
 	ULONG  ASM (*gc_FreeClass)(REG(a0, struct gClass *));
 	STRPTR gc_ClassName;		/* internal access (file name) */
@@ -215,6 +228,16 @@ struct gcapGetBorders {
 	LONG   *gcap_StorageLeft, *gcap_StorageRight, *gcap_StorageYOrigin;
 };
 
+#ifdef __amigaos4__
+#ifdef __GNUC__
+   #ifdef __PPC__
+    #pragma pack()
+   #endif
+#elif defined(__VBCC__)
+   #pragma default-align
+#endif
+#endif
+
 struct gcapGetCoord {
 	ULONG  MethodID;
 	double gcap_Y;		// value to transform
@@ -222,6 +245,15 @@ struct gcapGetCoord {
 	LONG   gcap_Scale;	// which scale to use (1 or 2) (not yet implemented)
 };
 
+#ifdef __amigaos4__
+#ifdef __GNUC__
+   #ifdef __PPC__
+    #pragma pack(2)
+   #endif
+#elif defined(__VBCC__)
+   #pragma amiga-align
+#endif
+#endif
 /** gAxes - Attributes **/
 
 #define GAA_TagBase			GOA_TagBase + 100
@@ -611,6 +643,16 @@ struct ColorContext {
 	void	(*cc_SetOutlineColor)(struct RastPort *rp, uint32 color);
 };
 
+#ifdef __amigaos4__
+#ifdef __GNUC__
+   #ifdef __PPC__
+    #pragma pack()
+   #endif
+#elif defined(__VBCC__)
+   #pragma default-align
+#endif
+#endif
+
 /*************************** Prototypes ***************************/
 
 // inlines
@@ -710,9 +752,17 @@ extern void RefreshGFrames(struct Page *page);
 extern struct gObject *gMakeRefObject(struct Page *page, struct gClass *gc, struct gObject *go, const STRPTR undoText);
 extern ULONG GetGObjectAttr(struct gObject *go,ULONG tag,ULONG *data);
 extern void gSetObjectAttrsA(struct Page *page,struct gObject *go,struct TagItem *tags);
+#ifdef __amigaos4__
+extern void gSetObjectAttrs(struct Page *page,struct gObject *go,...) VARARGS68K;
+#else
 extern void gSetObjectAttrs(struct Page *page,struct gObject *go,ULONG tag1,...) VARARGS68K;
+#endif
 extern void SetGObjectAttrsA(struct Page *page,struct gObject *go,struct TagItem *tag);
+#ifdef __amigaos4__
+extern void SetGObjectAttrs(struct Page *page,struct gObject *go,...) VARARGS68K;
+#else
 extern void SetGObjectAttrs(struct Page *page,struct gObject *go,ULONG tag1,...) VARARGS68K;
+#endif
 extern void RefreshGObjectBounds(struct Page *page,struct gObject *go);
 extern void RemoveGObject(struct Page *page,struct gObject *go,BYTE draw);
 extern void AddGObject(struct Page *page,struct gGroup *gg,struct gObject *go,BYTE draw);
@@ -728,9 +778,17 @@ extern struct gGroup *MouseGGroup(struct Page *page,LONG *pos);
 extern BOOL HandleGObjects(struct Page *page);
 extern void PrepareCreateObject(struct Page *page,struct gClass *gc,BOOL more);
 extern ULONG gDoClassMethodA(struct gClass *gc,APTR go,Msg msg);
+#ifdef __amigaos4__
+extern ULONG gDoClassMethod(struct gClass *gc,APTR go,...) VARARGS68K;
+#else
 extern ULONG gDoClassMethod(struct gClass *gc,APTR go,ULONG id,...) VARARGS68K;
+#endif
 extern ULONG PUBLIC gDoMethodA(REG(a0, APTR go),REG(a1, Msg msg));
+#ifdef __amigaos4__
+extern ULONG gDoMethod(APTR go, ...) VARARGS68K;
+#else
 extern ULONG gDoMethod(APTR go,ULONG id,...) VARARGS68K;
+#endif
 extern ULONG PUBLIC gDoSuperMethodA(REG(a0, struct gClass *gc),REG(a1, APTR go),REG(a2, Msg msg));
 extern BOOL PUBLIC gIsSubclassFrom(REG(a0, struct gClass *gc),REG(a1, struct gClass *supergc));
 extern void PUBLIC gSuperDraw(REG(d0, struct Page *page),REG(d1, ULONG dpi),REG(a0, struct RastPort *rp),REG(a1, struct gClass *gc),REG(a2, struct gObject *go),REG(a3, struct gBounds *gb));

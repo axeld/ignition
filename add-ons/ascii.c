@@ -4,12 +4,25 @@
  * Licensed under the terms of the GNU General Public License, version 3.
  */
 
+#ifdef __amigaos4__
+	#include <exec/exec.h>
+	#include <proto/exec.h>
+	#include <proto/dos.h>
+	#include <proto/utility.h>
 
-#include <stdlib.h>
+	#include <string.h>
+#else
+	#include <stdlib.h>
+#endif
 #include "iotype.h"
 
 
 const STRPTR __version = "$VER: ascii.io 0.1 (5.3.2001)";
+
+#ifdef __amigaos4__
+	#undef  strlen
+	#define strlen   Strlen
+#endif
 
 
 void PUBLIC

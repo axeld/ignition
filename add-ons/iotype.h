@@ -8,9 +8,9 @@
 ** Copyright 2001-2009 pinc Software
 ** All Rights Reserved
 */
-
-#include "SDI_compiler.h"
-
+#ifndef __amigaos4__
+	#include "SDI_compiler.h"
+#endif
 #define __DOS_STDLIBBASE__
 
 #include <exec/types.h>
@@ -28,16 +28,27 @@
 #	include <pragmas/dos_pragmas.h>
 #endif
 
-#include <string.h>
-#include <math.h>
+#ifndef __amigaos4__
+	#include <string.h>
+	#include <math.h>
+#endif
 
 #define foreach(l,v) for(v = (APTR)((struct List *)l)->lh_Head;((struct Node *)v)->ln_Succ;v = (APTR)((struct Node *)v)->ln_Succ)
 
 #ifndef CELL_H
 #	include "cell.h"
 #endif
-
-
+/*
+#ifdef __amigaos4__
+	#ifdef __GNUC__
+		#ifdef __PPC__
+			#pragma pack(2)
+		#endif
+	#elif defined(__VBCC__)
+		#pragma amiga-align
+	#endif
+#endif
+*/
 /*** Project related ***/
 
 struct Event
@@ -67,24 +78,35 @@ struct Event
 #define PG_USLETTER 3
 #define PG_USLEGAL 4
 
-struct Mappe
-{
-  struct Node mp_Node;
-  long   mp_Flags;
-  STRPTR mp_Path;
-  struct MinList mp_Pages;
-  ULONG  mp_mmWidth, mp_mmHeight;
-  ULONG  mp_MediumWidth, mp_MediumHeight;
-  ULONG  mp_mmMediumWidth, mp_mmMediumHeight;
-  struct MinList mp_Projects;
-  struct Page *mp_actPage;
-  struct Window *mp_Window;
-  struct Event mp_Events[NUM_EVENTS];
-  struct MinList mp_Names;
-  struct MinList mp_Databases;
-  struct MinList mp_Masks;
-  long   mp_Modified;
-  ULONG  mp_FileType;
+struct Mappe {
+	struct Node mp_Node;
+	ULONG  mp_Flags;
+	STRPTR mp_Path;
+	struct MinList mp_Pages;
+	ULONG  mp_mmWidth,mp_mmHeight;
+	ULONG  mp_MediumWidth,mp_MediumHeight;
+	ULONG  mp_mmMediumWidth,mp_mmMediumHeight;
+	struct MinList mp_Projects;
+	struct Page *mp_actPage;
+	struct Window *mp_Window;
+	struct Event mp_Events[NUM_EVENTS];
+	struct MinList mp_Names;
+	struct MinList mp_Databases;
+	struct MinList mp_Masks;
+	struct MinList mp_Formats;// links
+	struct MinList mp_CalcFormats;
+	struct MinList mp_AppCmds;
+	APTR mp_Prefs; //Eigentlich struct Prefs
+	struct IOType *mp_FileType;
+	STRPTR mp_Title;
+	BYTE   mp_Modified;
+	struct MinList mp_RexxScripts;
+	STRPTR mp_Author,mp_Version,mp_Note,mp_CatchWords;
+	STRPTR mp_Password;
+	STRPTR mp_CellPassword;
+	struct IBox mp_WindowBox;
+	ULONG  mp_PrinterFlags;
+	LONG   mp_BorderLeft, mp_BorderRight, mp_BorderTop, mp_BorderBottom;
 };
 
 #define MPF_SCRIPTS 1
@@ -112,29 +134,32 @@ struct Page
   struct Rect32 pg_Select;
   WORD   pg_SelectPos, pg_SelectLength;
   struct Node *pg_Family;
-  ULONG  pg_DPI;
   ULONG  pg_PointHeight;
-  long   pg_Style;
+  ULONG  pg_DPI;
   struct {
            struct coordPkt cp;
            WORD DispPos;
            WORD FirstChar;
            struct tableField *tf;
-           STRPTR Undo;
+           struct tableField  *Undo;
          } pg_Gad;
-  long   pg_TabW, pg_TabH;     /* scroller gadgets */
+  long   pg_TabW, pg_TabH;     
   long   pg_TabX, pg_TabY;
   ULONG  pg_APen, pg_BPen;
-  UWORD  pg_Zoom;             /* in percent */
+  ULONG  pg_Zoom;             
   UWORD  pg_StdWidth, pg_StdHeight;
   ULONG  pg_mmStdWidth, pg_mmStdHeight;
   double pg_PropFactorX, pg_PropFactorY;
-  struct MinList pg_gFrames;
-  UBYTE  pg_FrameAction;
+  double pg_SizeFactorX,pg_SizeFactorY;/* faster converting between pixel and mm */
+
+  struct MinList pg_gObjects;
+  struct MinList pg_gGroups;
+  struct MinList pg_gDiagrams;
   UBYTE  pg_HotSpot;
-  struct UndoNode *pg_CurrentUndo;
-  struct MinList pg_Undos;
+  UBYTE  pg_Action;
 };
+
+
 
 #define PGS_IGNORE -3        /* TabGadget-Status */
 #define PGS_NONE -2
@@ -184,14 +209,14 @@ struct FuncArg
   struct Term *fa_Root;
 };
 
-struct Function
-{
-  struct Node f_Node;
-  double (*f_Value)(struct MinList *);
-  STRPTR (*f_Text)(struct MinList *);
-  UBYTE  (*f_RC)(struct MinList *);
+struct Function {
+  struct Node f_Node;  /* ln_Type -> function category */
+  APTR   f_Code;   /* pointer to a function */
   STRPTR f_Help;
-  UBYTE  f_FormatFrom;
+  uint8  f_Type;
+  uint32 f_ID; /* function ID, last byte is always NULL (can be casted to a STRPTR) */
+  STRPTR f_Args;
+  int32  f_MinArgs,f_MaxArgs;
 };
 
 struct MaskField
@@ -225,15 +250,22 @@ struct Database
   struct Term *db_Root;
   struct Page *db_Page;
   ULONG  db_PageNumber;
+  struct Reference *db_Reference;
   struct MinList db_Fields;
   struct tablePos db_TablePos;
   ULONG  db_Current;
-  UBYTE  db_IndexType;
+  struct MinList db_Indices;   /* list of indices (struct Index) */
+  struct MinList db_Filters;   /* list of filters */
+  struct Index *db_Index;  /* current index */
+  struct Filter *db_Filter;/* current filter */
+ uint32 db_IndexPos;  /* position in real/filter/index array */
+/*  UBYTE  db_IndexType;
   union
   {
     struct tablePos db_indexpos;
     struct MinList db_index;
   } db_index;
+ */
 };
 
 #define DBIT_NONE 0
@@ -250,6 +282,8 @@ struct Name
   struct Term *nm_Root;
   struct Page *nm_Page;
   ULONG  nm_PageNumber;
+  struct Reference *nm_Reference;
+  struct tablePos nm_TablePos;
 };
 
 #define NMT_NONE 0
@@ -267,6 +301,7 @@ struct Term
     struct {
              double t_value;
              STRPTR t_text;
+		  STRPTR t_format;
            } t_val;
     struct {
              long t_col,t_row;
@@ -280,13 +315,14 @@ struct Term
              long t_col,t_row;
              STRPTR t_page;
              long   t_numpage;
-             STRPTR t_mappe;
+//           STRPTR t_mappe;
            } t_ext;
   } t_type;
 };
 
 #define t_Value t_type.t_val.t_value
 #define t_Text t_type.t_val.t_text
+#define t_Format t_type.t_val.t_format
 #define t_Col t_type.t_cell.t_col
 #define t_Row t_type.t_cell.t_row
 #define t_AbsCol t_type.t_cell.t_abscol
@@ -295,7 +331,7 @@ struct Term
 #define t_Args t_type.t_func.t_args
 #define t_Page t_type.t_ext.t_page
 #define t_NumPage t_type.t_ext.t_numpage
-#define t_Mappe t_type.t_ext.t_mappe
+//#define t_Mappe t_type.t_ext.t_mappe
 
 
 /*************************** Colors ***************************/
@@ -361,6 +397,7 @@ struct PrefDisp
   BYTE   pd_HelpBar,pd_ToolBar;
   BYTE   pd_IconBar,pd_FormBar;
   BYTE   pd_ShowAntis;
+  long   pd_AntiWidth, pd_AntiHeight;
 };
 
 #define PDR_NONE 0       // Rasta look
@@ -397,7 +434,8 @@ struct PrefScreen
 
 struct PrefFile
 {
-  BYTE   pf_CreateIcons,pf_Backup,pf_NoSuffix,pf_AutoSave;
+  UWORD  pf_Flags;
+  UBYTE  pf_AutoSave;
   long   pf_AutoSaveIntervall;     /* in seconds */
 };
 
@@ -405,9 +443,12 @@ struct PrefFile
 #define PFAS_REMEMBER 1
 #define PFAS_ON 2
 
+#define PTEQ_NUM 5
+
 struct PrefTable
 {
   UWORD pt_Flags;
+  UBYTE pt_EditFunc[PTEQ_NUM];
 };
 
 #define PTF_SHOWFORMULA 1
@@ -423,6 +464,20 @@ struct PrefIcon
   UBYTE  pi_Spacing;
 };
 
+#ifdef __amigaos4__
+	#define PUBLIC
+#endif
+/*
+#ifdef __amigaos4__
+	#ifdef __GNUC__
+		#ifdef __PPC__
+			#pragma pack()
+		#endif
+	#elif defined(__VBCC__)
+		#pragma default-align
+	#endif
+#endif
+*/
 /***************************** interne Funktionen *******************************/
 
 void   (*ReportErrorA)(STRPTR fmt,APTR args);
@@ -466,8 +521,12 @@ void   ReportError(STRPTR fmt, ...) VARARGS68K;
 /********************************* Variables ************************************/
 
 extern APTR pool, ioBase;
-#ifndef __SASC
-extern struct Library *DOSBase;
+#ifdef __amigaos4__
+	extern struct Library *DOSBase;
+	extern struct UtilityIFace *IUtility;
+#else
+	#ifndef __SASC
+		extern struct Library *DOSBase;
+	#endif
 #endif
-
 #endif  /* IOTYPE_H */

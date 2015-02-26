@@ -8,6 +8,12 @@
 #include "types.h"
 #include "funcs.h"
 
+#ifdef __amigaos4__
+	#define GOFFSET 10
+#else
+	#define GOFFSET  0
+#endif
+
 extern const char *gAppCommandLabels[];
 //extern const char *gShortAppCommandLabels[];
 
@@ -235,7 +241,7 @@ CreatePrefScreenGads(REG(a0, struct winData *wd))
 	gad = CreateGadget(BUTTON_KIND,gad,&ngad,GT_Underscore,'_',TAG_END);
 
 	ngad.ng_LeftEdge = 8+lborder;
-	ngad.ng_TopEdge = fontheight*2+10;
+	ngad.ng_TopEdge = fontheight*2+10 + GOFFSET;
 	ngad.ng_Width = (boxwidth*fontheight)/(fontheight+4);
 	ngad.ng_Height = fontheight;
 	ngad.ng_Flags = PLACETEXT_RIGHT;
@@ -457,7 +463,7 @@ CreateFilePrefsGadgets(REG(a0, struct winData *wd))
 	ngad.ng_GadgetID++;						  // 3
 	gad = CreateGadget(STRING_KIND,gad,&ngad,GTST_String,wd->wd_ExtData[2],GT_Underscore,'_',TAG_END);
 
-	ngad.ng_TopEdge = 2 * fontheight + 8;
+	ngad.ng_TopEdge = 2 * fontheight + 8 + GOFFSET;
 	ngad.ng_Width = TLn(GetString(&gLocaleInfo, MSG_CHOOSE_GAD))+20;
 	ngad.ng_LeftEdge = gWidth-ngad.ng_Width-8-rborder;
 	ngad.ng_GadgetText = GetString(&gLocaleInfo, MSG_CHOOSE_GAD);
@@ -648,8 +654,7 @@ CreateKeyboardPrefsGadgets(struct winData *wd, long width, long height)
 	ngad.ng_GadgetText = GetString(&gLocaleInfo, MSG_SHORT_CUT_GAD);
 	ngad.ng_Flags = PLACETEXT_ABOVE;
 	ngad.ng_GadgetID = 1;					// 1
-	gad = wd->wd_ExtData[0] = CreateGadget(LISTVIEW_KIND, gad, &ngad, GTLV_Labels, &pr->pr_AppKeys,
-		GTLV_ShowSelected, NULL, GTLV_CallBack, &formatHook, GTLV_MaxPen, 7, TAG_END);
+	gad = wd->wd_ExtData[0] = CreateGadget(LISTVIEW_KIND, gad, &ngad, GTLV_Labels, &pr->pr_AppKeys,	GTLV_ShowSelected, NULL, GTLV_CallBack, &formatHook, GTLV_MaxPen, 7, TAG_END);
 
 	ngad.ng_TopEdge += ngad.ng_Height;
 	ngad.ng_Width /= 2;
@@ -784,7 +789,7 @@ CreatePrefCmdsGads(REG(a0, struct winData *wd))
 		MSG_DELETE_UGAD, MSG_OK_UGAD, MSG_CANCEL_UGAD, TAG_END);
 
 	ngad.ng_LeftEdge = lborder;
-	ngad.ng_TopEdge = fontheight+6;
+	ngad.ng_TopEdge = fontheight+6 + GOFFSET;
 	ngad.ng_Width = gWidth-lborder-rborder;
 	ngad.ng_Height = itemheight*i+4;
 	ngad.ng_GadgetText = NULL;
@@ -1134,24 +1139,26 @@ CreateFormatPrefsGadgets(REG(a0, struct winData *wd))
 
 	ngad.ng_LeftEdge = w;
 	ngad.ng_TopEdge += 2*fontheight+13;
-	ngad.ng_Width = boxwidth;
+	ngad.ng_Width = boxwidth - GOFFSET;
 	ngad.ng_GadgetText = GetString(&gLocaleInfo, MSG_NEG_VALUES_LABEL);
 	ngad.ng_Flags = PLACETEXT_RIGHT;
 	ngad.ng_GadgetID++;					 // 11
 	gad = CreateGadget(CHECKBOX_KIND,gad,&ngad,GA_Disabled,TRUE,GTCB_Scaled,TRUE,TAG_END);
 
-	ngad.ng_LeftEdge += 16+3*boxwidth+TLn(GetString(&gLocaleInfo, MSG_NEG_VALUES_LABEL));
+	ngad.ng_LeftEdge += 16 - GOFFSET + 3 * boxwidth+TLn(GetString(&gLocaleInfo, MSG_NEG_VALUES_LABEL));
 	ngad.ng_GadgetID++;					 // 12
 	gad = CreatePopGadget(wd,gad,FALSE);
 
 	ngad.ng_LeftEdge = w;
 	ngad.ng_TopEdge += fontheight+7;
+	ngad.ng_Width = boxwidth - GOFFSET;
 	ngad.ng_GadgetText = GetString(&gLocaleInfo, MSG_NEG_VALUES_GAD);
 	ngad.ng_GadgetID++;					 // 13
 	gad = CreateGadget(CHECKBOX_KIND,gad,&ngad,GA_Disabled,TRUE,GTCB_Scaled,TRUE,TAG_END);
 
 	ngad.ng_LeftEdge = w;
 	ngad.ng_TopEdge += fontheight+7;
+	ngad.ng_Width = boxwidth - GOFFSET;
 	ngad.ng_GadgetText = GetString(&gLocaleInfo, MSG_THOUSANDS_SEPARATOR_GAD);
 	ngad.ng_GadgetID++;					 // 14
 	gad = CreateGadget(CHECKBOX_KIND,gad,&ngad,GA_Disabled,TRUE,GTCB_Scaled,TRUE,TAG_END);
@@ -1201,7 +1208,7 @@ CreatePrefColorsGads(REG(a0, struct winData *wd))
 			numPens++;
 		}
 		pens[numPens] = ~0;
-		wd->wd_ExtData[7] = (APTR)numPens;
+		wd->wd_ExtData[7] = (APTR)((long)numPens);
 		if (!numPens) {
 			pens[0] = FindColor(scr->ViewPort.ColorMap,0xffffffff,0xffffffff,0xffffffff,7);
 			pens[1] = FindColor(scr->ViewPort.ColorMap,0x88888888,0x88888888,0x88888888,7);
@@ -1289,8 +1296,8 @@ CreatePrefColorsGads(REG(a0, struct winData *wd))
 	gad = CreateGadget(MX_KIND, gad, &ngad, GTMX_Labels, &sColorSpaceLabels, GTMX_Scaled, TRUE, GTMX_Spacing, 3, GT_Underscore, '_', TAG_END);
 
 	h -= barheight+fontheight+6+bborder;
-	w = (boxwidth*h)/(fontheight+4);
-	w2 = (gWidth-w2-w-boxwidth-6) >> 1;
+	w = (boxwidth*h)/(fontheight+4) -  3 * GOFFSET;
+	w2 = ((gWidth-w2-w-boxwidth-6) >> 1) -  (GOFFSET / 2);
 	gad = wd->wd_ExtData[0] = NewObj(wd,WOT_GADGET,NULL,"gradientslider.gadget",GA_Top,	   barheight+fontheight+5,
 																				GA_Left,	  w2+w+6,
 																				GA_Width,	 boxwidth,

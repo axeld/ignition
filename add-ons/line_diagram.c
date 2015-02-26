@@ -15,8 +15,11 @@
 #endif
 
 #define CATCOMP_NUMBERS
-#include "ignition_strings.h"
-
+#ifdef __amigaos4__
+	#include "../ignition_strings.h"
+#else
+	#include "ignition_strings.h"
+#endif
 #include <string.h>
 #include <stdbool.h>
 
@@ -56,7 +59,7 @@ draw(REG(d0, struct Page *page), REG(d1, ULONG dpi),
 	long i, j, k;
 	ULONG color;
 
-	gSuperDraw(page, dpi, rp, gc, gd, gb);
+	gSuperDraw(page, dpi, rp, gc, (struct gObject *)gd, gb);
 
 	gDoMethod(gd, GCM_GET, GAA_Bounds, &agb);
 	gDoMethod(gd, GCM_GET, GAA_Pseudo3D, &pseudo3D);

@@ -9,6 +9,10 @@
 #include "funcs.h"
 #include "classes.h"
 
+#ifdef __amigaos4__
+	#include <stdarg.h>
+#endif
+
 
 #ifdef DEBUG
 //#  define G2(x) bug("  "); x
@@ -34,12 +38,36 @@ gDoClassMethodA(struct gClass *gc, APTR go, Msg msg)
 {
 	G2(bug("doClassMethodA: %lx - object: %lx - method: %ld\n", gc, go, *(ULONG *)msg));
     if (gc)
-		return gc->gc_Dispatch(gc, go, msg);
-
+    {
+			return gc->gc_Dispatch(gc, go, msg);
+	}
+	
     return 0L;
 }
 
 
+#ifdef __amigaos4__
+ULONG gDoClassMethod(struct gClass *gc, APTR go,  ...) VARARGS68K;
+ULONG gDoClassMethod(struct gClass *gc, APTR go,  ...)
+{
+	va_list ap;
+	Msg m;
+
+
+    if (gc)
+    {
+        ULONG rvalue;
+		
+		va_startlinear(ap, go);
+		m = va_getlinearva(ap, Msg);
+
+		rvalue = gDoClassMethodA(gc, go, m);
+		va_end(ap);
+		return rvalue;
+ 	}
+    return 0L;
+}
+#else
 ULONG
 gDoClassMethod(struct gClass *gc, APTR go, ULONG id, ...)
 {
@@ -49,19 +77,42 @@ gDoClassMethod(struct gClass *gc, APTR go, ULONG id, ...)
 
     return 0L;
 }
-
+#endif
 
 ULONG PUBLIC
 gDoMethodA(REG(a0, APTR go), REG(a1, Msg msg))
 {
+    
 	G2(bug("doMethodA: object: %lx - method: %ld\n", go, *(ULONG *)msg));
+
     if (go)
 		return ((struct gObject *)go)->go_Class->gc_Dispatch(((struct gObject *)go)->go_Class, go, msg);
-
     return 0L;
 }
 
 
+#ifdef __amigaos4__
+ULONG gDoMethod(APTR go,  ...) VARARGS68K;
+ULONG gDoMethod(APTR go,  ...)
+{
+	va_list ap;
+	Msg m;
+
+
+    if (go)
+    {
+        ULONG rvalue;
+
+		va_startlinear(ap, go);
+		m = va_getlinearva(ap, Msg);
+		
+		rvalue = gDoMethodA(go, m);
+		va_end(ap);
+		return rvalue;
+	}
+    return 0L;
+}
+#else
 ULONG
 gDoMethod(APTR go, ULONG id, ...)
 {
@@ -71,6 +122,7 @@ gDoMethod(APTR go, ULONG id, ...)
 
     return 0L;
 }
+#endif
 
 
 ULONG PUBLIC
@@ -790,10 +842,23 @@ gSetObjectAttrsA(struct Page *page, struct gObject *go, struct TagItem *tags)
 }
 
 
-void
-gSetObjectAttrs(struct Page *page, struct gObject *go, ULONG tag1, ...)
+#ifdef __amigaos4__
+void gSetObjectAttrs(struct Page *page, struct gObject *go,...) VARARGS68K;
+void gSetObjectAttrs(struct Page *page, struct gObject *go,...)
+#else
+void gSetObjectAttrs(struct Page *page, struct gObject *go, ULONG tag1, ...)
+#endif
 {
+#ifdef __amigaos4__
+	va_list ap;
+	struct TagItem *tags;
+
+	va_startlinear(ap, go);
+	tags = va_getlinearva(ap, struct TagItem *);
+	gSetObjectAttrsA(page, go, tags);
+#else
 	gSetObjectAttrsA(page, go, (struct TagItem *)&tag1);
+#endif
 }
 
 
@@ -866,10 +931,23 @@ SetGObjectAttrsA(struct Page *page, struct gObject *go, struct TagItem *tags)
 }
 
 
-void
-SetGObjectAttrs(struct Page *page, struct gObject *go, ULONG tag1, ...)
+#ifdef __amigaos4__
+void SetGObjectAttrs(struct Page *page, struct gObject *go, ...) VARARGS68K;
+void SetGObjectAttrs(struct Page *page, struct gObject *go, ...)
+#else
+void SetGObjectAttrs(struct Page *page, struct gObject *go, ULONG tag1, ...)
+#endif
 {
+#ifdef __amigaos4__
+	va_list ap;
+	struct TagItem *tags;
+
+	va_startlinear(ap, go);
+	tags = va_getlinearva(ap, struct TagItem *);
+	SetGObjectAttrsA(page, go, tags);
+#else
 	SetGObjectAttrsA(page, go, (struct TagItem *)&tag1);
+#endif
 }
 
 
@@ -988,7 +1066,7 @@ DoGObjectAction(struct Page *page, struct gObject *go, long type)
 
 	if (type != SELECTDOWN && !gCommandExecuted
 		&& CheckGObject(page, go, page->pg_TabX + imsg.MouseX - page->pg_wTabX, page->pg_TabY + imsg.MouseY - page->pg_wTabY))
-		gDoMethod(go, GCM_COMMAND);
+			gDoMethod(go, GCM_COMMAND);
 
 	DrawSingleGObject(page, go);
 }
@@ -1430,13 +1508,13 @@ NewGObjectA(struct Page *page, struct gClass *gc, struct point2d *points, ULONG 
 	return go;
 }
 
-
+/*
 struct gObject *
 NewGObject(struct Page *page, struct gClass *gc, struct point2d *p, ULONG num, ULONG tag,...)
 {
 	return NewGObjectA(page, gc, p, num, (struct TagItem *)&tag);
 }
-
+*/
 
 /** Bereitet die angegebene Seite vor, ein Objekt mit der Maus
  *  einzufügen.
@@ -1629,7 +1707,7 @@ OpenGObjectWindow(struct gObject *go)
 struct gGroup *
 GetParentGGroup(struct Page *page,struct gGroup *gg)
 {
-    struct MinList *list = FindList(gg);
+    struct MinList *list = FindList((struct MinNode *)gg);
 
     if (list == &page->pg_gGroups)
         return gg;

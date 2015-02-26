@@ -13,19 +13,47 @@
 #endif
 
 #define CATCOMP_NUMBERS
-#include "ignition_strings.h"
+#ifdef __amigaos4__
+	#include "../ignition_strings.h"
+
+	#include <proto/utility.h>
+#else
+	#include "ignition_strings.h"
+#endif
 
 #include <string.h>
 
+#ifdef __amigaos4__
+	#undef  strcmp
+	#define strcmp  Stricmp
+#endif
+
 
 const char *version = "$VER: button.gc 0.15 (6.8.2003)";
-
+#ifdef __amigaos4__
+	#ifdef __GNUC__
+		#ifdef __PPC__
+			#pragma pack(2)
+		#endif
+	#elif defined(__VBCC__)
+		#pragma amiga-align
+	#endif
+#endif
 struct gButton {
 	STRPTR gb_Text, gb_ShowText;
 	struct Term *gb_Term;
 	struct FontInfo *gb_FontInfo;
 	ULONG  gb_ShinePen, gb_ShadowPen, gb_FillPen, gb_TextPen;
 };
+#ifdef __amigaos4__
+	#ifdef __GNUC__
+		#ifdef __PPC__
+			#pragma pack()
+		#endif
+	#elif defined(__VBCC__)
+		#pragma default-align
+	#endif
+#endif
 
 #define GBA_ShadowPen GOA_TagUser + 1
 #define GBA_ShinePen  GOA_TagUser + 2

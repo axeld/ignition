@@ -7,6 +7,9 @@
 
 #include "types.h"
 #include "funcs.h"
+#ifdef __amigaos4__
+	#include <proto/gtdrag.h>
+#endif
 
 
 extern struct FormatVorlage empty_fv;
@@ -219,7 +222,7 @@ FreePrefsModuleData(struct Prefs *pr,struct PrefsModule *pm)
 		case WDT_PREFDISP:
 			if (pr->pr_Disp->pd_AntiFont)
 				CloseFont(pr->pr_Disp->pd_AntiFont);
-			FreeString(pr->pr_Disp->pd_AntiAttr.ta_Name);
+			FreeString((STRPTR)pr->pr_Disp->pd_AntiAttr.ta_Name);
 			FreePooled(pool,pr->pr_Disp,sizeof(struct PrefDisp));
 			break;
 		case WDT_PREFICON:
@@ -227,7 +230,7 @@ FreePrefsModuleData(struct Prefs *pr,struct PrefsModule *pm)
 			FreePooled(pool,pr->pr_Icon,sizeof(struct PrefIcon));
 			break;
 		case WDT_PREFSCREEN:
-			FreeString(pr->pr_Screen->ps_TextAttr.ta_Name);
+			FreeString((STRPTR)pr->pr_Screen->ps_TextAttr.ta_Name);
 			FreePooled(pool,pr->pr_Screen,sizeof(struct PrefScreen));
 			break;
 		case WDT_PREFFILE:
@@ -361,7 +364,7 @@ RemPrefsModule(struct Prefs *pr,struct PrefsModule *pm)
 	type = pm->pm_Type;
 	if ((tn = FindTreeSpecial(&prefstree.tl_Tree,pm)) != 0)
 	{
-		RemoveFromLockedList(&prefstree,tn);
+		RemoveFromLockedList((struct MinList *)&prefstree, (struct MinNode *)tn);
 		FreePooled(pool,tn,sizeof(struct TreeNode));
 	}
 	MyRemove(pm);
@@ -472,14 +475,13 @@ AddPrefsModule(struct Prefs *pr, CONST_STRPTR t, STRPTR iname, UWORD type, UBYTE
 		return NULL;
 
 	if ((pm = AllocPooled(pool, sizeof(struct PrefsModule))) != 0) {
-		pm->pm_Node.in_Name = t;
+		pm->pm_Node.in_Name = (STRPTR)t;
 		pm->pm_Node.in_Type = LNT_PREFSMODULE;
 		pm->pm_Type = type;
 		pm->pm_ImageName = iname;
 		pm->pm_Node.in_Image = LoadImage(iname);
 		pm->pm_Flags = flags;
 		pr->pr_ModuleFlags |= GetPrefsModuleFlag(type);
-
 		AllocPrefsModuleData(pr,type);
 		MyAddTail(&pr->pr_Modules, pm);
 	}
@@ -539,11 +541,11 @@ AddPrefsModuleToLocalPrefs(struct Mappe *mp, UWORD type)
 	{
 		struct TreeNode *tn;
 
-		if ((tn = FindTreeSpecial(&prefstree.tl_Tree, mp)) && LockList(&prefstree, LNF_REFRESH))
+		if ((tn = FindTreeSpecial(&prefstree.tl_Tree, mp)) && LockList((struct MinList *)&prefstree, LNF_REFRESH))
 		{
 			AddPrefsModuleToTree(pr, pm, &tn->tn_Nodes);
 
-			UnlockList(&prefstree, LNF_REFRESH);
+			UnlockList((struct MinList *)&prefstree, LNF_REFRESH);
 		}
 	}
 }
@@ -555,7 +557,7 @@ CopyPrefsModule(struct TreeNode *source,struct TreeNode *tn,struct TreeNode *tar
 	if (!source || !tn || !target)
 		return;
 
-	if (LockList(&prefstree,LNF_REFRESH))
+	if (LockList((struct MinList *)&prefstree,LNF_REFRESH))
 	{
 		struct PrefsModule *pm = tn->tn_Special;
 		struct TreeNode *ttn;
@@ -647,7 +649,7 @@ CopyPrefsModule(struct TreeNode *source,struct TreeNode *tn,struct TreeNode *tar
 			if (imsg.Qualifier & IEQUALIFIER_SHIFT)
 				RemPrefsModule(GetLocalPrefs(source->tn_Special),pm);
 		}
-		UnlockList(&prefstree,LNF_REFRESH);
+		UnlockList((struct MinList *)&prefstree,LNF_REFRESH);
 	}
 }
 
@@ -718,14 +720,14 @@ MakeCmdsMapLinks(struct Mappe *mp)
 		if (!pm || (pm->pm_Flags & PMF_ADD))
 		{
 			foreach(&prefs.pr_AppCmds,ac)
-				AddLink(&mp->mp_AppCmds,ac,renderHook.h_Entry);
+				AddLink(&mp->mp_AppCmds,(struct MinNode *)ac,renderHook.h_Entry);
 		}
 		foreach(&mp->mp_Prefs.pr_AppCmds,ac)
 		{
 			RemoveLinkWithName(&mp->mp_AppCmds,ac->ac_Node.in_Name);
-			AddLink(&mp->mp_AppCmds,ac,renderHook.h_Entry);
+			AddLink(&mp->mp_AppCmds,(struct MinNode *)ac,renderHook.h_Entry);
 		}
-		SortListWith(&mp->mp_AppCmds,LinkNameSort);
+		SortListWith(&mp->mp_AppCmds,LinkNameSort); //GURU-MELDUNG
 
 		UnlockList(&mp->mp_AppCmds,LNF_REFRESH);
 	}
@@ -766,17 +768,17 @@ MakeNamesMapLinks(struct Mappe *mp)
 		if (!pm || (pm->pm_Flags & PMF_ADD))  // add global names
 		{
 			foreach(&prefs.pr_Names,nm)
-				AddLink(&mp->mp_Names,nm,popUpHook.h_Entry);
+				AddLink(&mp->mp_Names,(struct MinNode *)nm,popUpHook.h_Entry);
 		}
 		foreach(&mp->mp_Databases,nm)		 // add local databases
 		{
 			RemoveLinkWithName(&mp->mp_Names,nm->nm_Node.ln_Name);
-			AddLink(&mp->mp_Names,nm,popUpHook.h_Entry);
+			AddLink(&mp->mp_Names,(struct MinNode *)nm,popUpHook.h_Entry);
 		}
 		foreach(&mp->mp_Prefs.pr_Names,nm)	// add local names
 		{
 			RemoveLinkWithName(&mp->mp_Names,nm->nm_Node.ln_Name);
-			AddLink(&mp->mp_Names,nm,popUpHook.h_Entry);
+			AddLink(&mp->mp_Names,(struct MinNode *)nm,popUpHook.h_Entry);
 		}
 		SortListWith(&mp->mp_Names,LinkNameSort);
 
@@ -841,16 +843,16 @@ MakeFormatMapLinks(struct Mappe *mp)
 		{
 			foreach(&prefs.pr_Formats,fv)
 			{
-				AddLink(&mp->mp_Formats,fv,formatHook.h_Entry);
-				AddLink(&mp->mp_CalcFormats,fv,formatHook.h_Entry);
+				AddLink(&mp->mp_Formats,(struct MinNode *)fv,formatHook.h_Entry);
+				AddLink(&mp->mp_CalcFormats,(struct MinNode *)fv,formatHook.h_Entry);
 			}
 		}
 		foreach(&mp->mp_Prefs.pr_Formats,fv)
 		{
-			AddLink(&mp->mp_Formats,fv,formatHook.h_Entry);
-			AddLink(&mp->mp_CalcFormats,fv,formatHook.h_Entry);
+			AddLink(&mp->mp_Formats,(struct MinNode *)fv,formatHook.h_Entry);
+			AddLink(&mp->mp_CalcFormats,(struct MinNode *)fv,formatHook.h_Entry);
 		}
-		AddLink(&mp->mp_Formats,&empty_fv,formatHook.h_Entry);
+		AddLink(&mp->mp_Formats,(struct MinNode *)&empty_fv,formatHook.h_Entry);
 
 		SortListWith(&mp->mp_Formats,LinkFormatSort);
 		SortListWith(&mp->mp_CalcFormats,LinkCalcFormatSort);
@@ -1025,7 +1027,9 @@ InitAppPrefs(STRPTR name)
 	AddPrefsModule(&prefs, GetString(&gLocaleInfo, MSG_SCREEN_PREFS), "icons/prefs_screen.icon", WDT_PREFSCREEN, PMF_GLOBAL);
 	AddPrefsModule(&prefs, GetString(&gLocaleInfo, MSG_DISPLAY_PREFS), "icons/prefs_display.icon", WDT_PREFDISP, 0);
 	AddPrefsModule(&prefs, GetString(&gLocaleInfo, MSG_FILE_PREFS), "icons/prefs_file.icon", WDT_PREFFILE, PMF_GLOBAL);
+
 	//AddPrefsModule(&prefs,"Drucker", "icons/prefs_printer.icon", WDT_PREFPRINTER, 0 /*vorerst*/| PMF_GLOBAL);
+
 	AddPrefsModule(&prefs, GetString(&gLocaleInfo, MSG_FORMATS_PREFS), "icons/prefs_format.icon", WDT_PREFFORMAT, PMF_ADD);
 	AddPrefsModule(&prefs, GetString(&gLocaleInfo, MSG_CONTEXT_MENU_PREFS), "icons/prefs_menu.icon", WDT_PREFCONTEXT, 0);
 	AddPrefsModule(&prefs, GetString(&gLocaleInfo, MSG_MENU_PREFS), "icons/prefs_menu.icon", WDT_PREFMENU, 0);
@@ -1035,9 +1039,10 @@ InitAppPrefs(STRPTR name)
 	AddPrefsModule(&prefs, GetString(&gLocaleInfo, MSG_SYSTEM_PREFS), "icons/prefs_sys.icon", WDT_PREFSYS, PMF_GLOBAL);
 	AddPrefsModule(&prefs, GetString(&gLocaleInfo, MSG_SHEET_PREFS), "icons/prefs_keys.icon", WDT_PREFTABLE, PMF_GLOBAL);
 	AddPrefsModule(&prefs, GetString(&gLocaleInfo, MSG_KEYS_PREFS), "icons/prefs_keys.icon", WDT_PREFKEYS, 0);
+
 	//AddPrefsModule(&prefs, "Werkzeugsleiste", "icons/prefs_tool.icon", WDT_PREFTOOL);
 
-	sortList(&prefs.pr_Modules);
+	sortList(&prefs.pr_Modules); 
 	AddPrefsModulesToTree(&prefs,&prefs.pr_TreeNode->tn_Nodes);
 	InitTreeList(&prefstree);
 
@@ -1053,7 +1058,7 @@ InitAppPrefs(STRPTR name)
 			i = LoadPrefs(&prefs, NULL, lock, PRF_ALL);
 	}
 	if (!i)
-		LoadPrefs(&prefs, name, NULL, PRF_ALL);
+		LoadPrefs(&prefs, name, (BPTR)NULL, PRF_ALL);
 
 	RefreshIconSize(&prefs);
 

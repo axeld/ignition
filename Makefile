@@ -171,7 +171,7 @@ ifeq ($(OS), os4)
   CPU      = -mcpu=powerpc
   WARN     += -Wdeclaration-after-statement -Wdisabled-optimization
   REDEFINE =
-  CFLAGS   += -mcrt=$(CRT) -D__USE_INLINE__ -D__NEW_TIMEVAL_DEFINITION_USED__ \
+  CFLAGS   += -mcrt=$(CRT) -D__USE_INLINE__ -D__NEW_TIMEVAL_DEFINITION_USED__ -D__AMIGAOS41__\
               $(REDEFINE) -Wa,-mregnames
   LDFLAGS  += -mcrt=$(CRT)
 
@@ -285,7 +285,7 @@ OBJS +=	ignition.o prefs.o prefsio.o edit.o table.o cell.o calc.o font.o \
 		handleprefs.o color.o reference.o prefsgadgets.o graphic.o clip.o \
 		undo.o hooks.o database.o pointer.o boopsi.o \
 		diagram.o printer.o lock.o cmd.o menu.o popper.o screen.o search.o \
-		libs/compatibility.o locale.o
+		compatibility.o locale.o
 
 # main target
 .PHONY: all

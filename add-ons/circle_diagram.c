@@ -15,8 +15,14 @@
 #endif
 
 #define CATCOMP_NUMBERS
-#include "ignition_strings.h"
+#ifdef __amigaos4__
+	#include <proto/utility.h>
+	#include <proto/exec.h>
 
+	#include "../ignition_strings.h"
+#else
+	#include "ignition_strings.h"
+#endif
 #include <string.h>
 #include <stdio.h>
 #include <math.h>
@@ -28,11 +34,29 @@ const char *version = "$VER: circle_diagram.gc 0.3 (7.8.2003)";
 
 /** private instance structure **/
 
+#ifdef __amigaos4__
+	#ifdef __GNUC__
+		#ifdef __PPC__
+			#pragma pack(2)
+		#endif
+	#elif defined(__VBCC__)
+		#pragma amiga-align
+	#endif
+#endif
 struct gCircle {
     UBYTE gc_Frame;
 	UBYTE gc_Pseudo3D;
 	ULONG gc_StartAngle;
 };
+#ifdef __amigaos4__
+	#ifdef __GNUC__
+		#ifdef __PPC__
+			#pragma pack()
+		#endif
+	#elif defined(__VBCC__)
+		#pragma default-align
+	#endif
+#endif
 
 /** interface definition **/
 
@@ -52,7 +76,7 @@ ULONG instanceSize = sizeof(struct gCircle);
 
 static struct Catalog *sCatalog;
 
-
+#ifndef __amigaos4__
 void
 gAreaArcMove(struct RastPort *rp, long x, long y, long xradius, long yradius, double degree)
 {
@@ -112,7 +136,7 @@ drawSide(struct RastPort *rp, long x, long y, long xradius, long yradius, long h
 
     gAreaEnd(rp);
 }
-
+#endif
 
 void PUBLIC
 draw(REG(d0, struct Page *page), REG(d1, ULONG dpi), REG(a0, struct RastPort *rp), REG(a1, struct gClass *gc),
@@ -124,7 +148,7 @@ draw(REG(d0, struct Page *page), REG(d1, ULONG dpi), REG(a0, struct RastPort *rp
     long   i;
     long   x, y, xradius, yradius, height;
 
-    gSuperDraw(page, dpi, rp, gc, gd, gb);
+    gSuperDraw(page, dpi, rp, gc, (struct gObject *)gd, gb);
 
     x = gb->gb_Left + (gb->gb_Right - gb->gb_Left) / 2;
     y = gb->gb_Top + (height = gb->gb_Bottom - gb->gb_Top) / 2;
@@ -264,9 +288,19 @@ dispatch(REG(a0, struct gClass *gc), REG(a2, struct gDiagram *gd), REG(a1, Msg m
                     break;
 				case GCA_StartAngle:
 				{
+#ifdef __amigaos4__
+					STRPTR buffer;
+					buffer = VASPrintf("%ld Grad", &this_gc->gc_StartAngle);
+					if(buffer != NULL)
+					{
+						*((struct gcpGet *)msg)->gcpg_Storage = (ULONG)AllocString(buffer);
+						FreeVec(buffer);
+					}
+#else
 					char buffer[64];
 					sprintf(buffer, "%ld Grad", this_gc->gc_StartAngle);
 					*((struct gcpGet *)msg)->gcpg_Storage = (ULONG)AllocString(buffer);
+#endif
 					break;
 				}
                 default:

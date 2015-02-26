@@ -4,10 +4,13 @@
  * Licensed under the terms of the GNU General Public License, version 3.
  */
 
-
 #include "types.h"
 #include "funcs.h"
-
+#ifdef __amigaos4__
+//	#include <proto/bullet.h>
+	#include <stdarg.h>
+	extern struct EGlyphEngine EEngine;
+#endif
 
 #define TRACE_FONT 0
 #if TRACE_FONT
@@ -16,10 +19,10 @@
 #	define TRACE(x) ;
 #endif
 
- 
 struct MinList infos, fonts, families, fontpaths;
 struct SignalSemaphore fontSemaphore;
-
+int static count = 0;
+long static ccount = 0;
 
 static struct Font *
 OpenFontEngine(struct FontFamily *ff, long style)
@@ -32,6 +35,7 @@ OpenFontEngine(struct FontFamily *ff, long style)
 
 	for (fo = (APTR)fonts.mlh_Head; fo->fo_Node.ln_Succ; fo = (APTR)fo->fo_Node.ln_Succ) {
 		name = (STRPTR)GetTagData(OT_Family, 0, fo->fo_Tags);
+//printf("Name=<%s>\n", name);
 		if (name != NULL && !strcmp(name, ff->ff_Node.ln_Name)) {
 			// Found font of the requested family - now check for its properties.
 			// If the font matches 100%, take it
@@ -62,9 +66,31 @@ OpenFontEngine(struct FontFamily *ff, long style)
 
 		fo->fo_Space = GetTagData(OT_SpaceWidth, 2540, fo->fo_Tags);
 		strcpy(engine, name);  strcat(engine, ".library");
+#ifdef __amigaos4__
+		if ((EEngine.ege_BulletBase = OpenLibrary(engine, 0)) != 0) {
+#else
 		if ((BulletBase = OpenLibrary(engine, 0L)) != 0) {
+#endif
+#ifdef __amigaos4__
+            if (!EEngine.ege_BulletBase)
+                return NULL;
+            EEngine.ege_IBullet = (struct BulletIFace *)GetInterface(EEngine.ege_BulletBase, "main", 1, NULL);
+
+			if (EOpenEngine(&EEngine)) {
+			    fo->fo_Engine = EEngine.ege_GlyphEngine;
+				if (!ESetInfo(&EEngine/*(struct EGlyphEngine *)fo->fo_Engine*/, OT_OTagPath, fo->fo_Node.ln_Name, OT_OTagList, fo->fo_Tags, TAG_END))
+					return fo;
+
+				ECloseEngine(&EEngine/*(struct EGlyphEngine *)fo->fo_Engine*/);
+				fo->fo_Engine = NULL;
+			}
+            if (EEngine.ege_IBullet)
+                DropInterface((struct Interface *)EEngine.ege_IBullet);
+			CloseLibrary(EEngine.ege_BulletBase);
+		}
+#else
 			if ((fo->fo_Engine = OpenEngine()) != 0) {
-				if (!SetInfo(fo->fo_Engine, OT_OTagPath, fo->fo_Node.ln_Name,
+				if (!SetInfo(fo->fo_Engine, OT_OTagPath, fo->fo_Node.ln_Name, 
 											OT_OTagList, fo->fo_Tags,
 											TAG_END))
 					return fo;
@@ -74,7 +100,7 @@ OpenFontEngine(struct FontFamily *ff, long style)
 			}
 			CloseLibrary(BulletBase);
 		}
-		
+#endif		
 		// we only get here in case of an error above
 		return NULL;
 	}
@@ -103,7 +129,11 @@ struct FontChar *
 CreateChar(struct FontSize *fs, UWORD code)
 {
 	struct FontChar *fc;
+#ifdef __amigaos4__
+	struct EGlyphEngine *gle;
+#else
 	struct GlyphEngine *gle;
+#endif
 	struct GlyphMap *glm;
 
 	if (!fs)
@@ -114,9 +144,14 @@ CreateChar(struct FontSize *fs, UWORD code)
 
 	// we really have to recreate the character
 
-	gle = fs->fs_Font->fo_Engine;
 	
+#ifdef __amigaos4__
+	gle = &EEngine; //fs->fs_Font->fo_Engine;
+	if (!ESetInfo(gle, OT_DeviceDPI,  fs->fs_DPI,
+#else
 	if (!SetInfo(gle, OT_DeviceDPI,  fs->fs_DPI,
+	gle = fs->fs_Font->fo_Engine;
+#endif
 									 OT_PointHeight, fs->fs_PointHeight,
 									 OT_RotateSin,   fs->fs_RotateSin,
 									 OT_RotateCos,   fs->fs_RotateCos,
@@ -126,7 +161,11 @@ CreateChar(struct FontSize *fs, UWORD code)
 									 OT_GlyphCode,   code,
 									 TAG_END))
 	{
+#ifdef __amigaos4__
+		if (!EObtainInfo(gle, OT_GlyphMap, &glm, TAG_END))
+#else
 		if (!ObtainInfo(gle, OT_GlyphMap, &glm, TAG_END))
+#endif
 		{
 			if ((fc = AllocPooled(pool, sizeof(struct FontChar))) != 0)
 			{
@@ -143,7 +182,11 @@ CreateChar(struct FontSize *fs, UWORD code)
 				else
 					FreePooled(pool, fc, sizeof(struct FontChar));
 			}
+#ifdef __amigaos4__
+			EReleaseInfo(gle, OT_GlyphMap, glm, TAG_END);
+#else
 			ReleaseInfo(gle, OT_GlyphMap, glm, TAG_END);
+#endif
 		}
 	}
 	return fc;
@@ -180,7 +223,11 @@ OutlineLength(REG(a0, struct FontInfo *fi), REG(a1, STRPTR t), REG(d0, long len)
 		else if ((fc = CreateChar(fs, (UWORD)*t)) != 0) {
 			if (fi->fi_Kerning) {
 				if (*(t+1)) {
+#ifdef __amigaos4__
+					if (ESetInfo(&EEngine/*fs->fs_Font->fo_Engine*/,OT_GlyphCode,*t,OT_GlyphCode2,*(t+1),TAG_END) || EObtainInfo(&EEngine/*fs->fs_Font->fo_Engine*/,fi->fi_Kerning == FK_TEXT ? OT_TextKernPair : OT_DesignKernPair,&kern,TAG_END))
+#else
 					if (SetInfo(fs->fs_Font->fo_Engine,OT_GlyphCode,*t,OT_GlyphCode2,*(t+1),TAG_END) || ObtainInfo(fs->fs_Font->fo_Engine,fi->fi_Kerning == FK_TEXT ? OT_TextKernPair : OT_DesignKernPair,&kern,TAG_END))
+#endif
 						kern = 0;
 				} else
 					kern = 0;
@@ -237,8 +284,13 @@ DrawText(REG(a0, struct RastPort *rp), REG(a1, struct FontInfo *fi), REG(a2, STR
 			{
 				if (t[1])
 				{
+#ifdef __amigaos4__
+					if (ESetInfo(&EEngine/*fs->fs_Font->fo_Engine*/, OT_GlyphCode, t[0], OT_GlyphCode2, t[1], TAG_END)
+						|| EObtainInfo(&EEngine/*fs->fs_Font->fo_Engine*/, fi->fi_Kerning == FK_TEXT ? OT_TextKernPair : OT_DesignKernPair, &kern, TAG_END))
+#else
 					if (SetInfo(fs->fs_Font->fo_Engine, OT_GlyphCode, t[0], OT_GlyphCode2, t[1], TAG_END)
 						|| ObtainInfo(fs->fs_Font->fo_Engine, fi->fi_Kerning == FK_TEXT ? OT_TextKernPair : OT_DesignKernPair, &kern, TAG_END))
+#endif
 						kern = 0;
 				}
 				else
@@ -355,7 +407,11 @@ FreeFontSize(struct FontSize *fs)
 		while ((fc = (struct FontChar *)MyRemHead(&fs->fs_Chars)) != 0)
 			FreePooled(pool, fc, sizeof(struct FontChar));
 
+#ifdef __amigaos4__
+		FreeSysObject(ASOT_MEMPOOL, fs->fs_Pool);
+#else
 		DeletePool(fs->fs_Pool);
+#endif
 		FreePooled(pool, fs, sizeof(struct FontSize));
 	}
 }
@@ -384,7 +440,11 @@ GetFontSize(struct FontInfo *fi, ULONG dpi, long pointheight)
 		fs->fs_Font = fo;
 		fs->fs_Locked = 1;
 
+#ifdef __amigaos4__
+		fs->fs_Pool = AllocSysObjectTags(ASOT_MEMPOOL, ASOPOOL_MFlags, MEMF_CLEAR | MEMF_CHIP, ASOPOOL_Puddle, FS_POOLSIZE, ASOPOOL_Threshold, FS_POOLSIZE, TAG_END);
+#else
 		fs->fs_Pool = CreatePool(MEMF_CLEAR | MEMF_CHIP, FS_POOLSIZE, FS_POOLSIZE);    // ToDo: CyberGraphX-Support fehlt!!
+#endif
 		if (!fs->fs_Pool)
 		{
 			FreePooled(pool, fs, sizeof(struct FontSize));
@@ -398,7 +458,7 @@ GetFontSize(struct FontInfo *fi, ULONG dpi, long pointheight)
 }
 
 
-void PUBLIC
+void PUBLIC 
 FreeFontInfo(REG(a0, struct FontInfo *fi))
 {
 	//D(bug("freefont: %lx, locked = %ld\n",fi,fi ? fi->fi_Locked : 0));
@@ -411,11 +471,15 @@ FreeFontInfo(REG(a0, struct FontInfo *fi))
 	FreePooled(pool,fi,sizeof(struct FontInfo));
 }
 
-
+#ifdef __amigaos4__
+//struct FontInfo *ChangeFontInfoA(struct FontInfo *ofi, ULONG thisdpi, struct TagItem *ti, UBYTE freeref)
+struct FontInfo * PUBLIC ChangeFontInfoA(REG(a0, struct FontInfo *ofi), REG(d0, ULONG thisdpi), REG(a1, struct TagItem *ti), REG(d1, UBYTE freeref))
+#else
 struct FontInfo * PUBLIC
 ChangeFontInfoA(REG(a0, struct FontInfo *ofi), REG(d0, ULONG thisdpi), REG(a1, struct TagItem *ti), REG(d1, UBYTE freeref))
+#endif
 {
-	struct FontInfo *fi, *sfi = NULL;
+	struct FontInfo *fi = NULL, *sfi = NULL;
 	struct TagItem *tstate;
 	struct Node *family;
 	struct FontSize *fs;
@@ -424,6 +488,10 @@ ChangeFontInfoA(REG(a0, struct FontInfo *ofi), REG(d0, ULONG thisdpi), REG(a1, s
 	LONG   space, embolden;
 	WORD   rotate, shear;
 	UBYTE  kerning;
+	uint8 i;
+
+	++ccount;
+//DebugPrintF("Callcount = %03d\n", ccount);
 
 	ObtainSemaphore(&fontSemaphore);
 
@@ -472,36 +540,48 @@ ChangeFontInfoA(REG(a0, struct FontInfo *ofi), REG(d0, ULONG thisdpi), REG(a1, s
 		{
 			case FA_Family:
 				family = (struct Node *)ti->ti_Data;
+//DebugPrintF("FA_Family: %0X\n", family);
 				break;
 			case FA_PointHeight:
 				height = ti->ti_Data;
+//DebugPrintF("FA_PointHeight: %0X\n", height);
 				break;
 			case FA_Style:
 				style = ti->ti_Data;
+//DebugPrintF("FA_Style: %0X\n", style);
 				break;
 			case FA_Space:
 //        space = ((long)ti->ti_Data*(long)(thisdpi >> 16)+36)/72;
 				space = ti->ti_Data;
+//DebugPrintF("FA_Space: %0X\n", space);
 				break;
 			case FA_Rotate:
 				rotate = ti->ti_Data;
+//DebugPrintF("FA_Rotate: %0X\n", rotate);
 				break;
 			case FA_Shear:
 				shear = ti->ti_Data;
+//DebugPrintF("FA_Shear: %0X\n", shear);
 				break;
 			case FA_Kerning:
 				kerning = ti->ti_Data;
+//DebugPrintF("FA_Kerning: %0X\n", kerning);
 				break;
 /*      case FA_FreeReference:
 				freeref = ti->ti_Data ? TRUE : FALSE;
 				break;*/
+			default:
+//DebugPrintF("Unbek. TAG\n");
+			    break;
 		}
 	}
 
 	/* unter allen bestehenden FontInfos passende heraussuchen */
-
-	foreach (&infos, fi)
+//DebugPrintF("MinList: %0X %0X %0X %0X\n", &infos, infos.mlh_Head, infos.mlh_Tail, infos.mlh_TailPred);
+ 	for(i = 0, fi = (struct FontInfo *)infos.mlh_Head; ((struct MinNode *)fi)->mln_Succ && i < count; fi = (struct FontInfo *)((struct MinNode *)fi)->mln_Succ, i++)
+// 	foreach (&infos, fi) foreach(l,v)
 	{
+//DebugPrintF("Nr.%d Name:<%s> Next: %0X\n", i + 1, fi->fi_Family->ln_Name, ((struct MinNode *)fi)->mln_Succ);
 		fs = fi->fi_FontSize;
 
 		if (fs->fs_DPI == thisdpi
@@ -513,10 +593,15 @@ ChangeFontInfoA(REG(a0, struct FontInfo *ofi), REG(d0, ULONG thisdpi), REG(a1, s
 			&& fs->fs_BasicEmboldenX == embolden)
 		{
 			sfi = fi;
+//DebugPrintF("Erste Stufe passt: (%d %d %d)\n", style == fi->fi_Style, space == fi->fi_CharSpace, kerning == fi->fi_Kerning);
 			if (style == fi->fi_Style && space == fi->fi_CharSpace && kerning == fi->fi_Kerning)
+			{
+//DebugPrintF("Passt komplett\n");
 				break;
+			}
 		}
 	}
+//DebugPrintF("count=%d i=%d\n", count, i);
 
 	TRACE(("search for style: %ld (0x%08lx)\n", style, sfi));
 
@@ -526,28 +611,39 @@ ChangeFontInfoA(REG(a0, struct FontInfo *ofi), REG(d0, ULONG thisdpi), REG(a1, s
 		fi->fi_Locked++;
 
 		if (freeref && ofi)
+		{
+//DebugPrintF("FreeFontInfo\n");
 			FreeFontInfo(ofi);
+		}
 
 		ReleaseSemaphore(&fontSemaphore);
+//DebugPrintF("Nr.%d Font:<%s> passt!\n\n", i + 1, fi->fi_Family->ln_Name);
 		return fi;
 	}
 
 	if (freeref && ofi && ofi->fi_Locked == 1)  /* the previous one has only been used once, and can be changed */
 	{
+//DebugPrintF("Font <%s> nur 1x genutzt!\n\n", ofi->fi_Family->ln_Name);
 		FreeFontSize(ofi->fi_FontSize);
 		fi = ofi;  ofi = NULL;
 	}
 	else if ((fi = AllocPooled(pool, sizeof(struct FontInfo))) != 0)
 	{
 		fi->fi_Locked = 1;
+		++count;
+//DebugPrintF("infos wird ergänzt (%d\%0X)\n", count, fi);
 		MyAddTail(&infos, fi);
 	}
 
 	if (ofi && freeref)
-		FreeFontInfo(ofi);
+	{
+//DebugPrintF("FreeFontInfo 2\n");
+			FreeFontInfo(ofi);
+	}
 
 	if (!fi)
 	{
+//DebugPrintF("ReleaseSemaphore\n\n");
 		ReleaseSemaphore(&fontSemaphore);
 		return NULL;
 	}
@@ -605,11 +701,13 @@ ChangeFontInfoA(REG(a0, struct FontInfo *ofi), REG(d0, ULONG thisdpi), REG(a1, s
 	if (fi->fi_FontSize)
 	{
 		ReleaseSemaphore(&fontSemaphore);
+//DebugPrintF("Func-Ende %0X\n\n", fi);
 		return fi;
 	}
 
 	FreeFontInfo(fi);
 	ReleaseSemaphore(&fontSemaphore);
+//DebugPrintF("Func-Ende 0\n\n");
 
 	return NULL;
 }
@@ -621,11 +719,24 @@ NewFontInfoA(REG(a0, struct FontInfo *fi), REG(d0, ULONG dpi), REG(a1, struct Ta
 	return ChangeFontInfoA(fi, dpi, ti, FALSE);
 }
 
-
-struct FontInfo *
-NewFontInfo(struct FontInfo *fi, ULONG dpi, ULONG tag, ...)
+#ifdef __amigaos4__
+struct FontInfo * VARARGS68K NewFontInfo(struct FontInfo *fi, ULONG dpi, ...);
+struct FontInfo *NewFontInfo(struct FontInfo *fi, ULONG dpi, ...)
+#else
+struct FontInfo *NewFontInfo(struct FontInfo *fi, ULONG dpi, ULONG tag, ...)
+#endif
 {
+#ifdef __amigaos4__
+	va_list ap;
+	struct TagItem *tags;
+
+	va_startlinear(ap, dpi);
+	tags = va_getlinearva(ap, struct TagItem *);
+//	return NewFontInfoA(fi, dpi, tags);
+	return ChangeFontInfoA(fi, dpi, tags, FALSE);
+#else
 	return ChangeFontInfoA(fi, dpi, (struct TagItem *)&tag, FALSE);
+#endif
 }
 
 
@@ -661,10 +772,23 @@ SetFontInfoA(REG(a0, struct FontInfo *ofi), REG(d0, ULONG thisdpi), REG(a1, stru
  *  @see FreeFontInfo()
  */
 
-struct FontInfo *
-SetFontInfo(struct FontInfo *ofi, ULONG dpi, ULONG tag, ...)
+#ifdef __amigaos4__
+struct FontInfo * VARARGS68K SetFontInfo(struct FontInfo *ofi, ULONG dpi, ...);
+struct FontInfo *SetFontInfo(struct FontInfo *ofi, ULONG dpi, ...)
+#else
+struct FontInfo *SetFontInfo(struct FontInfo *ofi, ULONG dpi, ULONG tag, ...)
+#endif
 {
+#ifdef __amigaos4__
+	va_list ap;
+	struct TagItem *tags;
+
+	va_startlinear(ap, dpi);
+	tags = va_getlinearva(ap, struct TagItem *);
+	return SetFontInfoA(ofi, dpi, tags);
+#else
 	return ChangeFontInfoA(ofi, dpi, (struct TagItem *)&tag, TRUE);
+#endif
 }
 
 
@@ -696,17 +820,24 @@ FreeFonts(void)
 
 	while ((ff = (struct FontFamily *)MyRemHead(&families)) != 0)
 		FreeFamily(ff);
-	while (!IsListEmpty((struct List *)&infos))
-		FreeFontInfo((struct FontInfo *)infos.mlh_Head);
+	while (!IsListEmpty((struct List *)&infos) && count)
+		count--, FreeFontInfo((struct FontInfo *)infos.mlh_Head);
 
 	while ((fo = (struct Font *)MyRemHead(&fonts)) != 0)
 	{
 		FreePooled(pool, fo->fo_Tags, GetTagData(OT_FileIdent, 0, fo->fo_Tags));
 		if (fo->fo_Engine)
 		{
+#ifdef __amigaos4__
+            ECloseEngine(&EEngine/*fo->fo_Engine*/);
+            if (EEngine.ege_IBullet)
+                DropInterface((struct Interface *)EEngine.ege_IBullet);
+			CloseLibrary(EEngine.ege_BulletBase);
+#else
 			BulletBase = fo->fo_Engine->gle_Library;
 			CloseEngine(fo->fo_Engine);
 			CloseLibrary(BulletBase);
+#endif
 		}
 		FreePooled(pool, fo, sizeof(struct Font));
 	}
@@ -716,7 +847,11 @@ FreeFonts(void)
 void
 GetFonts(struct MinList *list, STRPTR dir, BOOL addfont)
 {
+#ifdef __amigaos4__
+	struct AnchorPath *ap;
+#else
 	struct AnchorPath ALIGNED ap;
+#endif
 	struct TagItem *otag;
 	struct FontFamily *ff;
 	struct Font *fo;
@@ -724,12 +859,28 @@ GetFonts(struct MinList *list, STRPTR dir, BOOL addfont)
 	long   rc,i;
 	char   *t,file[256];
 
+#ifdef __amigaos4__
+	ap = AllocDosObjectTags(	DOS_ANCHORPATH, 
+	                         	  	ADO_Mask, SIGBREAKF_CTRL_C,
+	                         		ADO_Strlen, 1024L,
+	                         		TAG_END ); 
+#else
 	memset((char *)&ap, 0, sizeof(struct AnchorPath));
+#endif
 	if (!(current = Lock(dir, ACCESS_READ)))
 		return;
 
 	current = CurrentDir(current);
 
+#ifdef __amigaos4__
+	for (rc = MatchFirst("#?.otag", ap); !rc; rc = MatchNext(ap))
+	{
+		if ((font = Open(ap->ap_Info.fib_FileName, MODE_OLDFILE)) != 0)
+		{
+			if ((otag = AllocPooled(pool, ap->ap_Info.fib_Size)) != 0)
+			{
+				Read(font, otag, ap->ap_Info.fib_Size);
+#else
 	for (rc = MatchFirst("#?.otag", &ap); !rc; rc = MatchNext(&ap))
 	{
 		if ((font = Open(ap.ap_Info.fib_FileName, MODE_OLDFILE)) != 0)
@@ -737,6 +888,7 @@ GetFonts(struct MinList *list, STRPTR dir, BOOL addfont)
 			if ((otag = AllocPooled(pool, ap.ap_Info.fib_Size)) != 0)
 			{
 				Read(font, otag, ap.ap_Info.fib_Size);
+#endif
 				for (i = 0; (otag + i)->ti_Tag != TAG_END; i++)
 				{
 					// OTAG fonts are in big endian format
@@ -752,7 +904,11 @@ GetFonts(struct MinList *list, STRPTR dir, BOOL addfont)
 					int32 weight = GetTagData(OT_StemWeight, OTS_Medium, otag);
 
 					strcpy(file,dir);
+#ifdef __amigaos4__
+					AddPart(file, ap->ap_Info.fib_FileName, 256);
+#else
 					AddPart(file, ap.ap_Info.fib_FileName, 256);
+#endif
 					fo->fo_Node.ln_Name = AllocString(file);
 
 					// set this font's properties
@@ -770,7 +926,11 @@ GetFonts(struct MinList *list, STRPTR dir, BOOL addfont)
 
 				if (!(t = (STRPTR)GetTagData(OT_Family, 0, otag)))
 				{
+#ifdef __amigaos4__
+					strcpy(t = file, ap->ap_Info.fib_FileName);
+#else
 					strcpy(t = file, ap.ap_Info.fib_FileName);
+#endif
 					if ((i = strlen(file)) > 5)
 						file[i - 5] = 0;
 				}
@@ -781,6 +941,7 @@ GetFonts(struct MinList *list, STRPTR dir, BOOL addfont)
 
 					if (t && (ff = AllocPooled(pool, sizeof(struct FontFamily))))
 					{
+//DebugPrintF("Gef. Font:<%s>\n",t);
 						ff->ff_Node.ln_Name = AllocString(t);
 						MyAddTail(list, ff);
 					}
@@ -789,7 +950,13 @@ GetFonts(struct MinList *list, STRPTR dir, BOOL addfont)
 			Close(font);
 		}
 	}
+#ifdef __amigaos4__
+	MatchEnd(ap);
+	FreeDosObject(DOS_ANCHORPATH,ap);
+#else
 	MatchEnd(&ap);
+#endif
+
 	current = CurrentDir(current);
 	UnLock(current);
 
@@ -813,7 +980,7 @@ AddFontPath(STRPTR path)
 }
 
 
-void
+void 
 SearchFonts(void)
 {
 	struct Node *ln;

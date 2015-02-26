@@ -13,7 +13,9 @@
 #ifndef EXEC_TYPES_H
 #include <exec/types.h>
 #endif
-
+#ifdef __amigaos4__
+	#include <proto/intuition.h> 
+#endif
 #include "gclass.h"
 
 struct TablePos;
@@ -42,6 +44,13 @@ void (*gAreaDraw)(struct RastPort *rp,LONG x,LONG y);
 void (*gAreaEnd)(struct RastPort *rp);
 ULONG (*GetDPI)(struct Page *page);
 LONG (*GetOffset)(struct Page *page,BOOL horiz);
+#ifdef __amigaos4__
+	double (*gcalcllength)(double vx, double vy);
+	void (*gAreaArcMove)(struct RastPort *rp, long x, long y, long xradius, long yradius, double degree);
+	void (*gAreaArc)(struct RastPort *rp, long x, long y, long xradius, long yradius, double degree);
+	void (*DrawArc)(struct RastPort *rp, long x, long y, long xradius, long yradius, double start, double end);
+	void (*drawSide)(struct RastPort *rp, long x, long y, long xradius, long yradius, long height, double start, double end);
+#endif
 /**/
 /* fonts */
 /**/
@@ -70,8 +79,13 @@ void (*SetLowColor)(struct RastPort *rp,ULONG color);
 void (*SetOutlineColor)(struct RastPort *rp,ULONG color);
 
 /* variadic functions must be real functions */
-ULONG gDoMethod(APTR go,LONG data,...) VARARGS68K;
-ULONG gDoSuperMethod(struct gClass *gc,APTR go,LONG data,...) VARARGS68K;
-struct FontInfo *SetFontInfo(struct FontInfo *fi,ULONG dpi,ULONG tag1,...) VARARGS68K;
-
+#ifdef __amigaos4__
+	ULONG gDoMethod(APTR go,...) VARARGS68K;
+	ULONG gDoSuperMethod(struct gClass *gc,APTR go,...) VARARGS68K;
+	struct FontInfo *SetFontInfo(struct FontInfo *fi,ULONG dpi,...) VARARGS68K;
+#else
+	ULONG gDoMethod(APTR go,LONG data,...) VARARGS68K;
+	ULONG gDoSuperMethod(struct gClass *gc,APTR go,LONG data,...) VARARGS68K;
+	struct FontInfo *SetFontInfo(struct FontInfo *fi,ULONG dpi,ULONG tag1,...) VARARGS68K;
+#endif
 #endif  /* CLIB_GCLASS_PROTOS_H */

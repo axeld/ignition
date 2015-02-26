@@ -24,7 +24,7 @@ IsDBEmpty(struct Database *db)
 	if (!GetFirstCell(db->db_Page, &db->db_TablePos))
 		empty = TRUE;
 
-	if (((in = db->db_Filter) || (in = db->db_Index)) && !in->in_Index || !db->db_TablePos.tp_Height && db->db_Page && empty)
+	if (((in = (struct Index *)db->db_Filter) || (in = db->db_Index)) && !in->in_Index || !db->db_TablePos.tp_Height && db->db_Page && empty)
 		return TRUE;
 
 	return FALSE;
@@ -70,7 +70,7 @@ GetField(struct Database *db, STRPTR t)
 		return db->db_Root;
 
 	if (db->db_Node.ln_Type == NMT_DATABASE && (fi = (APTR)FindTag(&db->db_Fields, t + i)))
-		j = FindListEntry(&db->db_Fields, fi);
+		j = FindListEntry(&db->db_Fields, (struct MinNode *)fi);
 	else
 		return NULL;
 
@@ -178,7 +178,7 @@ GetDBPos(struct Database *db,ULONG pos)
 	struct Index *in;
 	ULONG  i;
 
-	if (!db || (!((in = db->db_Filter) || (in = db->db_Index))))
+	if (!db || (!((in = (struct Index *)db->db_Filter) || (in = db->db_Index))))
 		return pos;
 	if (!in->in_Index)
 		return 0L;
@@ -208,7 +208,7 @@ GetDBRefs(STRPTR t)
 
 	if (!t)
 		return(NULL);
-	if (refdb && ((in = refdb->db_Filter) || (in = refdb->db_Index)) && !in->in_Index)
+	if (refdb && ((in = (struct Index *)refdb->db_Filter) || (in = refdb->db_Index)) && !in->in_Index)
 		in = NULL;
 	if ((stack = AllocPooled(pool, size)) != 0)
 	{
@@ -736,7 +736,7 @@ UpdateDBCurrent(struct Database *db, ULONG current)
 {
 	struct Index *in;
 
-	if ((in = db->db_Filter) || (in = db->db_Index))
+	if ((in = (struct Index *)db->db_Filter) || (in = db->db_Index))
 	{
 		if (in->in_Index)
 		{
@@ -903,7 +903,7 @@ void UpdateMaskCell(struct Mappe *mp,struct Page *page,struct tableField *tf,str
 			{
 				if ((fi = (APTR)MyFindName(&db->db_Fields, t)) != 0)
 				{
-					if ((dbtf = AllocTableField(db->db_Page, db->db_TablePos.tp_Col + FindListEntry(&db->db_Fields, fi), db->db_TablePos.tp_Row+db->db_Current)) != 0)
+					if ((dbtf = AllocTableField(db->db_Page, db->db_TablePos.tp_Col + FindListEntry(&db->db_Fields, (struct MinNode *)fi), db->db_TablePos.tp_Row+db->db_Current)) != 0)
 					{
 						SetTFText(db->db_Page,dbtf,tf->tf_Original);
 						if (un)
@@ -935,7 +935,7 @@ void SetDBCurrent(struct Database *db,UBYTE mode,long pos)
 
 	if (!db)
 		return;
-	if ((in = db->db_Filter) || (in = db->db_Index)) {
+	if ((in = (struct Index *)db->db_Filter) || (in = db->db_Index)) {
 		/* indexed/filtered */
 		if (!in->in_Index) {
 			db->db_IndexPos = -1;
@@ -1384,13 +1384,13 @@ UpdateDatabaseGadgets(struct Mappe *mp,struct Database *db,struct Field *fi)
 	wd->wd_ExtData[3] = db;  wd->wd_ExtData[4] = fi;
 	if (db)
 	{
-		GT_SetGadgetAttrs(wd->wd_ExtData[0],win,NULL,GTLV_Labels,wd->wd_ExtData[2],GTLV_Selected,FindListEntry(wd->wd_ExtData[2],db),TAG_END);
+		GT_SetGadgetAttrs(wd->wd_ExtData[0],win,NULL,GTLV_Labels,wd->wd_ExtData[2],GTLV_Selected,FindListEntry(wd->wd_ExtData[2],(struct MinNode *)db),TAG_END);
 		GT_SetGadgetAttrs(GadgetAddress(win,3),win,NULL,GA_Disabled,FALSE,TAG_END);
 		GT_SetGadgetAttrs(GadgetAddress(win,4),win,NULL,GA_Disabled,FALSE,GTST_String,db->db_Node.ln_Name,TAG_END);
 		GT_SetGadgetAttrs(GadgetAddress(win,5),win,NULL,GTTX_Text,db->db_Page->pg_Node.ln_Name,TAG_END);
 		GT_SetGadgetAttrs(GadgetAddress(win,7),win,NULL,GA_Disabled,FALSE,GTST_String,db->db_Content,TAG_END);
 		GT_SetGadgetAttrs(GadgetAddress(win,8),win,NULL,GA_Disabled,FALSE,TAG_END);
-		GT_SetGadgetAttrs(wd->wd_ExtData[1],win,NULL,GTLV_Labels,&db->db_Fields,GTLV_Selected,fi ? FindListEntry(&db->db_Fields,fi) : ~0L,GA_Disabled,FALSE,TAG_END);
+		GT_SetGadgetAttrs(wd->wd_ExtData[1],win,NULL,GTLV_Labels,&db->db_Fields,GTLV_Selected,fi ? FindListEntry(&db->db_Fields,(struct MinNode *)fi) : ~0L,GA_Disabled,FALSE,TAG_END);
 	}
 	else
 	{
@@ -1452,7 +1452,7 @@ HandleDatabaseIDCMP(REG(a0, struct TagItem *tag))
 					if (!db || !fi || !fi->fi_Node.ln_Type || fi->fi_Node.ln_Type == FIT_COUNTER)
 						break;
 					list = fi->fi_Node.ln_Type == FIT_REFERENCE ? wd->wd_ExtData[2] : &mp->mp_Prefs.pr_Names;
-					i = PopUpList(win,gad = GadgetAddress(win,13),list,TAG_END);
+					i = PopUpList(win,gad = GadgetAddress(win,13), (struct MinList *)list,TAG_END);
 					if (i != ~0L)
 					{
 						for(page = (struct Page *)list->lh_Head;i && page->pg_Node.ln_Succ;page = (APTR)page->pg_Node.ln_Succ,i--);
@@ -1720,7 +1720,7 @@ UpdateMaskGadgets(struct Mask *ma,struct MaskField *mf)
 		}
 		else if (mf != (APTR)~0L)
 		{
-			GT_SetGadgetAttrs(gad,win,NULL,GTLV_Labels,&ma->ma_Fields,GTLV_Selected,FindListEntry((struct List *)&ma->ma_Fields,mf),TAG_END);
+			GT_SetGadgetAttrs(gad,win,NULL,GTLV_Labels,&ma->ma_Fields,GTLV_Selected,FindListEntry((struct MinList *)&ma->ma_Fields,(struct MinNode *)mf),TAG_END);
 			GT_SetGadgetAttrs(GadgetAddress(win,9),win,NULL,GA_Disabled,FALSE,TAG_END);
 			GT_SetGadgetAttrs(GadgetAddress(win,12),win,NULL,GTST_String,mf->mf_Node.ln_Name,GA_Disabled,FALSE,TAG_END);
 			GT_SetGadgetAttrs(GadgetAddress(win,13),win,NULL,GTST_String,mf->mf_Col && mf->mf_Row ? Coord2String(mf->mf_Col,mf->mf_Row) : NULL,GA_Disabled,FALSE,TAG_END);
@@ -1895,7 +1895,7 @@ UpdateIndexGadgets(struct Database *db, struct Index *in)
 			GT_SetGadgetAttrs(GadgetAddress(win,6),win,NULL,GA_Disabled,TRUE,TAG_END);
 			GT_SetGadgetAttrs(GadgetAddress(win,7),win,NULL,GA_Disabled,TRUE,TAG_END);
 		} else if (in != (APTR)~0L) {
-			GT_SetGadgetAttrs(GadgetAddress(win,3),win,NULL,GTLV_Labels,&db->db_Indices,GTLV_Selected,FindListEntry((struct List *)&db->db_Indices,in),TAG_END);
+			GT_SetGadgetAttrs(GadgetAddress(win,3),win,NULL,GTLV_Labels,&db->db_Indices,GTLV_Selected,FindListEntry((struct MinList *)&db->db_Indices, (struct MinNode *)in),TAG_END);
 			GT_SetGadgetAttrs(GadgetAddress(win,5),win,NULL,GA_Disabled,FALSE,TAG_END);
 			GT_SetGadgetAttrs(GadgetAddress(win,6),win,NULL,GTST_String,in->in_Node.ln_Name,GA_Disabled,FALSE,TAG_END);
 			// GT_SetGadgetAttrs(GadgetAddress(win,7),win,NULL,GA_Disabled,FALSE,TAG_END);
@@ -2059,7 +2059,7 @@ UpdateFilterGadgets(struct Database *db, struct Filter *fi)
 		GT_SetGadgetAttrs(GadgetAddress(win,6),win,NULL,GA_Disabled,TRUE,TAG_END);
 		GT_SetGadgetAttrs(GadgetAddress(win,7),win,NULL,GA_Disabled,TRUE,TAG_END);
 	} else if (fi != (APTR)~0L) {
-		GT_SetGadgetAttrs(GadgetAddress(win,3),win,NULL,GTLV_Labels,&db->db_Filters,GTLV_Selected,FindListEntry((struct List *)&db->db_Filters,fi),TAG_END);
+		GT_SetGadgetAttrs(GadgetAddress(win,3),win,NULL,GTLV_Labels,&db->db_Filters,GTLV_Selected,FindListEntry((struct MinList *)&db->db_Filters, (struct MinNode *)fi),TAG_END);
 		GT_SetGadgetAttrs(GadgetAddress(win,5),win,NULL,GA_Disabled,FALSE,TAG_END);
 		GT_SetGadgetAttrs(GadgetAddress(win,6),win,NULL,GTST_String,fi->fi_Node.ln_Name,GA_Disabled,FALSE,TAG_END);
 		GT_SetGadgetAttrs(GadgetAddress(win,7),win,NULL,GTST_String,fi->fi_Filter,GA_Disabled,FALSE,TAG_END);

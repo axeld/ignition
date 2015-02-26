@@ -1,4 +1,4 @@
-# $Id$
+# $Id: mmakefile.src 53 2010-11-20 14:29:20Z marust $
 
 include $(TOP)/config/make.cfg
 

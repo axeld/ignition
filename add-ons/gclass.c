@@ -10,11 +10,15 @@
 #include <exec/nodes.h>
 #include <exec/memory.h>
 #include <dos/dos.h>
-#include <libraries/gtdrag.h>
 #include <libraries/iffparse.h>
+#ifdef __amigaos4__
+	#include "../libs/gtdrag-OS4/include/libraries/gtdrag.h"
+#else
+	#include <libraries/gtdrag.h>
 
-#include <proto/exec.h>
-#include <proto/dos.h>
+	#include <proto/exec.h>
+	#include <proto/dos.h>
+#endif
 
 #if defined(__SASC)
 #	include <pragmas/exec_pragmas.h>
@@ -29,6 +33,14 @@
 #include "gclass.h"
 #include "gclass_protos.h"
 
+#ifdef __amigaos4__
+	struct ExecIFace *IExec;
+	struct DOSIFace *IDOS; 
+	struct UtilityIFace *IUtility;
+	struct LocaleIFace *ILocale;
+	struct GraphicsIFace * IGraphics;
+	//struct Library *DOSBase;
+#else
 struct __gClass {
 	struct ImageNode gc_Node;   /* name and icon, only for non-diagrams */
 	struct gClass *gc_Super;    /* super class */
@@ -42,12 +54,12 @@ struct __gClass {
 	ULONG  ASM (*gc_FreeClass)(REG(a0, struct gClass *));
 	STRPTR gc_ClassName;        /* internal access (filename) */
 };
-
-struct ExecBase *SysBase;
-struct GfxBase *GfxBase;
-struct UtilityBase *UtilityBase;
-struct LocaleBase *LocaleBase;
-struct Library *MathIeeeDoubBasBase, *MathIeeeDoubTransBase;
+	struct ExecBase *SysBase;
+	struct GfxBase *GfxBase;
+	struct UtilityBase *UtilityBase;
+	struct LocaleBase *LocaleBase;
+	struct Library *MathIeeeDoubBasBase, *MathIeeeDoubTransBase;
+#endif
 APTR   pool, gcBase;
 
 
@@ -61,7 +73,23 @@ extern struct gInterface interface[];
 extern ULONG instanceSize;
 extern const STRPTR superClass;
 
+#ifdef __amigaos4__
+__attribute__((used)) const LONG Version=2;
 
+__attribute__((used)) BOOL 
+InitGClass(struct gClass *gc, APTR *functable, APTR mainpool, 
+		struct GraphicsIFace * gfxIF, struct ExecIFace *execIF, 
+		APTR p1,
+		APTR p2,
+		struct UtilityIFace *utilif, struct LocaleIFace *localeif, long magic)
+{
+
+	//Library-Pointer
+	IExec = execIF;
+	IGraphics = gfxIF;
+	IUtility = utilif;
+	ILocale = localeif;
+#else
 BOOL PUBLIC
 InitGClass(REG(a0, struct __gClass *gc), REG(a1, APTR *functable), REG(a2, APTR mainpool), REG(a3, APTR gfxbase),
 	REG(a6, struct ExecBase *ExecBase), REG(d0, APTR mathbase), REG(d1, APTR mathtrans), REG(d2, APTR utilitybase), REG(d3, APTR localebase),
@@ -80,8 +108,8 @@ InitGClass(REG(a0, struct __gClass *gc), REG(a1, APTR *functable), REG(a2, APTR 
     UtilityBase = utilitybase;
     MathIeeeDoubBasBase = mathbase;
     MathIeeeDoubTransBase = mathtrans;
-	LocaleBase = localebase;
-
+    LocaleBase = localebase;
+#endif
     gc->gc_Dispatch = dispatch;
     gc->gc_Draw = draw;
     gc->gc_FreeClass = freeClass;
@@ -92,6 +120,13 @@ InitGClass(REG(a0, struct __gClass *gc), REG(a1, APTR *functable), REG(a2, APTR 
     pool = mainpool;
 
 	// Initialize function pointers
+#ifdef __amigaos4__
+	gcalcllength = functable[39];
+	drawSide = functable[38];
+	DrawArc = functable[37];
+	gAreaArc = functable[36];
+	gAreaArcMove = functable[35];
+#endif
 	AllocStringLength = functable[34];
 	AllocString = functable[33];
 	FreeString = functable[32];
@@ -133,3 +168,11 @@ InitGClass(REG(a0, struct __gClass *gc), REG(a1, APTR *functable), REG(a2, APTR 
 
 	return TRUE;
 }
+#ifdef __amigaos4__
+LONG _start(STRPTR args, LONG arglen, struct ExecBase *SysBase)
+{
+  //For stupid users who started the lib from CLI
+
+  return RETURN_FAIL;
+}
+#endif

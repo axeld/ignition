@@ -13,19 +13,46 @@
 #endif
 
 #define CATCOMP_NUMBERS
-#include "ignition_strings.h"
+#ifdef __amigaos4__
+	#include <proto/utility.h>
+	#include "../ignition_strings.h"
+#else
+	#include "ignition_strings.h"
+#endif
 
 #include <string.h>
 
+#ifdef __amigaos4__
+	#undef  strcmp
+	#define strcmp  Stricmp
+#endif
 
 const char *version = "$VER: text.gc 0.2 (6.8.2003)";
 
+#ifdef __amigaos4__
+	#ifdef __GNUC__
+		#ifdef __PPC__
+			#pragma pack(2)
+		#endif
+	#elif defined(__VBCC__)
+		#pragma amiga-align
+	#endif
+#endif
 struct gText {
 	STRPTR gt_Text, gt_ShowText;
 	struct Term *gt_Term;
 	struct FontInfo *gt_FontInfo;
 	ULONG gt_Color;
 };
+#ifdef __amigaos4__
+	#ifdef __GNUC__
+		#ifdef __PPC__
+			#pragma pack()
+		#endif
+	#elif defined(__VBCC__)
+		#pragma default-align
+	#endif
+#endif
 
 struct gInterface interface[] = {
 	{GOA_Pen,      NULL/*"Textfarbe:"*/, GIT_PEN, NULL, NULL},

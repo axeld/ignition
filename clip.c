@@ -352,7 +352,7 @@ CutCopyObjects(struct Page *page,struct PasteNode *pn,UBYTE mode)
 				else
 					t = GROUPOBJECT(gg)->go_Node.ln_Name;
 
-				if (!AddToNameList(buffer,t,&len,512))
+				if (!AddToNameList(buffer, (STRPTR)t,&len,512))
 					break;
 			}
 			pn->pn_Node.ln_Name = AllocString(buffer);
@@ -368,6 +368,9 @@ CutCopyCells(struct Page *page, struct PasteNode *pn, uint8 mode)
 	struct tableField *tf = NULL, *stf = NULL;
 	long col, row, maxColumn = -1;
 	bool firstSecured = true;
+#ifdef __amigaos4__
+	bool tfdeleted;			//Flag, das tf schon freigegeben wurde, verhindert so Grim bei OS4
+#endif
 
 	if (pn) {
 		// set the clip name to something meaningful
@@ -398,6 +401,9 @@ CutCopyCells(struct Page *page, struct PasteNode *pn, uint8 mode)
 
 	while ((tf = GetMarkedFields(page, tf, FALSE)) != 0)
 	{
+#ifdef __amigaos4__
+	    tfdeleted = FALSE;
+#endif
 		if ((mode & (CCC_CUT | CCC_DELETE)) != 0 && (tf->tf_Flags & TFF_IMMUTABLE) != 0 && firstSecured) {
 			DocumentSecurity(page, tf);
 			firstSecured = false;
@@ -417,13 +423,20 @@ CutCopyCells(struct Page *page, struct PasteNode *pn, uint8 mode)
 			if ((tf->tf_Flags & TFF_IMMUTABLE) == 0) {
 				RemoveCell(page, tf, true);
 				FreeTableField(tf);
+#ifdef __amigaos4__
+				tfdeleted = TRUE;
+#endif
 			}
 		} else {
 			// copy cell
 			stf = CopyCell(page, tf);
 		}
 
+#ifdef __amigaos4__
+		if (!tfdeleted && (mode & (CCC_CUT | CCC_DELETE)) != 0 && (tf->tf_Flags & TFF_IMMUTABLE) == 0) {
+#else
 		if ((mode & (CCC_CUT | CCC_DELETE)) != 0 && (tf->tf_Flags & TFF_IMMUTABLE) == 0) {
+#endif
 			// find the max. column which has to be redrawn
 			if (stf->tf_Col + stf->tf_Width > maxColumn)
 				maxColumn = stf->tf_Col + stf->tf_Width;
@@ -526,7 +539,7 @@ CutCopyClip(struct Page *page,UBYTE mode)
 		}
 
 		if (pn && (cwin = GetAppWindow(WDT_CLIP)))
-			GT_SetGadgetAttrs(GadgetAddress(cwin,1),cwin,NULL,GTLV_Labels,&clips,GTLV_Selected,CountNodes((struct List *)&clips),TAG_END);
+			GT_SetGadgetAttrs(GadgetAddress(cwin,1),cwin,NULL,GTLV_Labels,&clips,GTLV_Selected,CountNodes((struct MinList *)&clips),TAG_END);
 	}
 	return pn;
 }
@@ -751,7 +764,7 @@ PasteClipboard(struct Page *page, struct ClipboardHandle *cbh, UBYTE mode)
 							do
 							{
 								t = strchr(s, '\n');
-								if (t >= (uint8 *)sp->sp_Data + sp->sp_Size)
+								if ((uint8 *)t >= (uint8 *)sp->sp_Data + sp->sp_Size)
 									break;
 
 								if ((tf = MakeTableField(page, col, row)) != 0)
@@ -760,7 +773,11 @@ PasteClipboard(struct Page *page, struct ClipboardHandle *cbh, UBYTE mode)
 									if (t != NULL)
 										length = t - s;
 									else
+#ifdef __amigaos4__
+										length = (uint8 *)sp->sp_Data + sp->sp_Size	- (uint8 *)s;
+#else
 										length = (uint8 *)sp->sp_Data + sp->sp_Size	- s;
+#endif
 
 									tf->tf_Text = AllocStringLength(s, length);
 									MyAddTail(&list, tf);

@@ -13,7 +13,11 @@
 #endif
 
 #define CATCOMP_NUMBERS
-#include "ignition_strings.h"
+#ifdef __amigaos4__
+	#include "../ignition_strings.h"
+#else
+	#include "ignition_strings.h"
+#endif
 
 #include <string.h>
 
@@ -22,11 +26,29 @@ const char *version = "$VER: frame.gc 0.3 (7.8.2003)";
 
 #define BORDER_SIZE 1536
 
+#ifdef __amigaos4__
+	#ifdef __GNUC__
+		#ifdef __PPC__
+			#pragma pack(2)
+		#endif
+	#elif defined(__VBCC__)
+		#pragma amiga-align
+	#endif
+#endif
 struct Frame
 {
   ULONG  f_ShinePen, f_ShadowPen;
   UBYTE  f_Flags;
 };
+#ifdef __amigaos4__
+	#ifdef __GNUC__
+		#ifdef __PPC__
+			#pragma pack()
+		#endif
+	#elif defined(__VBCC__)
+		#pragma default-align
+	#endif
+#endif
 
 #define FF_RECESSED 1
 #define FF_DOUBLED 2

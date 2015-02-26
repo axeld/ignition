@@ -5,7 +5,6 @@
 #ifndef IGN_TABLE_H
 #define IGN_TABLE_H
 
-
 struct tableSize {
 	UWORD  ts_Pixel;
 	ULONG  ts_mm;

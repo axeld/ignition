@@ -82,7 +82,11 @@ NextWord(STRPTR t, long pos)
 
 	while(*(t+pos) && CharType(*(t+pos),&type))
 		pos++;
+#ifdef __amigaos4__
+	Strlcpy(word,t+oldpos,pos-oldpos+1);
+#else
 	stccpy(word,t+oldpos,pos-oldpos+1);
+#endif
 
 	return word;
 }
@@ -171,7 +175,11 @@ ReplaceString(struct Page *page, struct tableField *tf, struct SearchNode *sn, U
 		{
 			if ((s = AllocPooled(pool,strlen(t)-mslen+strlen(sn->sn_Text)+1)))
 			{
+#ifdef __amigaos4__
+				Strlcpy(s,t,msfirst+1);
+#else
 				stccpy(s,t,msfirst+1);
+#endif
 				strcat(s,sn->sn_Text);
 				strcat(s,t+msfirst+mslen);
 			}
@@ -802,7 +810,7 @@ HandleFindReplaceIDCMP(REG(a0, struct TagItem *tag))
 			switch (id) {
 				case 1:
 				case 6:
-					if (sn && imsg.Code == FindListEntry(list,sn))
+					if (sn && imsg.Code == FindListEntry(list, (struct MinNode *)sn))
 					{
 						GT_SetGadgetAttrs(gad,win,NULL,GTLV_Labels,~0L,TAG_END);
 						sn->sn_Node.ln_Type = (!sn->sn_Node.ln_Type) & 1;

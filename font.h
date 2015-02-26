@@ -5,7 +5,6 @@
 #ifndef IGN_FONT_H
 #define IGN_FONT_H
 
-
 struct FontFamily {
 	struct Node ff_Node;
 };
@@ -85,7 +84,6 @@ struct FontChar {
 	struct GlyphMap fc_Glyph;
 };
 
-
 /*************************** Prototypes ***************************/
 
 extern void SearchFonts(void);
@@ -99,9 +97,17 @@ extern ULONG PUBLIC OutlineLength(REG(a0, struct FontInfo *fi),REG(a1, STRPTR te
 extern ULONG PUBLIC OutlineHeight(REG(a0, struct FontInfo *fi),REG(a1, STRPTR text),REG(d0, long len));
 extern void PUBLIC FreeFontInfo(REG(a0, struct FontInfo *fi));
 extern struct FontInfo * PUBLIC NewFontInfoA(REG(a0, struct FontInfo *fi),REG(d0, ULONG dpi),REG(a1, struct TagItem *ti));
-extern struct FontInfo *NewFontInfo(struct FontInfo *fi,ULONG dpi,ULONG tag,...) VARARGS68K;
-extern struct FontInfo * PUBLIC SetFontInfoA(REG(a0, struct FontInfo *fi),REG(d0, ULONG dpi),REG(a1, struct TagItem *ti));
-extern struct FontInfo *SetFontInfo(struct FontInfo *fi,ULONG dpi,ULONG tag,...) VARARGS68K;
+#ifdef __amigaos4__
+	extern struct FontInfo *NewFontInfo(struct FontInfo *fi,ULONG dpi,...) VARARGS68K;
+#else
+	extern struct FontInfo *NewFontInfo(struct FontInfo *fi,ULONG dpi,ULONG tag,...) VARARGS68K;
+#endif
+	extern struct FontInfo * PUBLIC SetFontInfoA(REG(a0, struct FontInfo *fi),REG(d0, ULONG dpi),REG(a1, struct TagItem *ti));
+#ifdef __amigaos4__
+	extern struct FontInfo *SetFontInfo(struct FontInfo *fi,ULONG dpi,...) VARARGS68K;
+#else
+	extern struct FontInfo *SetFontInfo(struct FontInfo *fi,ULONG dpi,ULONG tag,...) VARARGS68K;
+#endif
 extern struct FontInfo * PUBLIC CopyFontInfo(REG(a0, struct FontInfo *fi));
 
 #endif   /* IGN_FONT_H */
