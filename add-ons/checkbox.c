@@ -393,12 +393,12 @@ initClass(REG(a0, struct gClass *gc))
 {
 	sCatalog = OpenCatalog(NULL, "ignition.catalog", OC_BuiltInLanguage, "deutsch", TAG_END);
 
-	interface[0].gi_Label = GetCatalogStr(sCatalog, MSG_BRIGHT_EDGES_LABEL, "Helle Kanten:");
-	interface[1].gi_Label = GetCatalogStr(sCatalog, MSG_DARK_EDGES_LABEL, "Dunkle Kanten:");
-	interface[3].gi_Label = GetCatalogStr(sCatalog, MSG_TEXT_COLOR_LABEL, "Textfarbe:");
-	interface[4].gi_Label = GetCatalogStr(sCatalog, MSG_CHECKED_COLOR_LABEL, "Markierungsfarbe:");
-	interface[5].gi_Label = GetCatalogStr(sCatalog, MSG_CHECKED_GAD, "Markiert");
-	interface[9].gi_Label = GetCatalogStr(sCatalog, MSG_TEXT_PLACEMENT_LABEL, "Textplazierung:");
+	interface[0].gi_Label = (STRPTR)GetCatalogStr(sCatalog, MSG_BRIGHT_EDGES_LABEL, "Helle Kanten:");
+	interface[1].gi_Label = (STRPTR)GetCatalogStr(sCatalog, MSG_DARK_EDGES_LABEL, "Dunkle Kanten:");
+	interface[3].gi_Label = (STRPTR)GetCatalogStr(sCatalog, MSG_TEXT_COLOR_LABEL, "Textfarbe:");
+	interface[4].gi_Label = (STRPTR)GetCatalogStr(sCatalog, MSG_CHECKED_COLOR_LABEL, "Markierungsfarbe:");
+	interface[5].gi_Label = (STRPTR)GetCatalogStr(sCatalog, MSG_CHECKED_GAD, "Markiert");
+	interface[9].gi_Label = (STRPTR)GetCatalogStr(sCatalog, MSG_TEXT_PLACEMENT_LABEL, "Textplazierung:");
 
 	sPlaceTextLabels[0] = GetCatalogStr(sCatalog, MSG_PLACE_RIGHT_GAD, "rechts");
 	sPlaceTextLabels[1] = GetCatalogStr(sCatalog, MSG_PLACE_LEFT_GAD, "links");

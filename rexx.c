@@ -10,6 +10,9 @@
 #include <dos/dostags.h>
 #ifdef __amigaos4__
 	#include <stdarg.h>
+
+	#define SetRexxVar(a, b, c, d)  SetRexxVarFromMsg(b, c, a)
+	#define GetRexxVar(a, b, c)		GetRexxVarFromMsg(b, c, a)
 #endif
 
 
@@ -2494,7 +2497,7 @@ rxClose(long *opts)
 }
 
 // LOAD NAME,REQ/S,NEW/S,TYPE/K,TYPEREQ/S,OLDPATH/S
-//	  0	1	 2	 3	  4		 5
+//	     0	  1	   2	 3	  		4		 5     
 
 ULONG rxLoad(long *opts)
 {
@@ -2513,8 +2516,17 @@ ULONG rxLoad(long *opts)
 			mp->mp_Path = AllocString(page->pg_Mappe->mp_Path);
 		}
 		if (opts[0]) {
+#ifdef __amigaos4__
+			if(!rxpage->pg_Window)				//Wenn es nicht die Tabelle 0 ist
+			{									//dann den page-Zeiger auf Tabelle 0 bestimmen
+				if (!(page = (struct Page *)FindTag(&mp->mp_Pages, "0")) && !(page = (struct Page *)FindListNumber(&mp->mp_Pages,atol("0"))))
+					return(RC_WARN);
+ 				else
+					SetMainPage(page);			//Hauptseite auf Tabelle 0 setzem
+			}
+#endif
 			strcpy(dest, (STRPTR)opts[0]);
-			SetMapName(mp, FilePart(dest));
+			SetMapName(mp, (STRPTR)FilePart(dest));
 			dest[(ULONG)((char *)PathPart(dest) - dest)] = 0;
 			if (!opts[5] || *dest)
 				FreeString(mp->mp_Path);
@@ -2548,6 +2560,7 @@ ULONG rxLoad(long *opts)
 					ASLFR_InitialDrawer, mp->mp_Path ? mp->mp_Path : projpath,
 					ASLFR_InitialFile,   mp->mp_Node.ln_Name,
 					ASLFR_InitialPattern,"#?",
+					ASLFR_AcceptPattern, "#?.(igs|tcd|csv|txt)",
 					ASLFR_DoSaveMode,	FALSE,
 					ASLFR_DoPatterns,	FALSE,
 					ASLFR_DrawersOnly,   FALSE,
@@ -2612,7 +2625,6 @@ ULONG rxLoad(long *opts)
 #endif
 		} else
 			OpenProjWindow(rxpage, TAG_END);
-
 		handleEvent(rxpage, EVT_START, 0, 0);
 		return RC_OK;
 	}
@@ -2637,7 +2649,7 @@ rxSave(long *opts)
 	if (opts[0]) {
 		FreeString(mp->mp_Path);
 		strcpy(dest, (STRPTR)opts[0]);
-		SetMapName(mp, FilePart(dest));
+		SetMapName(mp, (STRPTR)FilePart(dest));
 		if (PathPart(dest) != (STRPTR)dest) {
 			dest[(ULONG)((char *)PathPart(dest)-dest)] = 0;
 			mp->mp_Path = AllocString(dest);
@@ -2918,7 +2930,7 @@ rxHelp(long *opts)
 		strcpy(t, (STRPTR)opts[0]);
 	else if (imsg.Class == IDCMP_MENUHELP)
 	{
-		struct AppMenueEntry *ame;
+		struct IgnAppMenuEntry *ame;
 		struct MenuItem *item;
 
 		strcpy(t, "unknown");
@@ -3065,7 +3077,7 @@ rxScript(long *opts)
 }
 
 // POS2COORD POS,STEM/K,COL/K,ROW/K
-//		   0   1	  2	 3
+//		   	  0   1	     2	 3
 
 ULONG rxPos2Coord(long *opts)
 {
@@ -3098,7 +3110,7 @@ ULONG rxPos2Coord(long *opts)
 }
 
 // COORD2POS COORD,COL/N,ROW/N,VAR/K/A
-//		   0	 1	 2	 3
+//		       0	 1	 2	     3
 
 ULONG rxCoord2Pos(long *opts)
 {
@@ -3111,11 +3123,19 @@ ULONG rxCoord2Pos(long *opts)
 	{
 		sprintf(t, "%s.COL", (char *)opts[0]);
 		StringToUpper(t);
+#ifdef __amigaos4__
+		if (!GetRexxVar(rxmsg,t,s))
+#else
 		if (!GetRexxVar(rxmsg,t,&s))
+#endif
 			col = atol(s);
 		sprintf(t, "%s.ROW", (char *)opts[0]);
 		StringToUpper(t);
+#ifdef __amigaos4__
+		if (!GetRexxVar(rxmsg,t,s))
+#else
 		if (!GetRexxVar(rxmsg,t,&s))
+#endif
 			row = atol(s);
 	}
 	else
@@ -3367,9 +3387,8 @@ ULONG rxGetBorder(long *opts)
 	return(RC_OK);
 }
 
-
 // GETCELL POS,APEN/S,BPEN/S,FONT/S,FONTSIZE/S,STYLE/S,TEXT/S,FORMAT/S,VISIBLE/S,ALIGNMENT/S,NOTE/S,VAR/K,STEM/K
-//		 0   1	  2	  3	  4		  5	   6	  7		8		 9		   10	 11	12
+//		    0    1	   2	   3	   4		  5	     6	     7		  8		    9		   10	 11	    12
 
 ULONG rxGetCell(long *opts)
 {
@@ -3447,19 +3466,19 @@ ULONG rxGetCell(long *opts)
 		StringToUpper(t);
 		SetRexxVar(rxmsg,t,s,strlen(s));
 	}
-	if (flags & (1 << 7))  // VISIBLE
-	{
-		sprintf(s,"%s",tf && tf->tf_Text ? tf->tf_Text : (STRPTR)"");
-		if (stem)
-			sprintf(t, "%s.VISIBLE", (char *)opts[12]);
-		StringToUpper(t);
-		SetRexxVar(rxmsg,t,s,strlen(s));
-	}
-	if (flags & (1 << 8))  // FORMAT
+	if (flags & (1 << 7))  // FORMAT
 	{
 		sprintf(s,"%s",tf && tf->tf_Format ? tf->tf_Format : (STRPTR)"");
 		if (stem)
 			sprintf(t, "%s.FORMAT", (char *)opts[12]);
+		StringToUpper(t);
+		SetRexxVar(rxmsg,t,s,strlen(s));
+	}
+	if (flags & (1 << 8))  // VISIBLE
+	{
+		sprintf(s,"%s",tf && tf->tf_Text ? tf->tf_Text : (STRPTR)"");
+		if (stem)
+			sprintf(t, "%s.VISIBLE", (char *)opts[12]);
 		StringToUpper(t);
 		SetRexxVar(rxmsg,t,s,strlen(s));
 	}

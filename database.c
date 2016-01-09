@@ -374,7 +374,7 @@ PrepareIndex(struct Database *db, struct Index *in)
 			MyNewList(list);
 			while(strlen(name))
 			{
-				part = FilePart(name);
+				part = (STRPTR)FilePart(name);
 				if ((ln = AllocPooled(pool, sizeof(struct Node) + sizeof(ULONG))) != 0)
 				{
 					if (*part == '-')                        /* sort direction */

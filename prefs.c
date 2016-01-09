@@ -1049,11 +1049,15 @@ InitAppPrefs(STRPTR name)
 	i = 0;
 	if (!strchr(name,':'))
 	{
+#ifdef __amigaos4__
+		BPTR progdir = SetCurrentDir(shelldir), lock;
+		lock = Lock(name, ACCESS_READ);
+		SetCurrentDir(progdir);
+#else
 		BPTR progdir = CurrentDir(shelldir), lock;
-
 		lock = Lock(name, ACCESS_READ);
 		CurrentDir(progdir);
-
+#endif
 		if (lock)
 			i = LoadPrefs(&prefs, NULL, lock, PRF_ALL);
 	}

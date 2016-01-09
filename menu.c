@@ -22,7 +22,7 @@ long cmis_num;
 bool
 CheckMenuItemSpecial(struct MenuItem *item, STRPTR t)
 {
-	struct AppMenueEntry *ame;
+	struct IgnAppMenuEntry *ame;
 	long   len;
 	STRPTR s;
 
@@ -337,8 +337,8 @@ ProjectsMenuLock(REG(a0, struct LockNode *ln), REG(a1, struct MinNode *node), RE
 void
 FreeAppMenus(struct MinList *l)
 {
-	struct AppMenue *am;
-	struct AppMenueEntry *ame,*same;
+	struct IgnAppMenu *am;
+	struct IgnAppMenuEntry *ame,*same;
 
 	while ((am = (APTR)MyRemHead(l)) != 0)
 	{
@@ -348,14 +348,14 @@ FreeAppMenus(struct MinList *l)
 			{
 				FreeString(same->am_Node.ln_Name);
 				FreeString(same->am_AppCmd);
-				FreePooled(pool,same,sizeof(struct AppMenueEntry));
+				FreePooled(pool,same,sizeof(struct IgnAppMenuEntry));
 			}
 			FreeString(ame->am_Node.ln_Name);
 			FreeString(ame->am_AppCmd);
-			FreePooled(pool,ame,sizeof(struct AppMenueEntry));
+			FreePooled(pool,ame,sizeof(struct IgnAppMenuEntry));
 		}
 		FreeString(am->am_Node.ln_Name);
-		FreePooled(pool,am,sizeof(struct AppMenue));
+		FreePooled(pool,am,sizeof(struct IgnAppMenu));
 	}
 }
 
@@ -363,15 +363,15 @@ FreeAppMenus(struct MinList *l)
 void
 CopyAppMenus(struct MinList *from,struct MinList *to)
 {
-	struct AppMenue *am,*sam;
-	struct AppMenueEntry *ame,*same,*mame,*smame;
+	struct IgnAppMenu *am,*sam;
+	struct IgnAppMenuEntry *ame,*same,*mame,*smame;
 
 	if (!from || !to)
 		return;
 
 	foreach(from,am)
 	{
-		if ((sam = AllocPooled(pool,sizeof(struct AppMenue))) != 0)
+		if ((sam = AllocPooled(pool,sizeof(struct IgnAppMenu))) != 0)
 		{
 			sam->am_Node.ln_Name = AllocString(am->am_Node.ln_Name);
 			MyNewList(&sam->am_Items);
@@ -379,7 +379,7 @@ CopyAppMenus(struct MinList *from,struct MinList *to)
 
 			foreach(&am->am_Items,ame)
 			{
-				if ((same = AllocPooled(pool,sizeof(struct AppMenueEntry))) != 0)
+				if ((same = AllocPooled(pool,sizeof(struct IgnAppMenuEntry))) != 0)
 				{
 					same->am_Node.ln_Name = AllocString(ame->am_Node.ln_Name);
 					same->am_AppCmd = AllocString(ame->am_AppCmd);
@@ -389,7 +389,7 @@ CopyAppMenus(struct MinList *from,struct MinList *to)
 
 					foreach(&ame->am_Subs,mame)
 					{
-						if ((smame = AllocPooled(pool,sizeof(struct AppMenueEntry))) != 0)
+						if ((smame = AllocPooled(pool,sizeof(struct IgnAppMenuEntry))) != 0)
 						{
 							smame->am_Node.ln_Name = AllocString(mame->am_Node.ln_Name);
 							smame->am_AppCmd = AllocString(mame->am_AppCmd);
@@ -410,21 +410,21 @@ CreateAppMenu(struct Prefs *pr)
 {
 	struct Menu *menu = NULL;
 	struct NewMenu *nmenu;
-	struct AppMenue *am;
-	struct AppMenueEntry *amItem,*amSub;
+	struct IgnAppMenu *am;
+	struct IgnAppMenuEntry *amItem,*amSub;
 	long   i = 1;
 
 	/** NewMenu-Arraygröße berechnen **/
 
-	for(am = (struct AppMenue *)pr->pr_AppMenus.mlh_Head;am->am_Node.ln_Succ;i++, am = (struct AppMenue *)am->am_Node.ln_Succ)
-		for(amItem = (struct AppMenueEntry *)am->am_Items.mlh_Head;amItem->am_Node.ln_Succ;i++, amItem = (struct AppMenueEntry *)amItem->am_Node.ln_Succ)
-			for(amSub = (struct AppMenueEntry *)amItem->am_Subs.mlh_Head;amSub->am_Node.ln_Succ;i++, amSub = (struct AppMenueEntry *)amSub->am_Node.ln_Succ);
+	for(am = (struct IgnAppMenu *)pr->pr_AppMenus.mlh_Head;am->am_Node.ln_Succ;i++, am = (struct IgnAppMenu *)am->am_Node.ln_Succ)
+		for(amItem = (struct IgnAppMenuEntry *)am->am_Items.mlh_Head;amItem->am_Node.ln_Succ;i++, amItem = (struct IgnAppMenuEntry *)amItem->am_Node.ln_Succ)
+			for(amSub = (struct IgnAppMenuEntry *)amItem->am_Subs.mlh_Head;amSub->am_Node.ln_Succ;i++, amSub = (struct IgnAppMenuEntry *)amSub->am_Node.ln_Succ);
 
 	/** Array nach Preferences füllen **/
 
 	if ((nmenu = AllocPooled(pool, sizeof(struct NewMenu) * i)) != 0)
 	{
-		for(i = 0,am = (struct AppMenue *)pr->pr_AppMenus.mlh_Head;am->am_Node.ln_Succ;i++, am = (struct AppMenue *)am->am_Node.ln_Succ)
+		for(i = 0,am = (struct IgnAppMenu *)pr->pr_AppMenus.mlh_Head;am->am_Node.ln_Succ;i++, am = (struct IgnAppMenu *)am->am_Node.ln_Succ)
 		{
 			(*(nmenu+i)).nm_Type = NM_TITLE;
 			(*(nmenu+i)).nm_Label = am->am_Node.ln_Name;
@@ -525,7 +525,7 @@ RefreshMenu(struct Prefs *pr)
 void
 HandleMenu(void)
 {
-	struct AppMenueEntry *ame;
+	struct IgnAppMenuEntry *ame;
 	struct MenuItem *item;
 
 	if ((item = ItemAddress(imsg.IDCMPWindow->MenuStrip,imsg.Code)) != 0) {

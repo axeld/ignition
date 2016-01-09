@@ -207,7 +207,6 @@ LoadGObjectTags(struct gcpIO *gcpio)
 					if ((ln = FindListNumber(gcpio->gcpio_Fonts, number)) != 0) {
 						struct FontInfo *fi;
 
-//DebugPrintF("LoadGObjectTags Name:<%s> Größe:%d Stil:%d\n", ((struct Node *)(ln->ln_Name))->ln_Name, size, style);
 						if ((fi = NewFontInfo(NULL, gDPI, FA_Family,	  ln->ln_Name,
 														 FA_PointHeight, size,
 														 FA_Style,	   style,
@@ -233,7 +232,9 @@ LoadGObjectTags(struct gcpIO *gcpio)
 					struct Term *term = NULL;
 
 					if (*s == '=')
+					{
 						term = CreateTree(gcpio->gcpio_Page, s);
+					}
 					else if (*s == '#')
 						s = AllocString(s + 1);
 					else
@@ -390,7 +391,11 @@ SaveGInterface(struct gcpIO *gcpio, struct gInterface *gi, struct gObject *go)
 					if (*s == '=')
 					{
 						calcflags &= ~CF_SHORTFUNCS;
+#ifdef __amigaos4__
+						term = CreateTree(go->go_Page,s);		//graphic.h line 440 is gcpio_Page only valid for Load
+#else
 						term = CreateTree(gcpio->gcpio_Page,s);
+#endif
 						calcflags |= CF_SHORTFUNCS;
 					}
 					WriteChunkString(iff,term ? StaticTreeTerm(term,FALSE) : s);
@@ -402,7 +407,7 @@ SaveGInterface(struct gcpIO *gcpio, struct gInterface *gi, struct gObject *go)
 			}
 			case GIT_FONT:
 			{
-				struct NumberLink *nl;
+				struct NumberLink *nl = NULL;
 				struct FontInfo *fi;
 
 				if (GetGObjectAttr(go,tag,(ULONG *)&fi) && (nl = FindLink(fonts,fi->fi_Family)))
@@ -1391,7 +1396,7 @@ LoadGClass(struct gClass *gc)
 		return TRUE;
 
 	if ((dir = Lock(CLASSES_PATH, ACCESS_READ)) != 0) {
-		olddir = CurrentDir(dir);
+		olddir = SetCurrentDir(dir);
 		if ((gc->gc_Segment = LoadSeg(gc->gc_ClassName)) != 0) {
 			//Get ELF handler
 			GetSegListInfoTags(gc->gc_Segment,GSLI_ElfHandle,&elfhandle,TAG_DONE);
@@ -1433,7 +1438,7 @@ LoadGClass(struct gClass *gc)
 			ErrorRequest(GetString(&gLocaleInfo, MSG_CLASS_NOT_FOUND_ERR),gc->gc_ClassName);
 		}
 
-		CurrentDir(olddir);
+		SetCurrentDir(olddir);
 		UnLock(dir);
 	}
 	if (!gc->gc_Segment) {
@@ -1539,13 +1544,14 @@ InitGClasses(void)
 	/* load external class descriptions */
 
 	if ((dir = Lock(CLASSES_PATH, ACCESS_READ)) != 0) {
-		olddir = CurrentDir(dir);
 #ifdef __amigaos4__
-	ap = AllocDosObjectTags(	DOS_ANCHORPATH, 
+		olddir = SetCurrentDir(dir);
+		ap = AllocDosObjectTags(	DOS_ANCHORPATH, 
 	                         	  	ADO_Mask, SIGBREAKF_CTRL_C,
 	                         		ADO_Strlen, 1024L,
 	                         		TAG_END ); 
 #else
+		olddir = CurrentDir(dir);
 		memset(&ap, 0, sizeof(struct AnchorPath));
 #endif
 #ifdef __amigaos4__
@@ -1589,7 +1595,11 @@ InitGClasses(void)
 					else if (!stricmp(t, "DIAGRAM"))
 						type = GCT_DIAGRAM;
 				}
+#ifdef __amigaos4__
+				SetCurrentDir(olddir);
+#else
 				CurrentDir(olddir);
+#endif
 
 				// search correct localized name for current locale
 
@@ -1602,17 +1612,22 @@ InitGClasses(void)
 
 				FreeString(icon);
 
+#ifdef __amigaos4__
+				SetCurrentDir(dir);
+#else
 				CurrentDir(dir);
+#endif
 				Close(dat);
 			}
 		}
 #ifdef __amigaos4__
 		MatchEnd(ap);
 		FreeDosObject(DOS_ANCHORPATH,ap);
+		SetCurrentDir(olddir);
 #else
 		MatchEnd(&ap);
-#endif
 		CurrentDir(olddir);
+#endif
 		UnLock(dir);
 	}
 	sortList(&gclasses);

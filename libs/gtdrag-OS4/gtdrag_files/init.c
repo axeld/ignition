@@ -21,6 +21,7 @@
 #include <exec/types.h>
 #include <libraries/gtdrag.h>
 #include <libraries/iffparse.h>
+#include <libraries/gadtools.h>
 #include <interfaces/gtdrag.h>
 #include <proto/gtdrag.h>
 #include <SDI_hook.h>
@@ -82,11 +83,11 @@ static APTR libExpunge(struct LibraryManagerInterface *Self)
 
         /* Undo what the init code did */
     	while((n = IExec->RemHead((struct List *)&gadlist)))
-      		IExec->FreeMem(n,sizeof(struct DragGadget));
+      		IExec->FreeVec(n);
     	while((n = IExec->RemHead((struct List *)&winlist)))
-      		IExec->FreeMem(n,sizeof(struct DragWindow));
+      		IExec->FreeVec(n);
     	while((da = (struct DragApp *)IExec->RemHead((struct List *)&applist)))
-      		IExec->FreeMem(da,sizeof(struct DragApp));
+      		IExec->FreeVec(da);
       
         IExec->DropInterface((struct Interface *)libBase->ILayers);
         IExec->CloseLibrary(libBase->LayersBase);
@@ -139,7 +140,7 @@ static struct Library *libOpen(struct LibraryManagerInterface *Self, ULONG versi
 
   	if(libBase->libNode.lib_OpenCnt == 1)
   	{
-    	if (!(dmport = IExec->CreateMsgPort()))
+    	if (!(dmport = IExec->AllocSysObjectTags(ASOT_PORT, TAG_END)))
     	{
       		IExec->ReleaseSemaphore(&libBase->LockSemaphore);
       		libExpunge(Self);
@@ -166,7 +167,7 @@ static APTR libClose(struct LibraryManagerInterface *Self)
 
     	while((msg = (APTR)IExec->GetMsg(dmport)))
       		FreeDropMessage((struct GtdragIFace *)Self, msg);
-    	IExec->DeleteMsgPort(dmport);
+    	IExec->FreeSysObject(ASOT_PORT, dmport);
   	}
 
     /* Make the close count */

@@ -121,6 +121,9 @@ DuplicateGGroup(struct Page *page, struct gGroup *cgg, struct UndoNode *un)
 		return NULL;
 	}
 
+#ifdef __amigaos4__
+	GROUPOBJECT(cgg)->go_Page = page;		//set go_Page to avoid GrimReaper
+#endif
 	if ((gg = CopyGGroup(cgg, TRUE)) != 0) {
 		/* if the original is on the same page */
 

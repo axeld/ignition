@@ -803,6 +803,8 @@ CopyGTagValue(ULONG type, struct TagItem *ti)
 ULONG
 GetGObjectAttr(struct gObject *go, ULONG tag, ULONG *data)
 {
+    ULONG rvalue;
+    
 	G2(bug("getGObjectAttr: %lx - tag: %lx - data: %lx\n", go, tag, data));
 	return gDoMethod(go, GCM_GET, tag, data);
 }
@@ -1192,7 +1194,9 @@ RemoveGObject(struct Page *page, struct gObject *go, BYTE flags)
     page->pg_NumObjects--;
 
     MyRemove(go);
-    go->go_Page = NULL;
+#ifndef __amigaos4__
+    go->go_Page = NULL;		//calls the grim in CopyGGroup
+#endif
 
     if (!(flags & ADDREM_NOGROUP))
         MyRemove(OBJECTGROUP(go));

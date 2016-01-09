@@ -1425,7 +1425,7 @@ HandleGGadget(struct Page *page, struct gObject *go)
                         STRPTR u;
 
 						zstrcpy(path, name);
-                        name = FilePart(name);
+                        name = (STRPTR)FilePart(name);
 
                         if ((u = PathPart(path)) != 0)
                             *u = 0;
@@ -1439,7 +1439,9 @@ HandleGGadget(struct Page *page, struct gObject *go)
                                                 ASLFR_InitialFile,   name ? name : (STRPTR)"",
                                                 ASLFR_DoSaveMode,    FALSE,
 #ifdef __amigaos4__
-												ASLFR_AcceptPattern, "#?.iff", //Vorerst nur IFF
+												ASLFR_AcceptPattern, "#?.(iff|png|gif|jpg)", 
+												ASLFR_InitialPattern, "#?.(iff|png|gif|jpg)",
+												ASLFR_DoPatterns, 	 TRUE,
 #else
                                                 ASLFR_InitialPattern,"#?",
                                                 ASLFR_DoPatterns,    FALSE,

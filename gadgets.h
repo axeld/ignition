@@ -6,14 +6,8 @@
 #define IGN_GADGETS_H
 
 
-#ifdef __amigaos4__
-//	#include "libs/textedit/include/gadgets/TextEdit.h"
-#else
+#ifndef __amigaos4__
 	#include <gadgets/TextEdit.h>
-#endif
-#ifdef __amigaos4__
-//	#include "libs/scroller/include/gadgets/Scroller.h"
-#else
 	#include <gadgets/Scroller.h>
 #endif
 

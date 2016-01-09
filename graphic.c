@@ -218,7 +218,8 @@ MakeTmpRas(long width, long height)
 
 	FreeTmpRas();
 #ifdef __amigaos4__
-	if ((sTempBitmap = AllocVecTags(bytes, AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE)) != 0)
+	if ((sTempBitmap = AllocVecTags(bytes, AVT_Type, MEMF_PRIVATE, AVT_ClearWithValue, 0, TAG_DONE)) != 0)
+//	if ((sTempBitmap = AllocVecTags(bytes, AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE)) != 0)
 #else
 	if ((sTempBitmap = AllocVec(bytes, MEMF_CHIP | MEMF_CLEAR)) != 0)
 #endif

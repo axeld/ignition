@@ -11,7 +11,11 @@ struct FontFamily {
 
 struct Font {
 	struct Node fo_Node;
+#ifdef __amigaos4__
+	struct EGlyphEngine *fo_Engine;
+#else
 	struct GlyphEngine *fo_Engine;
+#endif
 	long   fo_Style;
 	long   fo_Space;
 	struct TagItem *fo_Tags;

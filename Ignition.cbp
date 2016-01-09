@@ -1,0 +1,90 @@
+<?xml version="1.0" ?>
+<CodeBench_Project name="Ignition" path="Daten:Develop/Ignition/Ignition.cbp" created="1116962327" lastmodified="1192987252">
+	<plugin name="PROGDIR:Plugins/AmigaOS4SDK.CCPlugin" flags="0"/>
+	<label identifier="////"/>
+	<target name="Ignition"/>
+	<homedir name="Daten:Develop/Ignition"/>
+	<includedir name="Daten:Develop/ignition/include"/>
+	<compiler name="SDK:gcc/bin/gcc" switches="-D__USE_OLD_TIMEVAL__ -D__USE_INLINE__   -O3 -Ilibs/gtdrag-OS4/include -gstabs" stack="131072"/>
+	<linker switches="-lauto -rauto -lamiga -lgtdrag_auto"/>
+	<debugger name="Programme:SDKExtern/db101/db101" addsymbols="1"/>
+	<header pattern="#?.(h|hpp|hxx)"/>
+	<source pattern="#?.(c|cpp|cc|cxx)"/>
+	<object pattern="#?.(o|lib|a)"/>
+	<other pattern="~(#?.h|#?.c|#?.cpp|#?.cc|#?.cxx|#?.o|#?.lib|#?.a)"/>
+	<builder name="SDK:c/make -f"/>
+	<environment/>
+	<headers>
+		<file name="Daten:Develop/ignition/calc.h" open="0"/>
+		<file name="Daten:Develop/ignition/classes.h" open="0"/>
+		<file name="Daten:Develop/ignition/debug.h" open="0"/>
+		<file name="Daten:Develop/ignition/font.h" open="0"/>
+		<file name="Daten:Develop/ignition/funcs.h" open="0"/>
+		<file name="Daten:Develop/ignition/ignition_strings.h" open="0"/>
+		<file name="Daten:Develop/ignition/gadgets.h" open="0"/>
+		<file name="Daten:Develop/ignition/graphic.h" open="1"/>
+		<file name="Daten:Develop/ignition/images.h" open="0"/>
+		<file name="Daten:Develop/ignition/io.h" open="0"/>
+		<file name="Daten:Develop/ignition/prefs.h" open="1"/>
+		<file name="Daten:Develop/ignition/table.h" open="1"/>
+		<file name="Daten:Develop/ignition/types.h" open="1"/>
+		<file name="Daten:Develop/ignition/version.h" open="0"/>
+		<file name="Daten:Develop/ignition/wdt.h" open="0"/>
+		<file name="Daten:Develop/ignition/windefs.h" open="0"/>
+		<file name="Daten:Develop/ignition/windows.h" open="0"/>
+		<file name="Daten:Develop/ignition/include/compatibility.h" open="0"/>
+	</headers>
+	<sources>
+		<file name="compatibility.c" open="0"/>
+		<file name="database.c" open="0"/>
+		<file name="debug.c" open="0"/>
+		<file name="diagram.c" open="0"/>
+		<file name="lib/safeclip/generic/safeclip.c" open="0"/>
+		<file name="edit.c" open="0"/>
+		<file name="boopsi.c" open="0"/>
+		<file name="calc.c" open="0"/>
+		<file name="cell.c" open="1"/>
+		<file name="classes.c" open="1"/>
+		<file name="clip.c" open="0"/>
+		<file name="cmd.c" open="0"/>
+		<file name="color.c" open="0"/>
+		<file name="font.c" open="0"/>
+		<file name="functions.c" open="0"/>
+		<file name="gadgets.c" open="0"/>
+		<file name="graphic.c" open="1"/>
+		<file name="handleprefs.c" open="0"/>
+		<file name="handlewindows.c" open="0"/>
+		<file name="hooks.c" open="0"/>
+		<file name="ignition.c" open="1"/>
+		<file name="images.c" open="0"/>
+		<file name="initwindows.c" open="0"/>
+		<file name="io.c" open="0"/>
+		<file name="locale.c" open="0"/>
+		<file name="lock.c" open="0"/>
+		<file name="menu.c" open="0"/>
+		<file name="objects.c" open="1"/>
+		<file name="pointer.c" open="0"/>
+		<file name="popper.c" open="0"/>
+		<file name="prefs.c" open="0"/>
+		<file name="prefsgadgets.c" open="0"/>
+		<file name="prefsio.c" open="0"/>
+		<file name="printer.c" open="1" current="1"/>
+		<file name="project.c" open="0"/>
+		<file name="reference.c" open="0"/>
+		<file name="rexx.c" open="0"/>
+		<file name="screen.c" open="0"/>
+		<file name="search.c" open="0"/>
+		<file name="support.c" open="1"/>
+		<file name="table.c" open="1"/>
+		<file name="undo.c" open="0"/>
+		<file name="windows.c" open="1"/>
+	</sources>
+	<others>
+		<file name="Project Notes" open="1"/>
+	</others>
+	<flags value="0x0000000002078001"/>
+	<buildscript name="Makefile.OS4" depth="3" open="0"/>
+	<projectnotes open="1" current="0" top="0" left="0" line="44" row="0"/>
+	<buildwindow open="1"/>
+	<logfile name="RAM Disk:Build.log"/>
+</CodeBench_Project>

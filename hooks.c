@@ -26,7 +26,9 @@ fillHookFunc(REG(a0, struct Hook *h), REG(a2, struct RastPort *rastp), REG(a1, s
 {
 	if (prefs.pr_Screen->ps_BackFill) {
 		rect = (struct Rectangle *)((ULONG *)rect + 1);
-		//RectFill(&scrRp,rect->MinX,rect->MinY,rect->MaxX,rect->MaxY); //GURU-MELDUNG
+#ifndef __amigaos4__
+		RectFill(&scrRp,rect->MinX,rect->MinY,rect->MaxX,rect->MaxY); //GURU-MELDUNG under OS4
+#endif
 	}
 }
 

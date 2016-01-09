@@ -1,0 +1,58 @@
+
+  Notes relating to project: Ignition
+
+*************************************************************
+
+
+
+//// ZU BEACHTEN
+- die Datei cybergraphics.h im Ignition verzeichnis ist aus dem Internet. Rechte??? Braucht boopsi.c
+- AppMenu und AppMenuEntry wurde wegen gleichheit mit AmigosOS4 Strukturen IgnAppMenu und IgnAppMenuEntry
+- Wegen Namensgleichheit mit AmigaOS Fkt. wurde aus OpenClass IgnOpenClass.
+
+//// TO DO
+*******
+- Translate the sources to GCC instead of SAS/C.
+- Improve and complete TurboCalc I/O add-on.
+- UI for CSV I/O add-on.
+- Write I/O add-ons for OpenOffice, and Excel.
+- Real 3D diagrams using OpenGL.
+- Switch to a real drawing backend like AGG (older versions are BSD licensed, and is already available for AmigaOS), or Cairo.
+- Modernize UI through ReAction and/or MUI.
+- Make sure it runs fine on all Amiga-like platforms (AmigaOS, MorphOS).
+- Port to AROS.
+- Cleanup the sources.
+- Complete the end user documentation.
+- Write developer documentation for the I/O and graphics add-ons.
+- Parts of the documentation are only available in German. Also, many comments in the sources are in German.
+- Makros max() und min() auf MAX() und MIN() ändern. clib/macros.h dann verwendbar. makros werden GROSS geschrieben. 
+- include wahnsinn mit types.h und funcs.h abschaffen macht erstellung von neuen versionen langsam, wenn eine geändert werden muss.
+- cybergraphics funktionen entfernen und durch Picasso96 oder graphics ersetzen.
+- Scoll-Fkt mit mouse einbauen
+- Druckvorschau
+- Druckbereich festlegbar
+- 90 Grad gedrehter Druck
+- korrektere formatierung beim import von frendformaten. manchmal ist der zellinhalt nicht richtig ausgerichtet. weil schrift zu groß ist.
+
+//// BUGS
+******
+- Keine anderen bilder ausser iff können geladen werden, sonst Crash. <<<Im Moment ist die Auswahl durch Pattern auf .iff beschränkt.>>>
+- Passwortschutz noch nicht ganz klar.
+- Anzeige von Texten in Objekten (Kreis, Gradiente, Knopf etc) erscheinen nur, wenn sie in das objekt passen
+- der ok button im einstellungsmenue fkt. manchmal nicht (besonders nach tastatur zb)
+- Was ist der Grund für Papierkorb und Unbekannt in Einstellungsmenue?
+- Über Grafik vielleicht durch Bild ersetzen.
+- Einfügen im Formelgadget geht ohne verlust schon bestehender Daten. Einfügen aus Clipboard in Zelle, führt zum Verlust der vorhandenen Daten.
+- Warum ist die Beschriftung der Spalten/Zeilen nicht genauso gross, wie der Zelleninhalt, wenn beide die selbe Schriftgröße nutzen?
+
+//// Feature Request
+******
+- Automatische Anpassung (Optimale Größe) bei Doppelklick auf den Spalten Rand oben .
+- die nutzung von AISS, ein fallback auf das aktuelle Icon Set ist in Ordnung (testen, ob ich die Icons einfach austauschen kann)
+- Iconifizieren
+- Diagramme als Grafik speichern.
+- Bei einigen Diagrammen auch X-Werte anzeigen.
+- Nicht einfach ignition beenden, wenn letzte tabelle geschlossen wird, sondern nachfragen!
+- Keine neue Inztanz von ignition starten, wenn es schon läuft, sondern laufende nach vorne holen!
+- Uhrzeit stoppt bzw. Stopuhr-Mauszeiger kommt in "Rechnen mit Typen", wenn das Menue geöffnet wird, nicht aber beim context-menue (Zelle-Rechtsklick)
+- Internet URL Feld, das einen Namen für einen langen link erlaubt.

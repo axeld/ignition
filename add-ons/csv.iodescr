@@ -7,13 +7,13 @@ WRITEABLE
 NODEFAULT
 HASPREFSGUI
 PRI=1
-PREFS=guess&sep= 
+PREFS=GUESS&sep=;
 --
  Einfaches Austauschformat zwischen verschiedenen Datenbanken oder Tabellenkalkulationen.
  Es bleibt ausschlieﬂlich der reine Text und die Zellenaufteilung erhalten.
- Version 0.7 (4.3.2001)
+ Version 1.00 (05.05.2015)
 :english
  Comma Separated Values.
  The standard exchange format for databases and spreadsheet applications.
  Preserves only the plain text part and the cell order.
- Version 0.7 (4.3.2001)
+ Version 1.00 (05.05.2015)

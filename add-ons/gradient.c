@@ -212,9 +212,9 @@ ULONG PUBLIC
 initClass(REG(a0, struct gClass *gc))
 {
 	sCatalog = OpenCatalog(NULL, "ignition.catalog", OC_BuiltInLanguage, "deutsch", TAG_END);
-	interface[0].gi_Label = GetCatalogStr(sCatalog, MSG_FIRST_COLOR_LABEL, "Erste Farbe:");
-	interface[1].gi_Label = GetCatalogStr(sCatalog, MSG_SECOND_COLOR_LABEL, "Zweite Farbe:");
-	interface[2].gi_Label = GetCatalogStr(sCatalog, MSG_DIRECTION_LABEL, "Richtung:");
+	interface[0].gi_Label = (STRPTR)GetCatalogStr(sCatalog, MSG_FIRST_COLOR_LABEL, "Erste Farbe:");
+	interface[1].gi_Label = (STRPTR)GetCatalogStr(sCatalog, MSG_SECOND_COLOR_LABEL, "Zweite Farbe:");
+	interface[2].gi_Label = (STRPTR)GetCatalogStr(sCatalog, MSG_DIRECTION_LABEL, "Richtung:");
 
 	sAlignmentLabels[0] = GetCatalogStr(sCatalog, MSG_ORDER_HORIZONTAL_GAD, "horizontal");
 	sAlignmentLabels[1] = GetCatalogStr(sCatalog, MSG_ORDER_VERTICAL_GAD, "vertikal");

@@ -545,9 +545,7 @@ HandleTabGadget(struct Page *page)
 	}
 
 	if (tf && page->pg_Gad.DispPos >= 0) {
-		i = page->pg_Gad.cp.cp_X + bspace + OutlineLength(tf->tf_FontInfo,
-				tf->tf_Text + page->pg_Gad.FirstChar,
-				page->pg_Gad.DispPos - page->pg_Gad.FirstChar);
+		i = page->pg_Gad.cp.cp_X + bspace + OutlineLength(tf->tf_FontInfo, tf->tf_Text + page->pg_Gad.FirstChar, page->pg_Gad.DispPos - page->pg_Gad.FirstChar);
 
 		if (i < wd->wd_TabX
 			|| i > wd->wd_TabX + wd->wd_TabW
@@ -559,8 +557,7 @@ HandleTabGadget(struct Page *page)
 		}
 
 		page->pg_Gad.DispPos = -page->pg_Gad.DispPos - 1;
-		DrawTableCoord(page,i,page->pg_Gad.cp.cp_Y + 1, i + 1,
-			page->pg_Gad.cp.cp_Y + page->pg_Gad.cp.cp_H - 3);
+		DrawTableCoord(page,i,page->pg_Gad.cp.cp_Y + 1, i + 1, page->pg_Gad.cp.cp_Y + page->pg_Gad.cp.cp_H - 3);
 		page->pg_Gad.DispPos = -page->pg_Gad.DispPos - 1;
 
 		if (imsg.Class == IDCMP_RAWKEY) {
@@ -569,8 +566,7 @@ HandleTabGadget(struct Page *page)
 					page->pg_Gad.DispPos = 0;
 				else
 					page->pg_Gad.DispPos--;
-			} else if (imsg.Code == CURSORRIGHT && tf->tf_Text
-				&& page->pg_Gad.DispPos < strlen(tf->tf_Text)) {
+			} else if (imsg.Code == CURSORRIGHT && tf->tf_Text && page->pg_Gad.DispPos < strlen(tf->tf_Text)) {
 				if ((imsg.Qualifier & 3) != 0)
 					page->pg_Gad.DispPos = strlen(tf->tf_Text);
 				else
@@ -620,8 +616,7 @@ HandleTabGadget(struct Page *page)
 					}
 					if ((imsg.Qualifier & 3) != 0) {
 						if ((t = tf->tf_Text) != NULL) {
-							tf->tf_Text = AllocString(tf->tf_Text
-								+ page->pg_Gad.DispPos);
+							tf->tf_Text = AllocString(tf->tf_Text + page->pg_Gad.DispPos);
 							FreeString(t);
 							len = page->pg_Gad.DispPos = 0;
 							break;
@@ -629,13 +624,19 @@ HandleTabGadget(struct Page *page)
 						break;
 					}
 					page->pg_Gad.DispPos--;
+#ifdef __amigaos4__
+					//avoids a grim, when cursor wents out of scope and deletes a character to much
+					if(page->pg_Gad.DispPos -  page->pg_Gad.FirstChar == 0 && page->pg_Gad.FirstChar > 0)
+					{
+						page->pg_Gad.FirstChar--;
+						DrawTableCoord(page, 0, page->pg_Gad.cp.cp_Y + 1, i + 1, page->pg_Gad.cp.cp_Y + page->pg_Gad.cp.cp_H - 3);
+					}
+#endif
 					// supposed to fall through
 
 				case 127:	// delete
 					if ((imsg.Qualifier & 3) != 0) {
-						if ((t = tf->tf_Text)
-							&& (tf->tf_Text = AllocPooled(pool,
-								page->pg_Gad.DispPos + 1))) {
+						if ((t = tf->tf_Text) && (tf->tf_Text = AllocPooled(pool, page->pg_Gad.DispPos + 1))) {
 							CopyMem(t, tf->tf_Text, page->pg_Gad.DispPos);
 							FreeString(t);
 							len = page->pg_Gad.DispPos;
@@ -643,10 +644,8 @@ HandleTabGadget(struct Page *page)
 						}
 						break;
 					}
-					if (tf->tf_Text && strlen(tf->tf_Text)
-							> page->pg_Gad.DispPos) {
-						if (strlen(tf->tf_Text) > 1 && (st = t
-								= AllocPooled(pool, strlen(tf->tf_Text)))) {
+					if (tf->tf_Text && strlen(tf->tf_Text) > page->pg_Gad.DispPos) {
+						if (strlen(tf->tf_Text) > 1 && (st = t = AllocPooled(pool, strlen(tf->tf_Text)))) {
 							for (i = 0; tf->tf_Text[i]; i++) {
 								if (i != page->pg_Gad.DispPos)
 									*(st++) = tf->tf_Text[i];
@@ -690,34 +689,24 @@ HandleTabGadget(struct Page *page)
 		if (page->pg_Gad.DispPos == PGS_FRAME)
 			changed = TRUE;
 		else {
-			i = bspace + OutlineLength(tf->tf_FontInfo, tf->tf_Text,
-				tf->tf_Text ? strlen(tf->tf_Text) : 0);
+			i = bspace + OutlineLength(tf->tf_FontInfo, tf->tf_Text, tf->tf_Text ? strlen(tf->tf_Text) : 0);
 
 			if (tf->tf_WidthSet == 0xffff && tf->tf_Width != tf->tf_MaxWidth) {
 				oldw = page->pg_Gad.cp.cp_W;
-				for (page->pg_Gad.cp.cp_W = 0, j = page->pg_Gad.cp.cp_Col;
-					i > page->pg_Gad.cp.cp_W;
-					page->pg_Gad.cp.cp_W += GetTFWidth(page, j++))
+				for (page->pg_Gad.cp.cp_W = 0, j = page->pg_Gad.cp.cp_Col; i > page->pg_Gad.cp.cp_W; page->pg_Gad.cp.cp_W += GetTFWidth(page, j++))
 					;
 				if (oldw != page->pg_Gad.cp.cp_W) {
 					SetTFWidth(page, tf);
-					DrawTableCoord(page, min(oldw, page->pg_Gad.cp.cp_W)
-							+ page->pg_Gad.cp.cp_X - 4,
-						page->pg_Gad.cp.cp_Y - 2, wd->wd_TabX + wd->wd_TabW,
-						page->pg_Gad.cp.cp_Y + page->pg_Gad.cp.cp_H/*+2*/);
+					DrawTableCoord(page, min(oldw, page->pg_Gad.cp.cp_W) + page->pg_Gad.cp.cp_X - 4, page->pg_Gad.cp.cp_Y - 2, wd->wd_TabX + wd->wd_TabW, page->pg_Gad.cp.cp_Y + page->pg_Gad.cp.cp_H/*+2*/);
 				}
 			}
 
 			oldfc = page->pg_Gad.FirstChar;
 
 			if (page->pg_Gad.DispPos > page->pg_Gad.FirstChar) {
-				i = bspace + OutlineLength(tf->tf_FontInfo,
-					tf->tf_Text + page->pg_Gad.FirstChar,
-					page->pg_Gad.DispPos - page->pg_Gad.FirstChar);
+				i = bspace + OutlineLength(tf->tf_FontInfo, tf->tf_Text + page->pg_Gad.FirstChar, page->pg_Gad.DispPos - page->pg_Gad.FirstChar);
 				for (; i > page->pg_Gad.cp.cp_W;
-					i = bspace + OutlineLength(tf->tf_FontInfo,
-						tf->tf_Text + ++page->pg_Gad.FirstChar,
-						page->pg_Gad.DispPos - page->pg_Gad.FirstChar))
+					i = bspace + OutlineLength(tf->tf_FontInfo, tf->tf_Text + ++page->pg_Gad.FirstChar, page->pg_Gad.DispPos - page->pg_Gad.FirstChar))
 					;
 			} else {
 				i = bspace;
@@ -746,35 +735,21 @@ HandleTabGadget(struct Page *page)
 			}
 
 			if (oldfc != page->pg_Gad.FirstChar) {
-				DrawTableCoord(page, page->pg_Gad.cp.cp_X, page->pg_Gad.cp.cp_Y,
-					page->pg_Gad.cp.cp_X + page->pg_Gad.cp.cp_W,
-					page->pg_Gad.cp.cp_Y + page->pg_Gad.cp.cp_H);
+				DrawTableCoord(page, page->pg_Gad.cp.cp_X, page->pg_Gad.cp.cp_Y, page->pg_Gad.cp.cp_X + page->pg_Gad.cp.cp_W, page->pg_Gad.cp.cp_Y + page->pg_Gad.cp.cp_H);
 			} else {
-				i = page->pg_Gad.cp.cp_X + bspace
-					+ OutlineLength(tf->tf_FontInfo,
-						tf->tf_Text + page->pg_Gad.FirstChar,
-						page->pg_Gad.DispPos - page->pg_Gad.FirstChar);
+				i = page->pg_Gad.cp.cp_X + bspace + OutlineLength(tf->tf_FontInfo, tf->tf_Text + page->pg_Gad.FirstChar, page->pg_Gad.DispPos - page->pg_Gad.FirstChar);
 				if (imsg.Class == IDCMP_VANILLAKEY) {
 					j = 0;
 					oldw = page->pg_Gad.cp.cp_X + page->pg_Gad.cp.cp_W - 3;
 					if (len >= 0) {
-						j = page->pg_Gad.cp.cp_X + bspace
-							+ OutlineLength(tf->tf_FontInfo,
-								tf->tf_Text + page->pg_Gad.FirstChar,
-								len - page->pg_Gad.FirstChar);
+						j = page->pg_Gad.cp.cp_X + bspace + OutlineLength(tf->tf_FontInfo, tf->tf_Text + page->pg_Gad.FirstChar, len - page->pg_Gad.FirstChar);
 					} else if (page->pg_Gad.DispPos > 0) {
-						j = page->pg_Gad.cp.cp_X + bspace
-							+ OutlineLength(tf->tf_FontInfo,
-								tf->tf_Text + page->pg_Gad.FirstChar,
-								page->pg_Gad.DispPos - 1
-									- page->pg_Gad.FirstChar);
+						j = page->pg_Gad.cp.cp_X + bspace + OutlineLength(tf->tf_FontInfo, tf->tf_Text + page->pg_Gad.FirstChar, page->pg_Gad.DispPos - 1 - page->pg_Gad.FirstChar);
 						if (len == -1)
 							oldw = i;
 					}
-
 					if (j) {
-						DrawTableCoord(page, j, page->pg_Gad.cp.cp_Y, oldw,
-							page->pg_Gad.cp.cp_Y + page->pg_Gad.cp.cp_H - 2);
+						DrawTableCoord(page, j, page->pg_Gad.cp.cp_Y, oldw, page->pg_Gad.cp.cp_Y + page->pg_Gad.cp.cp_H - 2);
 					}
 				}
 				makeClip(page->pg_Window, wd->wd_TabX, wd->wd_TabY,

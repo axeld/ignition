@@ -11,11 +11,9 @@
 #include <exec/memory.h>
 #include <dos/dos.h>
 #include <libraries/iffparse.h>
-#ifdef __amigaos4__
-	#include "../libs/gtdrag-OS4/include/libraries/gtdrag.h"
-#else
-	#include <libraries/gtdrag.h>
+#include <libraries/gtdrag.h>
 
+#ifndef __amigaos4__
 	#include <proto/exec.h>
 	#include <proto/dos.h>
 #endif

@@ -41,7 +41,7 @@ ULONG IFFStreamHook(REG(a0, struct Hook *h), REG(a2, struct IFFHandle *iff), REG
         		if (is->is_Pool)
           			temp = IExecB->AllocPooled(is->is_Pool,size);
         		else
-          			temp = IExecB->AllocMem(size,0L);
+          			temp = IExecB->AllocVecTags(size, TAG_DONE);
         		if (!temp)
           			return(-1);
         		if (is->is_Buffer)
@@ -51,7 +51,7 @@ ULONG IFFStreamHook(REG(a0, struct Hook *h), REG(a2, struct IFFHandle *iff), REG
           			if (is->is_Pool)
             			IExecB->FreePooled(is->is_Pool,is->is_Buffer,is->is_Size);
           			else
-            			IExecB->FreeMem(is->is_Buffer,is->is_Size);
+            			IExecB->FreeVec(is->is_Buffer);
           			is->is_Buffer = temp;
           			is->is_Size = size;
         		}

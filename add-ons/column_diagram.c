@@ -17,6 +17,7 @@
 #define CATCOMP_NUMBERS
 
 #ifdef __amigaos4__
+#include <proto/exec.h>
 	#include "../ignition_strings.h"
 #else
 	#include "ignition_strings.h"
@@ -290,8 +291,8 @@ ULONG PUBLIC
 initClass(REG(a0, struct gClass *gc))
 {
 	sCatalog = OpenCatalog(NULL, "ignition.catalog", OC_BuiltInLanguage, "deutsch", TAG_END);
-	interface[0].gi_Label = GetCatalogStr(sCatalog, MSG_AREA_OUTLINE_GAD, "Fläche durch einen Rahmen begrenzen");
-	interface[1].gi_Label = GetCatalogStr(sCatalog, MSG_PSEUDO_3D_GAD, "Pseudo-3D");
+	interface[0].gi_Label = (STRPTR)GetCatalogStr(sCatalog, MSG_AREA_OUTLINE_GAD, "Fläche durch einen Rahmen begrenzen");
+	interface[1].gi_Label = (STRPTR)GetCatalogStr(sCatalog, MSG_PSEUDO_3D_GAD, "Pseudo-3D");
 
     return TRUE;
 }

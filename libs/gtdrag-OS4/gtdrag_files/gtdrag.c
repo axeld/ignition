@@ -70,12 +70,11 @@ void FakeInputEvent(struct GtdragIFace *Self)
   	struct MsgPort *iport;
   	struct InputEvent *ie;
 
-  	if ((iport = IExec->CreatePort(NULL,0)) != 0)
+  	if ((iport = IExec->AllocSysObjectTags(ASOT_PORT, ASOPORT_Pri, 0, TAG_END)) != 0)
   	{
-    	if ((ie = IExec->AllocMem(sizeof(struct InputEvent),MEMF_PUBLIC | MEMF_CLEAR)) != 0)
+    	if ((ie = IExec->AllocVecTags(sizeof(struct InputEvent), AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE)) != 0)
     	{
-//    	if ((ireq = (struct IOStdReq *)CreateExtIO(iport,sizeof(struct IOStdReq))) != 0)
-      		if ((ireq = (struct IOStdReq *)IExec->CreateIORequest(iport,sizeof(struct IOStdReq))) != 0)
+   		if ((ireq = (struct IOStdReq *)IExec->AllocSysObjectTags(ASOT_IOREQUEST, ASOIOR_ReplyPort, iport, ASOIOR_Size, sizeof(struct IOStdReq), TAG_DONE)) != 0)
       		{
         		if ((!IExec->OpenDevice("input.device",0,(struct IORequest *)ireq,0)) != 0)
         		{
@@ -94,12 +93,11 @@ void FakeInputEvent(struct GtdragIFace *Self)
         	  		IExec->DoIO((struct IORequest *)ireq);
           			IExec->CloseDevice((struct IORequest *)ireq);
         		}
-//      		DeleteExtIO((struct IORequest *)ireq);
-        		IExec->DeleteIORequest((struct IORequest *)ireq);
+        		IExec->FreeSysObject(ASOT_IOREQUEST, (struct IORequest *)ireq);
       		}
-      		IExec->FreeMem(ie,sizeof(struct InputEvent));
+      		IExec->FreeVec(ie);
    		}
-    IExec->DeletePort(iport);
+    IExec->FreeSysObject(ASOT_PORT, iport);
   	}
 }
 

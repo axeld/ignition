@@ -1,6 +1,6 @@
 /* ignition CSV-I/O-Module
  *
- * Copyright 1996-2009 pinc Software. All Rights Reserved.
+ * Copyright 1996-2015 pinc Software. All Rights Reserved.
  * Licensed under the terms of the GNU General Public License, version 3.
  */
 
@@ -11,288 +11,436 @@
 	#include <proto/utility.h>
 
 	#include <string.h>
+
+	#include <intuition/gadgetclass.h>
+	#include <libraries/gadtools.h>
+	#include <proto/gadtools.h>
+	#include <proto/intuition.h>
 #else
 	#include <stdlib.h>
 #endif
 
 #include "iotype.h"
 
+const STRPTR __version = "$VER: csv.io 1.00 (05.05.2015)";
 
-const STRPTR __version = "$VER: csv.io 0.7 (4.3.2001)";
+//Alternatives for using of prefs
+#define PREFS_GUESS 		1											//Automatic-mode for separator detecting
+#define PREFS_ASK 			2											//Ask for the separator
 
+//Global variables for prefs and separator
+char *separators = {";,\t"};											//Possible spearators
+char loadprefs    = PREFS_GUESS;										//default load-separator / Option
+char saveprefs    = ';';												//default save-separator / Option
+long sethyphen	  = 1;													//Flag for inclosing data with "
+long setsep		  = 0;
 
-#define PREFS_GUESS -1L
-#define PREFS_ASK -2L
-
-char *separator = ";,\t ";
-short loadprefs = PREFS_GUESS;
-short saveprefs = '\t';
-
+//Global variables for GUI
 #ifdef __amigaos4__
-	STRPTR Strchr(STRPTR t, char c)
+	struct Window *guiwin = NULL;										//GUI-Window for preferences
+	struct Gadget *guigad = NULL;										//Startpointer for all gadgets
+	APTR vi 			  = NULL;										//VisualInfo Pointer
+	char *cbtext 	= "\"...\"";										//Text fpr checkbox-gadget.
+	char *cytext[] 	= {"  ;  ", "  ,  ", "<TAB>", NULL};				//Texts for cycle-gadget.
+	#define CBGAD	1													//ID for checkbox gadget
+	#define CYGAD	2													//ID for radio gadget
+#endif
+
+#ifdef __amigaos4__														//Some needed things to compile under AOS4
+	STRPTR Strchr(STRPTR t, char c)										//AOS4 Strchr
 	{
-		int i;
+		int i;															//Index variable
 	
-		for(i = 0; t[i] != '\0'; i++)
-			if(t[i] == c)
-				return &t[i];
-		return NULL;
+		for(i = 0; t[i] != '\0'; i++)									//run through the string
+			if(t[i] == c)												//if give character found
+				return &t[i];											//Return a pointer to his position
+		return NULL;													//Nothing found
 	}
-	#undef  strlen
+	#undef  strlen														//undef standard functions
 	#undef  stricmp
 	#undef  strnicmp
 	#undef  strchr
-	#define strlen   Strlen
+	#define strlen   Strlen												//use the utility-Lib functions
 	#define stricmp  Stricmp
 	#define strnicmp Strnicmp
 	#define strchr   Strchr
+#else																	//Some needed things to compile other OS then OS4
+	/*
+	This functions determines the size of the hole csv-file. It rebuilds a new api-function from AOS4
+	*/
+	long GetFileSize(BPTR file)
+	{
+		struct FileInfoBlock *fib;										//Create FileInfoBlock pointer
+		long size = 0;													//size of the csv-file
+
+		if(!(fib = AllocDosObject(DOS_FIB,TAG_END)))					//Alloc a FileInfoBlockPointer
+			return(0);
+		if(ExamineFH(file,fib))											//Read FileInfoBlock data
+			size = fib->fib_Size;   									//set size variable
+		FreeDosObject(DOS_FIB,fib);										//Free DosObject
+		return(size);													//return size value
+	}
 #endif
 
-void PUBLIC
-closePrefsGUI(void)
+/*
+This function do all operations to reset the PrefsGui.
+*/
+void PUBLIC closePrefsGUI(void)
 {
-}
-
-
-void PUBLIC
-openPrefsGUI(REG(a0, struct Screen *src))
-{
-}
-
-
-void
-setPrefsString(short prefs,STRPTR t)
-{
-  if (prefs == PREFS_GUESS)
-    strcpy(t,"guess");
-  else if (prefs == PREFS_ASK)
-    strcpy(t,"ask");
-  else
-  {
-    strcpy(t,"sep=");
-    t[4] = prefs;
-    t[5] = 0;
-  }
-}
-
-
-STRPTR PUBLIC
-getPrefs(void)
-{
-  static char t[32];
-
-  setPrefsString(loadprefs,t);
 #ifdef __amigaos4__
-  Strlcat(t,"&", 32);
-#else
-  strcat(t,"&");
+	guiwin 	= NULL;
+	guigad 	= NULL;
+	vi 		= NULL;
 #endif
-  setPrefsString(saveprefs,t+strlen(t));
-
-  return t;
 }
 
-
-long PUBLIC
-setPrefs(REG(a0, STRPTR t))
+BOOL HandlePrefsSelection(struct Window *win)
 {
-  UBYTE  ok = TRUE;
-  STRPTR s;
+	BOOL rvalue = TRUE;													//Return vlaue is true, until CLOSEWINDOW
+	struct IntuiMessage *imsg;											//Messagepointer
+	ULONG Class;														//Messagetype
+	struct Gadget *gad;													//Pointer to actual gadget
 
-  if (!t)
-    return(TRUE);
+	Wait (1 << win->UserPort->mp_SigBit);								//Wait for signal on windowport
+	while(imsg = GT_GetIMsg(win->UserPort))								//Porcess all signals
+	{
+		Class = imsg->Class;											//Store class information
+		gad = (struct Gadget *)imsg->IAddress;							//Store gadgetpointer
+		GT_ReplyIMsg(imsg);												//Free message
+		switch (Class)													//Separate classes
+		{
+			case IDCMP_GADGETUP:										//Process gadget events
+				switch(gad->GadgetID)
+				{
+					case CBGAD:
+						GT_GetGadgetAttrs(gad, guiwin, NULL, GTCB_Checked, &sethyphen, TAG_DONE);
+						break;
+					case CYGAD:
+						GT_GetGadgetAttrs(gad, guiwin, NULL, GTCY_Active, &setsep, TAG_DONE);
+						saveprefs = separators[setsep];
+						break;
+				}														//END switch code
+				break;
 
-  if ((s = strchr(t,'&')) != 0)
-  {
-    if (*(s+1) == '&')  // überschreiben eines Strings der uns nicht gehört
-      s++;
-    *s = 0;
+			case IDCMP_CLOSEWINDOW:										//Process windows close event
+				rvalue = FALSE;											//Set return-value to false
+				break;
 
-    if (!stricmp("ask",s+1))
-      saveprefs = PREFS_ASK;
-    else if (!strnicmp("sep=",s+1,4))
-      saveprefs = *(s+5);
-    else
-      ok = FALSE;
-  }
-  if (ok)
-  {
-    if (!stricmp("guess",t))
-      loadprefs = PREFS_GUESS;
-    else if (!stricmp("ask",t))
-      loadprefs = PREFS_ASK;
-    else if (!strnicmp("sep=",t,4))
-      loadprefs = *(t+4);
-    else
-      ok = FALSE;
-  }
-  if (s)  // alten String wiederherstellen
-    *s = '&';
-
-  if (!ok)
-    ReportError("Fehlerhafte Voreinstellungen.");
-
-  return(TRUE);
+			case IDCMP_REFRESHWINDOW:									//Process refresh event
+				GT_BeginRefresh(win);
+				GT_EndRefresh(win, TRUE);
+				break;
+		}																//END switch Class
+	}																	//END while loop
+	return(rvalue);
 }
 
+/*
+This function do all operations to open the PrefsGui.
+*/
+void PUBLIC openPrefsGUI(REG(a0, struct Screen *scr))
+{
+#ifdef __amigaos4__
+	struct NewGadget ng;												//NewGadget Struktur for creating gadgets
+	struct Gadget *gad;													//Gadgetpointer for gadgetchain
 
+	if(guiwin == NULL)													//Window not open, then make it
+	{																	//Attention, ignition call openPrefsGUI more the once
+		if((vi = GetVisualInfo(scr, TAG_END)) != NULL)					//Get VisualInfo
+		{																//Successful
+			gad = CreateContext(&guigad);								//Create Gadget Context
+			ng.ng_GadgetText = cbtext;									//First gadget checkbox
+			ng.ng_LeftEdge	 = 120;
+			ng.ng_TopEdge    = 35;
+			ng.ng_Width      = 30;
+			ng.ng_Height     = 30;
+			ng.ng_VisualInfo = vi;
+			ng.ng_Flags 	 = PLACETEXT_RIGHT;
+			ng.ng_GadgetID 	 = CBGAD;
+			ng.ng_TextAttr   = scr->Font;
+			ng.ng_UserData 	 = NULL;
+			gad = CreateGadget(CHECKBOX_KIND, gad, &ng, GTCB_Checked, sethyphen, TAG_END);
+			ng.ng_LeftEdge	 = 20;
+			ng.ng_TopEdge    = 35;
+			ng.ng_Width      = 90;
+			ng.ng_Height 	 = 20;
+			ng.ng_GadgetText = "";
+			ng.ng_GadgetID = CYGAD;
+			ng.ng_Flags = NG_HIGHLABEL;
+			gad = CreateGadget(CYCLE_KIND, gad, &ng, GTCY_Labels, cytext, GTCY_Active, setsep, TAG_DONE);
+
+			if ((guiwin = OpenWindowTags(NULL, 
+								 WA_Flags,		0,
+								 WA_Left,	 	(scr->Width - 200) / 2,	//Set in the middle of the screen
+								 WA_Top,	  	(scr->Height - 65) / 2,
+								 WA_Title, 		"ignition CSV",
+								 WA_Width,		200,
+								 WA_Height,	   	65,
+								 WA_PubScreen,	scr,
+								 WA_DragBar, TRUE,
+								 WA_DepthGadget, TRUE,
+								 WA_CloseGadget, TRUE,
+								 WA_Activate, TRUE,
+								 WA_IDCMP, 		IDCMP_CLOSEWINDOW | IDCMP_REFRESHWINDOW | CHECKBOXIDCMP,
+								 TAG_END)) != (struct Window *)NULL)
+			{															//Window successfully opened
+				AddGList(guiwin, guigad, -1, -1, NULL);					//Gadgets aktivieren
+				RefreshGList(guigad, guiwin, NULL, ((UWORD) -1));
+				GT_RefreshWindow(guiwin, NULL);
+				while(HandlePrefsSelection(guiwin));					//Process the window events until closewindow
+				CloseWindow(guiwin);
+			}															//END Window successfully opened		
+			FreeGadgets(guigad);										//Free system variables
+			FreeVisualInfo(vi);
+		}																//END Successfully get VisualInfo
+	}																	//END Window not open
+#endif
+}
+
+/*
+This function decides with the prefs-value the contents of the PrefsString.
+*/
+void setPrefsString(short prefs, STRPTR t)
+{
+	if (prefs == PREFS_GUESS)											//For PREFS_GUESS
+		strcpy(t,"guess");												//Set PrefsString to "guess"
+	else if (prefs == PREFS_ASK)										//If PREFS_ASK
+		strcpy(t,"ask");												//Then set it to "ask"
+	else																//When not guess or ask
+	{																	//write into PrefsString
+		strcpy(t,"sep=");												//sep=
+		t[4] = prefs;													//and the sign which stored in prefs
+		t[5] = 0;														//set new string end
+	}
+}
+
+/*
+This functions gets the actual setting for load and save csv-files.
+The settings of the global prefs variables are stored in a single string.
+first the loadprefs and the saveprefs serarted with a &.
+*/
+STRPTR PUBLIC getPrefs(void)
+{
+	static char t[32];													//Create permanent variable t
+
+	setPrefsString(loadprefs,t);										//Get loadprefs
+#ifdef __amigaos4__														//Append an & as separator
+	Strlcat(t,"&", 32);
+#else
+	strcat(t,"&");
+#endif
+	setPrefsString(saveprefs,t+strlen(t));								//Append the saveprefs to t
+
+	return t;															//Return the pointer to t.
+}
+
+/*
+This function sets the global variables loadprefs and saveprefs. It gets the setting
+from the static variable t and writes the information in loadprefs and saveprefs.
+*/
+long PUBLIC setPrefs(REG(a0, STRPTR t))
+{
+	UBYTE  ok = TRUE;													//flag for data
+	STRPTR s;															//pointer to separator character
+
+	if(!t)																//if data availble
+		return(TRUE);													//end with true
+
+	if((s = strchr(t,'&')) != 0)										//is a separator sign in the string
+	{																	//then
+		*s = 0;															//remove & sign
+																		//Analyse the data right from & for saveprefs
+		if(!stricmp("ask", s+1))										//if ask in the string
+			saveprefs = PREFS_ASK;										//saveprefs is ASK
+		else if (!strnicmp("sep=",s+1,4))								//if sep= is in the string
+			saveprefs = *(s+5);											//then get the five character as separator
+		else															//if not target is found
+			ok = FALSE;													//no vaild config is found.
+	}
+	if(ok)																//if a valid saveprefs are found
+	{																	//then get the loadprefs config
+		if(!stricmp("guess", t))
+			loadprefs = PREFS_GUESS;									//loadprefs is GUESS
+		else if (!stricmp("ask",t))
+			loadprefs = PREFS_ASK;										//loadprefs is ASK
+		else if (!strnicmp("sep=",t,4))
+			loadprefs = *(t+4);											//Separator is in the config
+		else
+			ok = FALSE;													//no vaild config is found.
+	}
+	if(s)  																//if s is set
+		*s = '&';														//recover the string
+	
+	if(!ok)																//error state?
+		ReportError("No valid configuration");							//visualazation of an error-message
+
+	return(TRUE);
+}
+
+/*
+This function determines the separator-character.
+*/
+char GetSeparator(char prefsmode, char *buffer)
+{
+	char sep = '\0';													//to determine separator-char
+	char *s;															//Actual position in buffer
+
+	if(prefsmode == PREFS_GUESS)										//Guess-Mode
+	{
+		int  i;															//Index-variable
+
+		for(s = buffer; *s; s++)										//Run through the buffer
+		{
+			for(i = 0; separators[i] != *s && separators[i]; i++);		//Compare buffer char with every separator
+			if (i < strlen(separators))									//if a separator found
+				return separators[i];									//use it and end
+		}
+	}
+	else if (prefsmode == PREFS_ASK)									//Ask user for separator
+	{
+		ReportError("Not yet implemented.");							//no comment ;-)
+	}
+	else																//Use separator from csv.iodescr
+		sep = prefsmode;
+	return sep;
+}
+
+/*
+This function extracted the data for one cell of the table from the given buffer b with
+the separator sep.
+The position parameter marks the beginning point of analyse and will be changed by
+analyze the buffer.
+If the data are isolated, there will be copied to a new allocated buffer and the
+pointer to this buffer is returned. The position parameter is now set on the end of
+the isolated data in the buffer.
+If buffer is empty, NULL is returned.
+*/
+char *GetCellData(char sep, char *b, long *pos)
+{
+	char *start = &b[*pos];												//Marker for startposition
+	long offset = 0;													//is 0 when no " are used else 1
+	long croffset = 0;													//
+
+	if(b[*pos] == '\0')													//No data
+		return(NULL);
+	for(;; (*pos)++)													//Run through buffer
+	{
+		if(b[*pos] == '\r')												//End of line is CR LF
+#ifdef __amigaos4__	
+			Strlcpy(&b[*pos], &b[(*pos) + 1], strlen(&b[*pos]));		//then remove CR
+#else
+			strcpy(&b[*pos], &b[(*pos) + 1]);
+#endif
+		if(b[*pos] == sep  || 											//separator reached or
+		   b[*pos] == '\n' ||					 						//End of line reached or
+		   b[*pos] == '\0')												//End of buffer reached
+		{
+			if(*start == '"' && b[(*pos) - 1] != '"')					//broken line with data embedded with "?
+				continue; 												//Yes, then search for the real end of data
+			if(*start == '"')											//Data embedded in "
+			{
+				char *c;												//Pointer to the actual character
+				
+				start++;												//Ignore "
+				offset = 1;												//Set offset for "
+				for(c = start; c < &b[(*pos) - 1]; c++)					//Replace all not printable characters with space
+					if(*c < 32)
+						*c = ' ';
+			}															//End if start = '"'
+			else
+				offset = 0;												//No " no offset
+			return(AllocStringLength(start, &b[*pos] - start - offset));//Return Pointer to the data
+		}																//End if end of cell-data reached
+	}																	//End of for-loop
+}
+
+/*
+This functions controls the reading of the data from a csv-file. 
+It put the separated data into a new table of ignition.
+Every field of a line in a separate column-field in a row.
+Every line in a separated row of the table.
+*/
 long PUBLIC load(REG(d0, BPTR file), REG(a0, struct Mappe *mp))
 {
-  char   *buffer = NULL,*s,sep;
-  struct Page *page;
-  struct Cell *c;
-  long   size = 0;
+	char *buffer = NULL;												//Buffer for the whole csv-data
+	char *cdata;														//pointer to the buffer for cell-data
+	long pos = 0;														//Position in the buffer
+	char sep;															//Actual separator char
+	struct Page *page;													//Pointer to a new table
+	struct Cell *c;														//Pointer to a new cell in the table
+	long size = 0;														//Size of the csv-file
 
-  {
-    struct FileInfoBlock *fib;
+	size = GetFileSize(file);											//Get size of the csv-file
+	if(!(buffer = AllocPooled(pool, 1 + size)))							//Reserve memory for file and end string char
+		return(RETURN_FAIL);											//not enough memory
+	if(FRead(file, buffer, 1, size) != size)							//Read the whole file
+	{																	//when a error occurs
+		ReportError("Error at reading file.");							//Show messages
+		FreePooled(pool,buffer,size+1);									//Free memory
+		return(RETURN_FAIL);											//End function
+	}
+	sep = GetSeparator(loadprefs, buffer);								//Get the actual separator
+	if((page = NewPage(mp)) != 0)										//Create new table in ignition
+	{																	//Successful
+		long col = 1, row = 1;											//Actual column and row number
 
-    if (!(fib = AllocDosObject(DOS_FIB,TAG_END)))
-      return(RETURN_FAIL);
-
-    if (ExamineFH(file,fib))
-      buffer = AllocPooled(pool,1+(size = fib->fib_Size));   /* succeeding NULL-byte */
-
-    FreeDosObject(DOS_FIB,fib);
-    if (!buffer)
-      return(RETURN_FAIL);
-  }
-  if (FRead(file,buffer,1,size) != size)
-    ReportError("Fehler beim Lesen der Datei.");
-
-  if (loadprefs == PREFS_GUESS)
-  {
-    int  count[4],i,j,k;
-    char *a;
-
-    for(i = 0;i < 4;i++)
-      count[i] = 0;
-
-    for(s = buffer;*s;s++)
-    {
-      for(i = 0,a = separator;*a != *s && *a;a++,i++);
-      if (i < 4)
-        count[i]++;
-    }
-    j = count[0] > count[1] ? 0 : 1;
-    k = count[2] > count[3] ? 2 : 3;
-    sep = count[j] > count[k] ? separator[j] : separator[k];
-    //ReportError("Trenner: %d.",count[j] > count);
-  }
-  else if (loadprefs == PREFS_ASK)
-  {
-    ReportError("Not yet implemented.");
-  }
-  else
-    sep = loadprefs;
-
-  if ((page = NewPage(mp)) != 0)
-  {
-    long col = 1,row = 1,i;
-    char *a;
-
-    for(s = buffer;*s;s++)
-    {
-      if (*s == '\n' || *s == 13 && *(s+1) == 10)
-      {
-        row++;  col = 1;
-        if (*s == 13)
-          s++;
-        continue;
-      }
-      if (*s == sep)
-      {
-        col++;
-        continue;
-      }
-      if ((c = NewCell(page, col, row)) != 0)
-      {
-        a = s;
-        if (*s == '"')   // cell contains special characters
-        {
-          char *b;
-
-          s++;  a++;
-          for(i = 0;!(*s == '"' && *(s+1) != '"');s++,i++)
-            if (*s == '"')
-              s++;
-          if ((c->c_Text = b = AllocPooled(pool, i+1)) != 0)
-          {
-            s = a;
-            for(;!(*s == '"' && *(s+1) != '"');)
-            {
-              if (*s == '"')
-                s++;
-              *b++ = *s++;
-            }
-            *b = 0;
-          }
-        }
-        else             // cell data can simply be copied
-        {
-          for(i = 0;*s && *s != sep && *s != '\n' && *s != 13;s++,i++);
-          s--;
-          c->c_Text = AllocStringLength(a,i);
-        }
-        UpdateCellText(page,c);
-      }
-    }
-  }
-  FreePooled(pool,buffer,size+1);
-
-  return(RETURN_OK);
+		while(cdata = GetCellData(sep, buffer, &pos))					//Loop if data available
+		{
+			if((c = NewCell(page, col, row)) != 0)						//if successfully create cell
+			{
+				c->c_Text = cdata;										//set text to data-buffer
+				UpdateCellText(page,c);									//Update Cell
+				col = (buffer[pos] == '\n' ? 1 : col + 1);				//Update column counter
+				row = (buffer[pos] == '\n' ? row + 1 : row);			//Update row counter
+				pos += (buffer[pos] ? 1 : 0);							//Jump over the reached separator if not \0
+			}
+		}																//while-Loop for get cell-data
+	}																	//End if NewPage
+	FreePooled(pool,buffer,size+1);										//Release buffer memory
+	return(RETURN_OK);													//End function
 }
 
-
+/*
+This function saves the hole table in a ascii-file in the csv-format. The separator
+is selected with the methode which is descripted in the file csv.iodescr.
+*/
 long PUBLIC save(REG(d0, BPTR dat), REG(a0, struct Mappe *mp))
 {
-  struct Page *page;
-  struct Cell *c;
-  ULONG  lastrow = 1,lastcol = 1;
-  UBYTE  sep = '\t';
+	struct Page *page;													//Pointer to the actual page/table
+	struct Cell *c;														//Pointer to the actual cell
+	ULONG  lastrow = 1,lastcol = 1;										//Conuter for row and column
+	UBYTE  sep = ';';													//separator character deafult ;
 
-  if (saveprefs > 0)
-    sep = saveprefs;
+	if(saveprefs > 0)													//if saveprefs is set
+		sep = saveprefs;												//Get separator from saveprefs
 
-  foreach(&mp->mp_Pages,page)
-  {
-    foreach(&page->pg_Table,c)
-    {
-      if (c->c_Text)
-      {
-        STRPTR t;
-
-        while(lastrow < c->c_Row)
-        {
-          FPutC(dat,'\n');
-          lastrow++;  lastcol = 1;
-        }
-        while(lastcol < c->c_Col)
-        {
-          FPutC(dat,sep);
-          lastcol++;
-        }
-        for(t = c->c_Text;*t;t++)
-          if (*t == sep || *t == '"')
-            break;
-        if (*t)
-        {
-          FPutC(dat,'"');
-          for(t = c->c_Text;*t;t++)
-          {
-            if (*t == '"')
-              FPutC(dat,'"');
-            FPutC(dat,*t);
-          }
-          FPutC(dat,'"');
-        }
-        else
-          FPuts(dat,c->c_Text);
-      }
-    }
-  }
-  return(RETURN_OK);
+	foreach(&mp->mp_Pages,page)											//run through all pages
+	{
+		foreach(&page->pg_Table,c)										//run through all cell of a table
+			if(c->c_Text)												//Cell has contents
+			{
+				while(lastrow < c->c_Row)								//Generate empty rows before contents
+				{
+					FPutC(dat,'\n');
+					lastrow++;  lastcol = 1;
+				}
+				while(lastcol < c->c_Col)								//Generate empty columns before contents
+				{
+					FPutC(dat,sep);
+					lastcol++;
+				}
+				if(sethyphen)
+					FPutC(dat,'"');										//Write contents embedded in "-characters
+				FPuts(dat,c->c_Text);
+				if(sethyphen)
+					FPutC(dat,'"');
+			}															//END Cell has contents
+		lastrow = 1; lastcol = 1;										//Next table with a separator line
+		FPutC(dat,'\n');
+		FPutC(dat,'\n');
+	}																	//END of Table
+	return(RETURN_OK);
 }
-
 
 #if defined(__SASC)
 void STDARGS _XCEXIT(long a)

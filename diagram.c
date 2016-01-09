@@ -1368,8 +1368,13 @@ gAxesDraw(REG(d0, struct Page *page), REG(d1, ULONG dpi), REG(a0, struct RastPor
 
 	if (ga->ga_FontInfo)
 	{
-		double y = max(ga->ga_Min,0.0), div = ga->ga_Divisor;
+#ifdef __amigaos4__
+		double y = (ga->ga_Min > 0.0 ? 0.0 : ga->ga_Min), div = ga->ga_Divisor;  //So nun auch eine Y Beschriftung bei Werten unter 0
+		long w, i, h = (ga->ga_Max - ga->ga_Min) /div, old, lastfont;
+#else
+		double y = *max(ga->ga_Min,0.0), div = ga->ga_Divisor;
 		long w, i, h = ga->ga_Max / div, old, lastfont;
+#endif
 		char t[20];
 
 		old = lastfont = 0x7fffffff;
@@ -1518,7 +1523,6 @@ gAxesDispatch(REG(a0, struct gClass *gc), REG(a2, struct gDiagram *gd), REG(a1, 
 				ga->ga_BPen = 0xffffff;
 				ga->ga_Depth = 1;   // MERKER: sollte nach der Tiefe des gDiagrams gehen
 
-//DebugPrintF("gAxesDispatch (Null, ~0, NULL)\n");
 				ga->ga_FontInfo = NewFontInfoA(NULL, ~0L, NULL);
 
 				gAxesSet(gd, ga, ((struct gcpNew *)msg)->gcpn_AttrList);

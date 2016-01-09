@@ -279,10 +279,10 @@ initClass(REG(a0, struct gClass *gc))
 {
 	sCatalog = OpenCatalog(NULL, "ignition.catalog", OC_BuiltInLanguage, "deutsch", TAG_END);
 
-	interface[0].gi_Label = GetCatalogStr(sCatalog, MSG_BRIGHT_EDGES_LABEL, "Helle Kanten:");
-	interface[1].gi_Label = GetCatalogStr(sCatalog, MSG_DARK_EDGES_LABEL, "Dunkle Kanten:");
-	interface[2].gi_Label = GetCatalogStr(sCatalog, MSG_RECESSED_LABEL, "Eingedrückt:");
-	interface[3].gi_Label = GetCatalogStr(sCatalog, MSG_DOUBLE_FRAME_LABEL, "Doppelter Rahmen:");
+	interface[0].gi_Label = (STRPTR)GetCatalogStr(sCatalog, MSG_BRIGHT_EDGES_LABEL, "Helle Kanten:");
+	interface[1].gi_Label = (STRPTR)GetCatalogStr(sCatalog, MSG_DARK_EDGES_LABEL, "Dunkle Kanten:");
+	interface[2].gi_Label = (STRPTR)GetCatalogStr(sCatalog, MSG_RECESSED_LABEL, "Eingedrückt:");
+	interface[3].gi_Label = (STRPTR)GetCatalogStr(sCatalog, MSG_DOUBLE_FRAME_LABEL, "Doppelter Rahmen:");
 
 	return TRUE;
 }

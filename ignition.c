@@ -22,14 +22,7 @@
 	#include <gadgets/colorwheel.h>
 	#include <gadgets/gradientslider.h>
 	#include <proto/elf.h>
-	struct CyberGfxIFace *ICyberGfx;
-    struct EGlyphEngine EEngine;
-
-	//*** ELF.library structures
-//	struct Library* ElfBase = NULL;
-//	struct ElfIFace* IElf = NULL;
-
-//    struct ColorWheelIFace      *IColorWheel;
+	uint32* unicode_map;
 #endif
 
  
@@ -1655,12 +1648,21 @@ LoadSession(STRPTR name)
                     if (FindSession(t))                 // Datei gibt es doppelt (Fehler im Session-File)
                         break;
 
+#ifdef __amigaos4__
+					SetProcWindow((APTR)-1);												//Requester für Devicemounten aus.
+#endif
                     if (!(lock = Lock(t,ACCESS_READ)))  // Datei existiert nicht
                     {
                         gSessionChanged = true;
-                        break;
+#ifdef __amigaos4__
+ 						SetProcWindow(NULL);												//Requester für Devicemounten ein
+#endif
+                       break;
                     }
                     UnLock(lock);
+#ifdef __amigaos4__
+					SetProcWindow(NULL);													//Requester für Devicemounten ein
+#endif
 
 					if ((s = AllocPooled(pool, sizeof(struct Session))) != 0) {
                         STRPTR u;
@@ -1754,10 +1756,11 @@ InitAppIcon(void)
 	if ((dir = Lock(iconpath, SHARED_LOCK)) == (BPTR)NULL)
 		return;
 
-	olddir = CurrentDir(dir);
 #ifdef __amigaos4__
+	olddir = SetCurrentDir(dir);
 	if ((wbport = AllocSysObjectTags(ASOT_PORT, TAG_END)) != 0) {
 #else
+	olddir = CurrentDir(dir);
 	if ((wbport = CreateMsgPort()) != 0) {
 #endif
 		sigwait = (1L << SIGBREAKB_CTRL_C) | (1L << iport->mp_SigBit) | (1L << rxport->mp_SigBit) | (1L << wbport->mp_SigBit);
@@ -1766,7 +1769,11 @@ InitAppIcon(void)
 			appicon = AddAppIconA(0, 0, "ignition", wbport, (BPTR)NULL, appdo, (const struct TagItem *)NULL);
 		}
 	}
+#ifdef __amigaos4__
+	SetCurrentDir(olddir);
+#else
 	CurrentDir(olddir);
+#endif
 	UnLock(dir);
 }
 
@@ -1976,7 +1983,11 @@ InitApp(void)
 
 	if (sm && sm->sm_NumArgs) {
 		i = sm->sm_NumArgs - 1;
+#ifdef __amigaos4__
+        olddir = SetCurrentDir(sm->sm_ArgList[i].wa_Lock);
+#else
         olddir = CurrentDir(sm->sm_ArgList[i].wa_Lock);
+#endif
 		if ((dio = GetDiskObject(sm->sm_ArgList[i].wa_Name)) != 0) {
 			STRPTR value;
 
@@ -2000,7 +2011,11 @@ InitApp(void)
 
             FreeDiskObject(dio);
         }
+#ifdef __amigaos4__
+        SetCurrentDir(olddir);
+#else
         CurrentDir(olddir);
+#endif
     }
     InitSemaphore(&gWindowSemaphore);
     InitSemaphore(&fontSemaphore);
@@ -2015,7 +2030,7 @@ InitApp(void)
 	gLocaleInfo.li_LocaleBase = LocaleBase;
 #endif
     loc = OpenLocale(NULL);
-	gLocaleInfo.li_Catalog = OpenCatalog(loc, "ignition.catalog", OC_BuiltInLanguage, "deutsch", TAG_END);
+	gLocaleInfo.li_Catalog = OpenCatalog(loc, "ignition.catalog", OC_BuiltInLanguage, "english", TAG_END);
 
     if (!noabout && (iscr = scr = LockPubScreen(NULL)))
         InitAppScreen(iscr);
@@ -2052,6 +2067,7 @@ InitApp(void)
 #ifdef __amigaos4__
 //	struct Library *DataTypesBase = OpenLibrary("datatypes.library", 53);
 // 	IDataTypes = (struct DataTypesIFace*)GetInterface(DataTypesBase, "main", 1, NULL);  	
+	unicode_map = (uint32*)ObtainCharsetInfo(DFCS_NUMBER, loc->loc_CodeSet, DFCS_MAPTABLE); 
   	CyberGfxBase = (struct Library *) OpenLibrary("cybergraphics.library",43);
 	ICyberGfx = (struct CyberGfxIFace *) GetInterface((struct Library *)CyberGfxBase,"main",1,NULL);
 
@@ -2759,7 +2775,8 @@ main(int argc, char **argv)
     static long rc;
 
 #ifdef __amigaos4__
-    if (!(pool = AllocSysObjectTags(ASOT_MEMPOOL, ASOPOOL_MFlags, MEMF_CLEAR | MEMF_SHARED, ASOPOOL_Puddle, 16384, ASOPOOL_Threshold, 16384, TAG_END)))
+    if (!(pool = AllocSysObjectTags(ASOT_MEMPOOL, ASOPOOL_MFlags, MEMF_CLEAR | MEMF_ANY, ASOPOOL_Puddle, 16384, ASOPOOL_Threshold, 16384, TAG_END)))
+//    if (!(pool = AllocSysObjectTags(ASOT_MEMPOOL, ASOPOOL_MFlags, MEMF_CLEAR | MEMF_SHARED, ASOPOOL_Puddle, 16384, ASOPOOL_Threshold, 16384, TAG_END)))
 #else
     if (!(pool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC, 16384, 16384)))
 #endif
@@ -2779,11 +2796,12 @@ main(int argc, char **argv)
     else if ((sm = (struct WBStartup *)argv) != 0)
         wbstart((struct List *)&files, sm->sm_ArgList, 1, sm->sm_NumArgs);
 
-    shelldir = CurrentDir(GetProgramDir());
 #ifndef __amigaos4__
+    shelldir = CurrentDir(GetProgramDir());
 	if ((GTDragBase = OpenLibrary("gtdrag.library", 3)) != 0) {
 #else
-	 {
+    shelldir = SetCurrentDir(GetProgramDir());
+	{
 #endif
         InitAppClasses();
 
@@ -2862,10 +2880,11 @@ main(int argc, char **argv)
         CloseLibrary(GTDragBase);       
 	} else
         ErrorOpenLibrary("gtdrag.library", NULL);
+    CurrentDir(shelldir);
 #else
 	}
+    SetCurrentDir(shelldir);
 #endif
-    CurrentDir(shelldir);
 #ifdef __amigaos4__
 	FreeSysObject(ASOT_MEMPOOL, pool);
 #else

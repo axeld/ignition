@@ -50,7 +50,7 @@ struct DragGadget *AddDragGadget(struct GtdragIFace *Self, struct Gadget *gad,st
   	struct DragApp *da;
 
   	IExec->ObtainSemaphore(&ListSemaphore);
-  	if ((da = GetDragApp(Self,NULL)) && gad && win && (dg = IExec->AllocMem(sizeof(struct DragGadget),MEMF_PUBLIC | MEMF_CLEAR)))
+  	if ((da = GetDragApp(Self,NULL)) && gad && win && (dg = IExec->AllocVecTags(sizeof(struct DragGadget), AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE)))
   	{
     	dg->dg_Gadget = gad;
 	    dg->dg_Window = win;
@@ -62,7 +62,6 @@ struct DragGadget *AddDragGadget(struct GtdragIFace *Self, struct Gadget *gad,st
 	    IExec->AddTail((struct List *)&gadlist,(APTR)dg);
   	}
   	IExec->ReleaseSemaphore(&ListSemaphore);
-
   	return(dg);
 }
 
@@ -133,7 +132,7 @@ void FreeDragGadget(struct GtdragIFace *Self, struct DragGadget *dg)
   	if (!dg)
     	return;
 
-  	IExec->FreeMem(dg,sizeof(struct DragGadget));
+  	IExec->FreeVec(dg);
 }
 
 
@@ -224,7 +223,7 @@ struct DragObj *CreateDragObj(struct GtdragIFace *Self, struct DragGadget *dg,in
 	struct CyberGfxIFace *ICyberGfx = libBase->ICyberGfx;
 	struct Screen *scr;
   	struct RastPort *rp;
-  	struct DragObj *gdo;
+  	struct DragObj *gdo = NULL;
   	ULONG line;
   	int wordwidth;
   	int width,height,depth;
@@ -309,7 +308,7 @@ struct DragObj *CreateDragObj(struct GtdragIFace *Self, struct DragGadget *dg,in
   	wordwidth = (width + 15) >> 4;
   	depth = IGraphics->GetBitMapAttr(rp->BitMap,BMA_DEPTH);
 
-  	if (dg->dg_Object.od_Object && (gdo = IExec->AllocMem(sizeof(struct DragObj), MEMF_CLEAR | MEMF_PUBLIC)))
+  	if (dg->dg_Object.od_Object && (gdo = IExec->AllocVecTags(sizeof(struct DragObj), AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE)))
   	{
 #ifdef LOCKLAYERS
 	    LockLayers(&scr->LayerInfo);
@@ -324,12 +323,12 @@ struct DragObj *CreateDragObj(struct GtdragIFace *Self, struct DragGadget *dg,in
     	gdo->do_RefreshMap = IGraphics->AllocBitMap(width*2,height*2,depth,BMF_CLEAR | BMF_MINPLANES,rp->BitMap);
 
     	if (IGraphics->GetBitMapAttr(gdo->do_BitMap,BMA_FLAGS) & BMF_STANDARD)
-      		i = MEMF_CHIP | MEMF_PUBLIC;
+      		i = MEMF_CHIP | MEMF_SHARED;
     	else
-      		i = 0;
+      		i = MEMF_SHARED;
 
-    	gdo->do_FullShadow = IExec->AllocMem(2*wordwidth*height,i | MEMF_CLEAR);
-    	gdo->do_HalfShadow = IExec->AllocMem(2*wordwidth*height,i);
+    	gdo->do_FullShadow = IExec->AllocVecTags(2*wordwidth*height, AVT_Type, i, AVT_ClearWithValue, 0, TAG_DONE);
+    	gdo->do_HalfShadow = IExec->AllocVecTags(2*wordwidth*height, AVT_Type, i, TAG_DONE);
 
     	if (gdo->do_BitMap && gdo->do_SaveBack && gdo->do_RefreshMap && gdo->do_FullShadow && gdo->do_HalfShadow)
     	{
@@ -437,7 +436,7 @@ struct DragObj *CreateDragObj(struct GtdragIFace *Self, struct DragGadget *dg,in
     	IGraphics->FreeBitMap(gdo->do_BitMap);
     	IGraphics->FreeBitMap(gdo->do_SaveBack);
     	IGraphics->FreeBitMap(gdo->do_RefreshMap);
-    	IExec->FreeMem(gdo,sizeof(struct DragObj));
+    	IExec->FreeVec(gdo);
   	}
   	return(NULL);
 }
@@ -988,7 +987,7 @@ void MakeDropMessage(struct GtdragIFace *Self, struct DragApp *da,ULONG qual,WOR
   	if (adg && adg->dg_Type == BOOPSI_KIND && DoCustomMethod(Self, adg->dg_Gadget,GM_OBJECTDROP,&dm,qual))  // send to boopsi-gadget
     	return;
 
-  	if ((imsg = IExec->AllocMem(sizeof(struct ExtIntuiMessage),MEMF_CLEAR | MEMF_PUBLIC)) != 0)
+  	if ((imsg = IExec->AllocVecTags(sizeof(struct ExtIntuiMessage), AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE)) != 0)
   	{
     	struct DropMessage *gdm;
 
@@ -1001,13 +1000,13 @@ void MakeDropMessage(struct GtdragIFace *Self, struct DragApp *da,ULONG qual,WOR
     	IIntuition->CurrentTime(&imsg->Seconds,&imsg->Micros);
     	imsg->IDCMPWindow = win;
 
-    	if ((imsg->IAddress = gdm = IExec->AllocMem(sizeof(struct DropMessage),MEMF_PUBLIC)) != 0)
+    	if ((imsg->IAddress = gdm = IExec->AllocVecTags(sizeof(struct DropMessage), AVT_Type, MEMF_SHARED, TAG_DONE)) != 0)
     	{
       		IExec->CopyMem(&dm,gdm,sizeof(struct DropMessage));
       		IExec->PutMsg(win->UserPort,(struct Message *)imsg);
       		return;
     	}
-    	IExec->FreeMem(imsg,sizeof(struct ExtIntuiMessage));
+    	IExec->FreeVec(imsg);
   	}
 }
 
@@ -1033,16 +1032,16 @@ void FreeDragObj(struct GtdragIFace *Self, struct DragObj *gdo)
   	IGraphics->FreeBitMap(gdo->do_BitMap);
   	IGraphics->FreeBitMap(gdo->do_SaveBack);
   	IGraphics->FreeBitMap(gdo->do_RefreshMap);
-  	IExec->FreeMem(gdo->do_FullShadow,((gdo->do_Width+15) >> 4)*2*gdo->do_Height);
-  	IExec->FreeMem(gdo->do_HalfShadow,((gdo->do_Width+15) >> 4)*2*gdo->do_Height);
-  	IExec->FreeMem(gdo,sizeof(struct DragObj));
+  	IExec->FreeVec(gdo->do_FullShadow);
+  	IExec->FreeVec(gdo->do_HalfShadow);
+  	IExec->FreeVec(gdo);
 }
 
 
 void IntuiTick(struct GtdragIFace *Self, WORD mousex,WORD mousey)
 {
   	if (adg && UpdateHighlighting(Self, IDCMP_INTUITICKS,mousex,mousey,adg))
-    	(Self, gdo,mousex,mousey);
+    	UpdateDragObj(Self, gdo,mousex,mousey);
 }
 
 
@@ -1142,9 +1141,9 @@ void FreeDropMessage(struct GtdragIFace *Self, struct IntuiMessage *msg)
     	return;
 
   	if ((dm = msg->IAddress) != 0)
-    	IExec->FreeMem(dm,sizeof(struct DropMessage));
+    	IExec->FreeVec(dm);
 
-  	IExec->FreeMem(msg,sizeof(struct ExtIntuiMessage));
+  	IExec->FreeVec(msg);
 }
 
 

@@ -24,7 +24,6 @@
 #	define PDTA_SourceMode	(DTA_Dummy + 250)
 #	define PDTA_DestMode	(DTA_Dummy + 251)
 #	define PMODE_V43 (1)	/* Extended mode */
-
 #	define PDTM_WRITEPIXELARRAY (DTM_Dummy + 0x60)
 
 // picture.datatype v44
@@ -106,7 +105,8 @@ DispatchPageGadget(REG(a0, Class *cl), REG(a2, Object *o), REG(a1, Msg msg))
 				// Count pages and gadgets in the pages
 				for (i = 0; pd->pd_Pages[i]; i++);
 #ifdef __amigaos4__
-				pd->pd_GadgetCount = AllocVecTags(i * sizeof(ULONG), AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE );
+				pd->pd_GadgetCount = AllocVecTags(i * sizeof(ULONG), AVT_Type, MEMF_PRIVATE, AVT_ClearWithValue, 0, TAG_DONE );
+//				pd->pd_GadgetCount = AllocVecTags(i * sizeof(ULONG), AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE );
 #else
 				pd->pd_GadgetCount = AllocVec(i * sizeof(ULONG), MEMF_CLEAR | MEMF_PUBLIC);
 #endif
@@ -861,6 +861,7 @@ SetPictureScreen(struct PictureIData *pd, struct Image *im, struct Screen *scr)
 		if (!scr)
 			return;
 
+
 		if (CyberGfxBase && GetCyberMapAttr(bm = pd->pd_BitMap, CYBRMATTR_ISCYBERGFX) == -1 && pd->pd_Depth >= 24) {
 			if (GetBitMapAttr(scr->RastPort.BitMap, BMA_DEPTH) >= -15)
 				return;
@@ -973,7 +974,7 @@ CopyFromPictureImage(struct PictureIData *pd, struct Image *fim, LONG *cregs, st
 		cols = 1 << depth;
 
 #ifdef __amigaos4__
-		if ((pd->pd_ColorMap = AllocVecTags(sizeof(struct ColorRegister) * cols, AVT_Type, MEMF_SHARED, TAG_DONE )) != 0) {
+		if ((pd->pd_ColorMap = AllocVecTags(sizeof(struct ColorRegister) * cols, AVT_Type, MEMF_PRIVATE, TAG_DONE )) != 0) {
 #else
 		if ((pd->pd_ColorMap = AllocVec(sizeof(struct ColorRegister) * cols, MEMF_PUBLIC)) != 0) {
 #endif
@@ -984,7 +985,7 @@ CopyFromPictureImage(struct PictureIData *pd, struct Image *fim, LONG *cregs, st
 			}
 
 #ifdef __amigaos4__
-			if ((pd->pd_ColorRegs = AllocVecTags(sizeof(LONG) * 3 * cols, AVT_Type, MEMF_SHARED, TAG_DONE )) != 0) {
+			if ((pd->pd_ColorRegs = AllocVecTags(sizeof(LONG) * 3 * cols, AVT_Type, MEMF_PRIVATE, TAG_DONE )) != 0) {
 #else
 			if ((pd->pd_ColorRegs = AllocVec(sizeof(LONG) * 3 * cols, MEMF_PUBLIC)) != 0) {
 #endif
@@ -1022,13 +1023,15 @@ CopyFromPictureObject(struct PictureIData *pd, Object *obj, struct Image *im)
 						TAG_DONE) > 4) {
 		if (bm && cregs && cmap && bmh) {
 #ifdef __amigaos4__
-			if ((pd->pd_ColorMap = AllocVecTags(sizeof(struct ColorRegister) * cols, AVT_Type, MEMF_SHARED, TAG_DONE )) != 0) {
+			if ((pd->pd_ColorMap = AllocVecTags(sizeof(struct ColorRegister) * cols, AVT_Type, MEMF_PRIVATE, TAG_DONE )) != 0) {
+//			if ((pd->pd_ColorMap = AllocVecTags(sizeof(struct ColorRegister) * cols, AVT_Type, MEMF_SHARED, TAG_DONE )) != 0) {
 #else
 			if ((pd->pd_ColorMap = AllocVec(sizeof(struct ColorRegister) * cols, MEMF_PUBLIC)) != 0) {
 #endif
 				CopyMem(cmap, pd->pd_ColorMap, sizeof(struct ColorRegister) * cols);
 #ifdef __amigaos4__
-				if ((pd->pd_ColorRegs = AllocVecTags(sizeof(LONG) * 3 * cols, AVT_Type, MEMF_SHARED, TAG_DONE )) != 0) {
+				if ((pd->pd_ColorRegs = AllocVecTags(sizeof(LONG) * 3 * cols, AVT_Type, MEMF_PRIVATE, TAG_DONE )) != 0) {
+//				if ((pd->pd_ColorRegs = AllocVecTags(sizeof(LONG) * 3 * cols, AVT_Type, MEMF_SHARED, TAG_DONE )) != 0) {
 #else
 				if ((pd->pd_ColorRegs = AllocVec(sizeof(LONG) * 3 * cols, MEMF_PUBLIC)) != 0) {
 #endif
@@ -1057,7 +1060,9 @@ LoadPictureObject(struct PictureIData *pd, struct Image *im)
 {
 	ULONG  tags[] = {
 		DTA_GroupID,		GID_PICTURE,
+#ifndef __amigaos4__						//Under AOS4 this paramaeter produces problems with most picturetype (Grim-Reaper)
 		PDTA_SourceMode,	PMODE_V43,
+#endif
 		PDTA_Remap,			FALSE,
 		TAG_END
 	};
@@ -1137,7 +1142,16 @@ DispatchPictureImage(REG(a0, Class *cl), REG(a2, Object *o), REG(a1, Msg msg))
 					SetPictureScreen(pd, (struct Image *)o, (struct Screen *)ti->ti_Data);
 				else if (pd->pd_Name) {
 					pd->pd_Screen = (struct Screen *)ti->ti_Data;
-					LoadPictureObject(pd, (struct Image *)o);
+#ifdef __amigaos4__								//Avoid Guru/Grim when an unknown or to big data is loaded
+					if(!LoadPictureObject(pd, (struct Image *)o))
+					{
+						FreeString(pd->pd_Name);
+					    pd->pd_Name = AllocString("icons/prefs_sys.icon");
+					    LoadPictureObject(pd, (struct Image *)o);
+					}
+#else
+				LoadPictureObject(pd, (struct Image *)o);
+#endif
 				}
 			}
 			break;

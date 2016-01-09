@@ -171,7 +171,7 @@ ifeq ($(OS), os4)
 #  CFLAGS   += -mcrt=$(CRT) -D__USE_INLINE__ -D__NEW_TIMEVAL_DEFINITION_USED__ \
 #              $(REDEFINE) -Wa,-mregnames
 #  LDFLAGS  += -mcrt=$(CRT)
-   CFLAGS = -D__USE_INLINE__ -nostdlib -O3 -gstabs
+   CFLAGS = -D__USE_INLINE__ -nostdlib -O3 -gstabs -I../libs/gtdrag-OS4/include
    LDFLAGS = -D__USE_INLINE__ -nostdlib -O3 -gstabs
 else
 ifeq ($(OS), os3)

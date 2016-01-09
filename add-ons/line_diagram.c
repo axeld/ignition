@@ -215,7 +215,7 @@ initClass(REG(a0, struct gClass *gc))
 {
 	sCatalog = OpenCatalog(NULL, "ignition.catalog", OC_BuiltInLanguage,
 		"deutsch", TAG_END);
-	interface[0].gi_Label = GetCatalogStr(sCatalog, MSG_PSEUDO_3D_GAD,
+	interface[0].gi_Label = (STRPTR)GetCatalogStr(sCatalog, MSG_PSEUDO_3D_GAD,
 		"Pseudo-3D");
 
 	return TRUE;

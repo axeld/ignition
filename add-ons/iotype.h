@@ -35,21 +35,23 @@
 
 #define foreach(l,v) for(v = (APTR)((struct List *)l)->lh_Head;((struct Node *)v)->ln_Succ;v = (APTR)((struct Node *)v)->ln_Succ)
 
+#include "../wdt.h"
+
 #ifndef CELL_H
 #	include "cell.h"
 #endif
-/*
-#ifdef __amigaos4__
-	#ifdef __GNUC__
-		#ifdef __PPC__
-			#pragma pack(2)
-		#endif
-	#elif defined(__VBCC__)
-		#pragma amiga-align
-	#endif
-#endif
-*/
+
 /*** Project related ***/
+struct FontInfo {
+	struct MinNode fi_Node;
+	struct FontSize *fi_FontSize;
+	struct Node *fi_Family;
+	LONG   fi_CharSpace;
+	long   fi_Style;
+	UBYTE  fi_Kerning;
+	long   fi_Locked;
+};
+
 
 struct Event
 {
@@ -78,86 +80,6 @@ struct Event
 #define PG_USLETTER 3
 #define PG_USLEGAL 4
 
-struct Mappe {
-	struct Node mp_Node;
-	ULONG  mp_Flags;
-	STRPTR mp_Path;
-	struct MinList mp_Pages;
-	ULONG  mp_mmWidth,mp_mmHeight;
-	ULONG  mp_MediumWidth,mp_MediumHeight;
-	ULONG  mp_mmMediumWidth,mp_mmMediumHeight;
-	struct MinList mp_Projects;
-	struct Page *mp_actPage;
-	struct Window *mp_Window;
-	struct Event mp_Events[NUM_EVENTS];
-	struct MinList mp_Names;
-	struct MinList mp_Databases;
-	struct MinList mp_Masks;
-	struct MinList mp_Formats;// links
-	struct MinList mp_CalcFormats;
-	struct MinList mp_AppCmds;
-	APTR mp_Prefs; //Eigentlich struct Prefs
-	struct IOType *mp_FileType;
-	STRPTR mp_Title;
-	BYTE   mp_Modified;
-	struct MinList mp_RexxScripts;
-	STRPTR mp_Author,mp_Version,mp_Note,mp_CatchWords;
-	STRPTR mp_Password;
-	STRPTR mp_CellPassword;
-	struct IBox mp_WindowBox;
-	ULONG  mp_PrinterFlags;
-	LONG   mp_BorderLeft, mp_BorderRight, mp_BorderTop, mp_BorderBottom;
-};
-
-#define MPF_SCRIPTS 1
-#define MPF_NOTES 2
-#define MPF_PAGEMARKED 4     /* Seitenbegrenzung */
-#define MPF_PAGEONLY 8
-#define MPF_UNNAMED 16
-#define MPF_CUSIZE 32        /* Cell-Update */
-#define MPF_CUTIME 64
-
-struct Page
-{
-  struct Node pg_Node;
-  struct Window *pg_Window;
-  struct Mappe *pg_Mappe;
-  long   pg_Width, pg_Height;
-  BYTE   pg_Flags;
-  long   pg_Cols, pg_Rows;
-  struct MinList pg_Table;
-  struct tableSize *pg_tfWidth, *pg_tfHeight;
-  UWORD  pg_wTabX, pg_wTabY, pg_wTabW, pg_wTabH;
-  long   pg_MarkCol, pg_MarkRow, pg_MarkWidth, pg_MarkHeight;
-  long   pg_MarkX1, pg_MarkY1, pg_MarkX2, pg_MarkY2;
-  long   pg_SelectCol, pg_SelectRow, pg_SelectWidth, pg_SelectHeight;
-  struct Rect32 pg_Select;
-  WORD   pg_SelectPos, pg_SelectLength;
-  struct Node *pg_Family;
-  ULONG  pg_PointHeight;
-  ULONG  pg_DPI;
-  struct {
-           struct coordPkt cp;
-           WORD DispPos;
-           WORD FirstChar;
-           struct tableField *tf;
-           struct tableField  *Undo;
-         } pg_Gad;
-  long   pg_TabW, pg_TabH;     
-  long   pg_TabX, pg_TabY;
-  ULONG  pg_APen, pg_BPen;
-  ULONG  pg_Zoom;             
-  UWORD  pg_StdWidth, pg_StdHeight;
-  ULONG  pg_mmStdWidth, pg_mmStdHeight;
-  double pg_PropFactorX, pg_PropFactorY;
-  double pg_SizeFactorX,pg_SizeFactorY;/* faster converting between pixel and mm */
-
-  struct MinList pg_gObjects;
-  struct MinList pg_gGroups;
-  struct MinList pg_gDiagrams;
-  UBYTE  pg_HotSpot;
-  UBYTE  pg_Action;
-};
 
 
 
@@ -458,26 +380,143 @@ struct PrefTable
 #define PTF_MARKSUM 16
 #define PTF_MARKAVERAGE 32
 
+
 struct PrefIcon
 {
   UBYTE  pi_Width,pi_Height;
   UBYTE  pi_Spacing;
 };
 
+#define NUM_CMT 5         // falls das mal mehr wird: WDT_PREFCONTEXT, wd_ExtData!
+
+struct MenuSpecial {
+	APTR   ms_Parent;
+	struct MenuItem *ms_Item;
+	struct LockNode *ms_Lock;
+	UBYTE  ms_Type;
+};
+
+struct Prefs {
+	struct TreeNode *pr_TreeNode;
+	struct PrefDisp *pr_Disp;
+	struct PrefScreen *pr_Screen;
+	struct PrefFile *pr_File;
+	struct PrefTable *pr_Table;
+	struct PrefIcon *pr_Icon;
+	struct IBox pr_WinPos[NUM_WDT];
+	struct MinList pr_AppCmds;
+	struct MinList pr_AppMenus;
+	struct MinList pr_AppKeys;
+	struct MinList pr_IconObjs;
+	struct MinList pr_Names,pr_Formats;
+	struct Menu *pr_Menu;
+	struct MenuSpecial pr_ProjectsMenu;
+	struct MenuSpecial pr_SessionMenu;
+	struct MinList pr_Contexts[NUM_CMT];
+	ULONG  pr_Flags;
+	struct MinList pr_Modules;
+	ULONG  pr_ModuleFlags;
+};
+
+struct Mappe {
+	struct Node mp_Node;
+	ULONG  mp_Flags;
+	STRPTR mp_Path;
+	struct MinList mp_Pages;
+	ULONG  mp_mmWidth,mp_mmHeight;
+	ULONG  mp_MediumWidth,mp_MediumHeight;
+	ULONG  mp_mmMediumWidth,mp_mmMediumHeight;
+	struct MinList mp_Projects;
+	struct Page *mp_actPage;
+	struct Window *mp_Window;
+	struct Event mp_Events[NUM_EVENTS];
+	struct MinList mp_Names;
+	struct MinList mp_Databases;
+	struct MinList mp_Masks;
+	struct MinList mp_Formats;// links
+	struct MinList mp_CalcFormats;
+	struct MinList mp_AppCmds;
+	struct Prefs mp_Prefs;
+	struct IOType *mp_FileType;
+	STRPTR mp_Title;
+	BYTE   mp_Modified;
+	struct MinList mp_RexxScripts;
+	STRPTR mp_Author,mp_Version,mp_Note,mp_CatchWords;
+	STRPTR mp_Password;
+	STRPTR mp_CellPassword;
+	struct IBox mp_WindowBox;
+	ULONG  mp_PrinterFlags;
+	LONG   mp_BorderLeft, mp_BorderRight, mp_BorderTop, mp_BorderBottom;
+};
+
+#define MPF_SCRIPTS 1
+#define MPF_NOTES 2
+#define MPF_PAGEMARKED 4     /* Seitenbegrenzung */
+#define MPF_PAGEONLY 8
+#define MPF_UNNAMED 16
+#define MPF_CUSIZE 32        /* Cell-Update */
+#define MPF_CUTIME 64
+
+struct Page
+{
+  struct Node pg_Node;
+  struct Window *pg_Window;
+  struct Mappe *pg_Mappe;
+  long   pg_Width, pg_Height;
+  BYTE   pg_Flags;
+  long   pg_Cols, pg_Rows;
+  struct MinList pg_Table;
+  struct tableSize *pg_tfWidth, *pg_tfHeight;
+  UWORD  pg_wTabX, pg_wTabY, pg_wTabW, pg_wTabH;
+  long   pg_MarkCol, pg_MarkRow, pg_MarkWidth, pg_MarkHeight;
+  long   pg_MarkX1, pg_MarkY1, pg_MarkX2, pg_MarkY2;
+  long   pg_SelectCol, pg_SelectRow, pg_SelectWidth, pg_SelectHeight;
+  struct Rect32 pg_Select;
+  WORD   pg_SelectPos, pg_SelectLength;
+  struct Node *pg_Family;
+  ULONG  pg_PointHeight;
+  ULONG  pg_DPI;
+  struct {
+           struct coordPkt cp;
+           WORD DispPos;
+           WORD FirstChar;
+           struct tableField *tf;
+           struct tableField  *Undo;
+         } pg_Gad;
+  long   pg_TabW, pg_TabH;     
+  long   pg_TabX, pg_TabY;
+  ULONG  pg_APen, pg_BPen;
+  ULONG  pg_Zoom;             
+  UWORD  pg_StdWidth, pg_StdHeight;
+  ULONG  pg_mmStdWidth, pg_mmStdHeight;
+  double pg_PropFactorX, pg_PropFactorY;
+  double pg_SizeFactorX,pg_SizeFactorY;/* faster converting between pixel and mm */
+
+  struct MinList pg_gObjects;
+  struct MinList pg_gGroups;
+  struct MinList pg_gDiagrams;
+  UBYTE  pg_HotSpot;
+  UBYTE  pg_Action;
+  union  {
+     struct gClass *pg_CreateFromClass;
+     struct gObject *pg_ChangeObject;
+     };
+  struct coord *pg_Points;
+  LONG   pg_NumPoints,pg_CurrentPoint;
+  ULONG  pg_NumObjects,pg_OrderSize;
+  struct gObject **pg_ObjectOrder;
+
+  struct UndoNode *pg_CurrentUndo;
+  struct MinList pg_Undos;
+  LONG   pg_Locked;/* locked by REXX */
+  LONG   pg_Modified;
+  LONG   pg_CellTextSpace;
+};
+
+
 #ifdef __amigaos4__
 	#define PUBLIC
 #endif
-/*
-#ifdef __amigaos4__
-	#ifdef __GNUC__
-		#ifdef __PPC__
-			#pragma pack()
-		#endif
-	#elif defined(__VBCC__)
-		#pragma default-align
-	#endif
-#endif
-*/
 /***************************** interne Funktionen *******************************/
 
 void   (*ReportErrorA)(STRPTR fmt,APTR args);
@@ -495,6 +534,7 @@ STRPTR (*AllocStringLength)(STRPTR, LONG);
 STRPTR (*AllocString)(STRPTR);
 void   (*FreeString)(STRPTR);
 STRPTR (*ita)(double d, long comma, UBYTE flags);
+struct FontInfo *(*ChangeFontInfoA)(struct FontInfo *ofi,ULONG thisdpi, struct TagItem *ti, UBYTE freeref);
 
 // variadic functions must be real functions
 void   ReportError(STRPTR fmt, ...) VARARGS68K;

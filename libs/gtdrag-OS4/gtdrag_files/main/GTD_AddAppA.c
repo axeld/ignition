@@ -84,7 +84,7 @@ int _Gtdrag_GTD_AddAppA(struct GtdragIFace *Self, STRPTR name, struct TagItem *t
 
 	if (name && !GetDragApp(Self, NULL))
 	{
-    	if ((da = IExec->AllocMem(sizeof(struct DragApp),MEMF_PUBLIC | MEMF_CLEAR)) != 0)
+    	if ((da = IExec->AllocVecTags(sizeof(struct DragApp), AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE)) != 0)
 		{
 			da->da_Name = name;
 			da->da_Task = IExec->FindTask(NULL);

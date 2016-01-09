@@ -17,17 +17,7 @@
 
 
 /*************************** formats ***************************/
-/*
-#ifdef __amigaos4__
-	#ifdef __GNUC__
-		#ifdef __PPC__
-			#pragma pack(2)
-		#endif
-	#elif defined(__VBCC__)
-		#pragma amiga-align
-	#endif
-#endif
-*/
+
 struct FormatVorlage
 {
   struct Node fv_Node;
@@ -64,6 +54,37 @@ struct tableSize
   struct Cell *ts_Cell;
 };
 
+struct tablePos
+{
+	LONG tp_Col,tp_Row,tp_Width,tp_Height;
+};
+
+struct cellPos {
+	LONG cp_Col,cp_Row;
+};
+
+struct ArrayList {
+        LONG al_Size, al_Last;
+        void **al_List;
+};
+
+struct Reference {
+	struct ArrayList r_References;// array of (struct Reference *)
+	struct ArrayList r_ReferencedBy;  // array of (struct Reference *)
+	APTR   r_This;
+	struct Page *r_Page;
+	uint8  r_Type;
+	union {
+		struct {
+			struct tablePos tp;
+			uint32 count;
+			} tp;
+		struct cellPos cp;
+		STRPTR name;
+		} u;
+};
+
+
 struct Cell
 {
   struct MinNode c_Node;
@@ -85,11 +106,13 @@ struct Cell
   STRPTR c_Format;
   struct Term *c_Root;
   STRPTR c_Note;
+  struct Reference *c_Reference;
 };
 
 #define CT_TEXT 1
 #define CT_VALUE 2
-#define CT_FORMULA 3  /* ARexx-Einbindung über Funktion */
+#define CT_FORMULA 4  /* ARexx-Einbindung über Funktion */
+#define CT_EMPTY 8/* for undo/redo */
 
 #define CF_ACTUAL 1
 #define CF_REFRESH 2
@@ -110,11 +133,6 @@ struct Cell
 #define CA_VCENTER 12
 #define CA_VIRGIN 16
 
-struct tablePos
-{
-  LONG tp_Col,tp_Row,tp_Width,tp_Height;
-};
-
 struct coordPkt
 {
   long cp_X,cp_Y,cp_W,cp_H;
@@ -125,16 +143,5 @@ struct coordPkt
  * X,Y,W,H - geben Werte in Pixeln an
  * Col,Row,Width,Height - in Felderpositionen
  */
-/*
-#ifdef __amigaos4__
-	#ifdef __GNUC__
-		#ifdef __PPC__
-			#pragma pack()
-		#endif
-	#elif defined(__VBCC__)
-		#pragma default-align
-	#endif
-#endif
-*/
 #endif  /* CELL_H */
 

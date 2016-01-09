@@ -33,7 +33,8 @@ STRPTR *
 AllocToolTypes(long num)
 {
 #ifdef __amigaos4__
-	return AllocVecTags((num + 1) * sizeof(STRPTR), AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE );
+	return AllocVecTags((num + 1) * sizeof(STRPTR), AVT_Type, MEMF_PRIVATE, AVT_ClearWithValue, 0, TAG_DONE );
+//	return AllocVecTags((num + 1) * sizeof(STRPTR), AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE );
 #else
 	return AllocVec((num + 1) * sizeof(STRPTR), MEMF_CLEAR | MEMF_PUBLIC);
 #endif
@@ -248,13 +249,21 @@ spFile(struct IFFHandle *iff)
 
 	if (sm)
 	{
+#ifdef __amigaos4__
+		olddir = SetCurrentDir(sm->sm_ArgList[0].wa_Lock);
+#else
 		olddir = CurrentDir(sm->sm_ArgList[0].wa_Lock);
+#endif
 		SetToolTypes(sm->sm_ArgList[0].wa_Name,
 			"SHEETS",  strcmp(projpath,"sheets/") ? projpath : NULL,
 			"GRAPHICS",strcmp(graphicpath,"graphic/") ? graphicpath : NULL,
 			"ICONS",   strcmp(iconpath,"icons/") ? iconpath : NULL,
 			TAG_END);
+#ifdef __amigaos4__
+		SetCurrentDir(olddir);
+#else
 		CurrentDir(olddir);
+#endif
 	}
 	PopChunk(iff);
 }
@@ -326,8 +335,8 @@ spKeys(struct IFFHandle *iff,struct Prefs *pr)
 static void
 spMenu(struct IFFHandle *iff,struct Prefs *pr)
 {
-	struct AppMenue *am;
-	struct AppMenueEntry *ame,*same;
+	struct IgnAppMenu *am;
+	struct IgnAppMenuEntry *ame,*same;
 	UBYTE  type;
 
 	SetPrefsModule(pr,WDT_PREFMENU,FALSE);
@@ -711,7 +720,11 @@ lpFile(struct IFFHandle *iff)
 	}
 	if (sm)
 	{
+#ifdef __amigaos4__
+		olddir = SetCurrentDir(sm->sm_ArgList[0].wa_Lock);
+#else
 		olddir = CurrentDir(sm->sm_ArgList[0].wa_Lock);
+#endif
 		if ((dio = GetDiskObject(sm->sm_ArgList[0].wa_Name)) != 0)
 		{
 			if ((t = FindToolType(dio->do_ToolTypes,"SHEETS")) != 0)
@@ -722,7 +735,11 @@ lpFile(struct IFFHandle *iff)
 				FreeString(iconpath),  iconpath = AllocString(t);
 			FreeDiskObject(dio);
 		}
+#ifdef __amigaos4__
+		SetCurrentDir(olddir);
+#else
 		CurrentDir(olddir);
+#endif
 	}
 }
 
@@ -822,8 +839,8 @@ void
 lpMenu(struct IFFHandle *iff, LONG context, struct Prefs *pr)
 {
 	struct StoredProperty *sp;
-	struct AppMenue *am;
-	struct AppMenueEntry *ame,*same;
+	struct IgnAppMenu *am;
+	struct IgnAppMenuEntry *ame,*same;
 	STRPTR t;
 	long   pos = 0;
 
@@ -834,14 +851,14 @@ lpMenu(struct IFFHandle *iff, LONG context, struct Prefs *pr)
 
 		for(t = sp->sp_Data; sp->sp_Size-1 > pos;)
 		{
-			if (*t == NM_TITLE && (am = AllocPooled(pool,sizeof(struct AppMenue))))
+			if (*t == NM_TITLE && (am = AllocPooled(pool,sizeof(struct IgnAppMenu))))
 			{
 				am->am_Node.ln_Name = AllocString(t+1);
 				pos += strlen(t+1)+2;  t = pos+(UBYTE *)sp->sp_Data;
 				MyNewList(&am->am_Items);
 				MyAddTail(&pr->pr_AppMenus, am);
 			}
-			if (*t == NM_ITEM && am && (ame = AllocPooled(pool,sizeof(struct AppMenueEntry))))
+			if (*t == NM_ITEM && am && (ame = AllocPooled(pool,sizeof(struct IgnAppMenuEntry))))
 			{
 				ame->am_Node.ln_Name = AllocString(t+1);
 				pos += strlen(t+1)+2;  t = pos+(UBYTE *)sp->sp_Data;
@@ -852,7 +869,7 @@ lpMenu(struct IFFHandle *iff, LONG context, struct Prefs *pr)
 				MyNewList(&ame->am_Subs);
 				MyAddTail(&am->am_Items, ame);
 			}
-			if (*t == NM_SUB && am && ame && (same = AllocPooled(pool,sizeof(struct AppMenueEntry))))
+			if (*t == NM_SUB && am && ame && (same = AllocPooled(pool,sizeof(struct IgnAppMenuEntry))))
 			{
 				same->am_Node.ln_Name = AllocString(t+1);
 				pos += strlen(t+1)+2;  t = pos+(UBYTE *)sp->sp_Data;

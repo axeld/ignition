@@ -887,7 +887,6 @@ RefreshDiagramPageGadgets(REG(a0, struct Window *win), REG(d0, long active))
     }
 }
 
-
 #define GD_MAXROTATION 45
 		
  
@@ -904,8 +903,8 @@ CreateDiagramGadgets(REG(a0, struct winData *wd))
 		check_page_pointer(gd->gd_Object.go_Page);
 	}});
 
-	gWidth = 380 + rborder + lborder;
-	gHeight = barheight + fontheight*13 + 91 + bborder + (gd ? 0 : fontheight + 7);
+	gWidth = 460 + rborder + lborder;
+	gHeight = barheight + fontheight*13 + 95 + bborder + (gd ? 0 : fontheight + 7);
 	h = gHeight - barheight - fontheight - 16 - bborder - (gd ? 0 : fontheight + 7);
 	top = barheight + fontheight + 10;
 	wd->wd_Pages[5] = NULL;
@@ -1005,7 +1004,6 @@ CreateDiagramGadgets(REG(a0, struct winData *wd))
 	/*pgad =*/ CreateGadget(LISTVIEW_KIND, pgad, &ngad, GTLV_Labels, &gdiagrams, GTLV_ShowSelected, NULL,
 		GTLV_Selected, gd ? FindListEntry(&gdiagrams, (struct MinNode *)gd->gd_Object.go_Class) : ~0L,
 		GTLV_CallBack, &renderHook, GTLV_MaxPen, 7, GTLV_ItemHeight, itemheight, TAG_END);
-
     ngad.ng_Height = fontheight+4;
 
     /******* Darstellung *******/

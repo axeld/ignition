@@ -63,7 +63,7 @@ void _Gtdrag_GTD_RemoveGadget(struct GtdragIFace *Self, struct Gadget * gad)
   	if ((dg = FindDragGadget(gad)) != 0)
   	{
     	IExec->Remove((struct Node *)dg);
-    	IExec->FreeMem(dg,sizeof(struct DragGadget));
+    	IExec->FreeVec(dg);
   	}
   	IExec->ReleaseSemaphore(&ListSemaphore);
 }

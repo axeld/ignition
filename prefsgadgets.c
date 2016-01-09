@@ -298,7 +298,11 @@ void ASM CreatePrefMenuGads(REG(a0, struct winData *wd))
 {
 	long i = 13,lvwidth;
 
+#ifdef __amigaos4__
+	gWidth = 3*TLn(GetString(&gLocaleInfo, MSG_NEW_GAD))+3*TLn(GetString(&gLocaleInfo, MSG_DELETE_GAD))+282+180+lborder+rborder;
+#else
 	gWidth = 3*TLn(GetString(&gLocaleInfo, MSG_NEW_GAD))+3*TLn(GetString(&gLocaleInfo, MSG_DELETE_GAD))+282+lborder+rborder;
+#endif
 	gHeight = (7+i)*fontheight+barheight+54+bborder;
 	while(gHeight > scr->Height)
 	{
@@ -307,7 +311,11 @@ void ASM CreatePrefMenuGads(REG(a0, struct winData *wd))
 	}
 	ngad.ng_LeftEdge = lborder;
 	ngad.ng_TopEdge = barheight+fontheight+9;
+#ifdef __amigaos4__
+	ngad.ng_Width = lvwidth = TLn(GetString(&gLocaleInfo, MSG_NEW_GAD))+TLn(GetString(&gLocaleInfo, MSG_DELETE_GAD))+90 + 60;
+#else
 	ngad.ng_Width = lvwidth = TLn(GetString(&gLocaleInfo, MSG_NEW_GAD))+TLn(GetString(&gLocaleInfo, MSG_DELETE_GAD))+90;
+#endif
 	ngad.ng_Height = fontheight*i+4;
 	ngad.ng_GadgetText = GetString(&gLocaleInfo, MSG_MENU_TITLE_GAD);
 	ngad.ng_Flags = PLACETEXT_ABOVE;		// 1
@@ -777,7 +785,11 @@ CreatePrefCmdsGads(REG(a0, struct winData *wd))
 	struct Prefs *pr = GetLocalPrefs(wd->wd_Data);
 	long i = 10;
 
+#ifdef __amigaos4__
+	gWidth = TLn(GetString(&gLocaleInfo, MSG_NEW_GAD))+TLn(GetString(&gLocaleInfo, MSG_COPY_GAD))+TLn(GetString(&gLocaleInfo, MSG_DELETE_GAD))+126+14+lborder+rborder;
+#else
 	gWidth = TLn(GetString(&gLocaleInfo, MSG_NEW_GAD))+TLn(GetString(&gLocaleInfo, MSG_COPY_GAD))+TLn(GetString(&gLocaleInfo, MSG_DELETE_GAD))+126+lborder+rborder;
+#endif
 	gHeight = itemheight*i+2*fontheight+barheight+21+bborder;
 	while (gHeight > scr->Height) {
 		gHeight -= itemheight;
@@ -829,8 +841,13 @@ CreateDefineCmdGads(REG(a0, struct winData *wd))
 {
 	struct AppCmd *ac = wd->u.definecmd.wd_AppCmd;
 
+#ifdef __amigaos4__
 	gWidth = TLn(GetString(&gLocaleInfo, MSG_NEW_GAD)) + TLn(GetString(&gLocaleInfo, MSG_DELETE_GAD))
-		+ TLn(GetString(&gLocaleInfo, MSG_INTERNAL_COMMAND_GAD)) + 194 + lborder + rborder;
+		+ TLn(GetString(&gLocaleInfo, MSG_INTERNAL_COMMAND_GAD)) + 194 + 50 +lborder + rborder;
+#else
+	gWidth = TLn(GetString(&gLocaleInfo, MSG_NEW_GAD)) + TLn(GetString(&gLocaleInfo, MSG_DELETE_GAD))
+		+ TLn(GetString(&gLocaleInfo, MSG_INTERNAL_COMMAND_GAD)) + 194 +lborder + rborder;
+#endif
 	gHeight = fontheight*16 + barheight + 82 + bborder;
 
 	//wd->wd_ShortCuts = "mbnlirduhoay";
@@ -955,7 +972,7 @@ CreatePrefNamesGads(REG(a0, struct winData *wd))
 		MSG_CONTENTS_ULABEL, MSG_REFERENCE_ULABEL, MSG_OK_UGAD, MSG_CANCEL_UGAD, TAG_END);
 
 	w = TLn(GetString(&gLocaleInfo, MSG_NEW_GAD)) + TLn(GetString(&gLocaleInfo, MSG_COPY_GAD)) + TLn(GetString(&gLocaleInfo, MSG_DELETE_GAD)) + 48;
-	gWidth = w + 82 + TLn(sNameTypeLabels[1]) + TLn(GetString(&gLocaleInfo, MSG_TYPE_LABEL)) + lborder + rborder;
+	gWidth = w + 100 + TLn(sNameTypeLabels[1]) + TLn(GetString(&gLocaleInfo, MSG_TYPE_LABEL)) + lborder + rborder;
 	gHeight = barheight + fontheight*10 + 21 + bborder;
 	wd->wd_ExtData[1] = NULL;
 

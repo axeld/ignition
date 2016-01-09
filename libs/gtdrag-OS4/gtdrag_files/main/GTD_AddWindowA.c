@@ -75,8 +75,8 @@ void _Gtdrag_GTD_AddWindowA(struct GtdragIFace *Self, struct Window *win, struct
   	struct DragApp *da;
   	struct DragWindow *dw;
 
-  	IExec->ObtainSemaphore(&ListSemaphore);
-  	if ((da = GetDragApp(Self, NULL)) && win && (dw = IExec->AllocMem(sizeof(struct DragWindow),MEMF_PUBLIC | MEMF_CLEAR)))
+  	IExec->ObtainSemaphore(&ListSemaphore); 
+  	if ((da = GetDragApp(Self, NULL)) && win && (dw = IExec->AllocVecTags(sizeof(struct DragWindow), AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE)))
   	{
     	dw->dw_Window = win;
     	dw->dw_Task = da->da_Task;

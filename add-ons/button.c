@@ -354,9 +354,9 @@ initClass(REG(a0, struct gClass *gc))
 {
 	sCatalog = OpenCatalog(NULL, "ignition.catalog", OC_BuiltInLanguage, "deutsch", TAG_END);
 
-	interface[0].gi_Label = GetCatalogStr(sCatalog, MSG_BRIGHT_EDGES_LABEL, "Helle Kanten:");
-	interface[1].gi_Label = GetCatalogStr(sCatalog, MSG_DARK_EDGES_LABEL, "Dunkle Kanten:");
-	interface[3].gi_Label = GetCatalogStr(sCatalog, MSG_TEXT_COLOR_LABEL, "Textfarbe:");
+	interface[0].gi_Label = (STRPTR)GetCatalogStr(sCatalog, MSG_BRIGHT_EDGES_LABEL, "Helle Kanten:");
+	interface[1].gi_Label = (STRPTR)GetCatalogStr(sCatalog, MSG_DARK_EDGES_LABEL, "Dunkle Kanten:");
+	interface[3].gi_Label = (STRPTR)GetCatalogStr(sCatalog, MSG_TEXT_COLOR_LABEL, "Textfarbe:");
 
 	return TRUE;
 }

@@ -8,10 +8,10 @@
 
 
 #ifdef __amigaos4__
-	#define VERSION "1.00 beta 2"
-	#define INFODATE "21. Sep. 2014"
-	#define IGNITION_COPYRIGHT "Copyright ©1996-2014 pinc Software."
-	#define VERSTRING "$VER: ignitionOS4 " VERSION " (21.09.2014)"
+	#define VERSION "1.00 beta 3"
+	#define INFODATE "21. Oktobber 2015"
+	#define IGNITION_COPYRIGHT "Copyright ©1996-2015 pinc Software."
+	#define VERSTRING "$VER: ignitionOS4 " VERSION " (21.10.2015)"
 
 	#define SCREEN_TITLE "ignitionOS4  V" VERSION "    "  IGNITION_COPYRIGHT
 #else

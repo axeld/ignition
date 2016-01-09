@@ -11,6 +11,7 @@
 #ifdef __amigaos4__
 	#include <proto/elf.h>
 #endif
+extern struct FontInfo *ChangeFontInfoA(struct FontInfo *ofi,ULONG thisdpi, struct TagItem *ti, UBYTE freeref);
 
 //#define DUMP_CELLS
 //#define ENABLE_OLD_FORMAT
@@ -101,6 +102,7 @@ ReadChunkString(struct IFFHandle *iff, STRPTR buffer, ULONG len)
 		while(ReadChunkBytes(iff, s, 1) > 0 && *s);
 		*s = 0;
 	}
+	
 	return buffer;
 }
 
@@ -139,7 +141,8 @@ CryptString(STRPTR target, STRPTR source)
 	*(target) = 0;
 }
 
-
+/*
+Not used and wrong function for io-functable
 STRPTR PUBLIC
 ioita(REG(d0, ULONG d1), REG(d1, ULONG d2), REG(d2, long komma), REG(d3, UBYTE flags))
 {
@@ -150,7 +153,7 @@ ioita(REG(d0, ULONG d1), REG(d1, ULONG d2), REG(d2, long komma), REG(d3, UBYTE f
 
 	return ita(*d,komma,flags);
 }
-
+*/
 
 void PUBLIC
 ioUpdateTFText(REG(a0, struct Page *page), REG(a1, struct tableField *tf))
@@ -159,7 +162,7 @@ ioUpdateTFText(REG(a0, struct Page *page), REG(a1, struct tableField *tf))
 		return;
 
 	tf->tf_FontInfo = SetFontInfoA(tf->tf_FontInfo,page->pg_DPI,NULL);
-	//UpdateTFText(page,tf);
+	//UpdateCellText(page,tf);
 }
 
 
@@ -430,7 +433,6 @@ LoadCells(struct IFFHandle *iff, LONG context, struct Page *page, struct MinList
 			if (tf && !tf->tf_Text && !(tf->tf_Flags & TFF_FONTSET)) // alte Zelle zurücksetzen
 			{
 				FreeFontInfo(tf->tf_FontInfo);
-//DebugPrintF("LoadCells (NULL, %0X, FA_Family, %0X, FA_PointHeight, %0X, TAG_END)\n", page->pg_DPI,page->pg_Family,page->pg_PointHeight);
 				tf->tf_FontInfo = NewFontInfo(NULL,page->pg_DPI,FA_Family,     page->pg_Family,
 																FA_PointHeight,page->pg_PointHeight,
 																TAG_END);
@@ -1064,7 +1066,6 @@ LoadFonts(struct IFFHandle *iff)
 						}
 					}
 				}
-//DebugPrintF("LoadFonts->Font:<%s> ergänzt\n", ((struct Node *)(ln->ln_Name))->ln_Name);
 			MyAddTail(&io_fonts, ln);
 		}
 		pos += strlen(family) + 1;
@@ -1962,7 +1963,6 @@ StandardSaveProject(REG(d0, BPTR dat), REG(a0, struct Mappe *mp))
 			}
 
 			/************ Fonts ************/
-
 			if (!error && !(error = PushChunk(iff, 0, ID_FONTS,IFFSIZE_UNKNOWN)))
 			{
 				struct NumberLink *nl;
@@ -2450,15 +2450,15 @@ const APTR io_functable[] = {
 	/* 11 */ AllocStringLength,
 	/* 12 */ AllocString,
 	/* 13 */ FreeString,
-	/* 14 */ ioita,
+	/* 14 */ ita, //ioita,
+	/* 15 */ ChangeFontInfoA,
 	NULL
 };  /* to be continued */
 
 #ifdef __amigaos4__
 void InitIOType(struct IOType *io)
 {
-	BOOL * ASM (*initIOSegment)(REG(a0, APTR), REG(a1, APTR *), REG(a2, APTR), REG(a3, APTR), REG(a6, APTR),
-		REG(d0, APTR), REG(d1, APTR), REG(d2, APTR), REG(d3, APTR), REG(d4, long));
+	BOOL * ASM (*initIOSegment)(REG(a0, APTR), REG(a1, APTR *), REG(a2, APTR), REG(a3, APTR), REG(a6, APTR), REG(d0, APTR), REG(d1, APTR), REG(d2, APTR), REG(d3, APTR), REG(d4, APTR), REG(d5, APTR), REG(d6, long));
 	BPTR dir,olddir;//,segment;
 	Elf32_Handle elfhandle;
 	Elf32_Handle filehandle;
@@ -2469,7 +2469,7 @@ void InitIOType(struct IOType *io)
 
 	if ((dir = Lock(CLASSES_PATH,ACCESS_READ)) != 0)
 	{
-		olddir = CurrentDir(dir);
+		olddir = SetCurrentDir(dir);
 		if ((io->io_Segment = LoadSeg(io->io_Filename)) != 0)
 		{
 			//Get ELF handler
@@ -2490,7 +2490,7 @@ void InitIOType(struct IOType *io)
 								CloseElfTags(filehandle, CET_CloseInput, TRUE, TAG_DONE);
 								//Store the address of the Function
 								initIOSegment = (void*)query.Value;
-								if (!initIOSegment((APTR)io, (APTR)io_functable, (APTR)pool, (APTR)IExec, (APTR)IDOS, (APTR)IUtility, (APTR)ILocale, NULL, NULL, MAKE_ID('I','G','N',0)))
+								if (!initIOSegment((APTR)io, (APTR)io_functable, (APTR)pool, (APTR)IExec, (APTR)IDOS, (APTR)IUtility, (APTR)ILocale, (APTR)IIntuition, (APTR)IGadTools, NULL, NULL, MAKE_ID('I','G','N',0)))
 									UnLoadSeg(io->io_Segment);
 							}
 							else
@@ -2508,7 +2508,7 @@ void InitIOType(struct IOType *io)
 		}
 		else
 			ErrorRequest(GetString(&gLocaleInfo, MSG_ADD_ON_NOT_FOUND_ERR),io->io_Node.ln_Name,io->io_Filename);
-		CurrentDir(olddir);
+		SetCurrentDir(olddir);
 		UnLock(dir);
 	}
 }
@@ -2961,12 +2961,30 @@ SaveProject(struct Mappe *mp, struct IOType *io, bool confirmOverwrite)
 						struct FontInfo *fi;
 
 						if (GetGObjectAttr(go, gi->gi_Tag, (ULONG *)&fi)) {
+#ifdef __amigaos4__
+							if (FindListEntry(&io_fonts, (struct MinNode *)fi->fi_Family) == -1)
+#else
 							if (!FindListEntry(&io_fonts, (struct MinNode *)fi->fi_Family))
+#endif
 								AddNumberLink(&io_fonts, fi->fi_Family);
 						}
 					}
 				}
 			}
+			// also, add all the fonts used by the diagrams
+#ifdef __amigaos4__
+			foreach (&page->pg_gDiagrams, go) {
+				struct FontInfo *fi;
+				struct gInterface *gi;
+				struct gcpGet gs = {GCM_GET, GAA_FontInfo, (ULONG *)&fi};
+
+				if(gDiagramDispatch(go->go_Class, (struct gDiagram *)go, &gs) == 1)
+				{
+					if (FindListEntry(&io_fonts, (struct MinNode *)fi->fi_Family) == -1)
+						AddNumberLink(&io_fonts, fi->fi_Family);
+				}
+			}
+#endif
 		}
 //      SortFormatList((struct List *)&io_fvs);
 
@@ -2991,14 +3009,21 @@ SaveProject(struct Mappe *mp, struct IOType *io, bool confirmOverwrite)
 			else {                       // Create a new one
 				BPTR olddir,dir;
 				STRPTR tool;
-
+				char tpath[256];
 				if ((dir = Lock(iconpath, SHARED_LOCK)) != 0) {
 					char s[256];
-
+#ifdef __amigaos4__
+					olddir = SetCurrentDir(dir);
+#else
 					olddir = CurrentDir(dir);
+#endif
 					if ((dio = GetDiskObject("def_ign")) != 0)
 						tool = dio->do_DefaultTool;
+#ifdef __amigaos4__
+					SetCurrentDir(olddir);
+#else
 					CurrentDir(olddir);
+#endif
 					UnLock(dir);
 
 					if (!dio) {
@@ -3111,8 +3136,11 @@ SaveIOTypeDescription(struct IOType *io)
 		char t[256];
 		BPTR file;
 
+#ifdef __amigaos4__
+		olddir = SetCurrentDir(dir);
+#else
 		olddir = CurrentDir(dir);
-
+#endif
 		D(bug("save I/O prefs for \"%s\"\n", io->io_Filename));
 		strcpy(t, io->io_Filename);
 		strcat(t, "descr");
@@ -3153,7 +3181,11 @@ SaveIOTypeDescription(struct IOType *io)
 			Flush(file);
 			Close(file);
 		}
+#ifdef __amigaos4__
+		SetCurrentDir(olddir);
+#else
 		CurrentDir(olddir);
+#endif
 		UnLock(dir);
 	}
 }
@@ -3292,8 +3324,9 @@ initIO(void)
 	MyNewList(&iotypes);
 	initStandardIOTypes();
 	if ((dir = Lock(CLASSES_PATH,ACCESS_READ)) != 0) {
-		olddir = CurrentDir(dir);
 #ifdef __amigaos4__
+		olddir = SetCurrentDir(dir);
+
 		ap = AllocDosObjectTags(DOS_ANCHORPATH, ADO_Mask, SIGBREAKF_CTRL_C, ADO_Strlen, 1024L, TAG_END ); 
 		for (rc = MatchFirst("#?.iodescr",ap); !rc; rc = MatchNext(ap)) {
 			if ((file = Open(ap->ap_Info.fib_FileName, MODE_OLDFILE)) != 0) {
@@ -3302,6 +3335,7 @@ initIO(void)
 					if ((io->io_Filename = AllocPooled(pool,i = strlen(ap->ap_Info.fib_FileName)-4)) != 0)
 						CopyMem(ap->ap_Info.fib_FileName,io->io_Filename,i-1);
 #else
+		olddir = CurrentDir(dir);
 		memset(&ap,0,sizeof(struct AnchorPath));
 		for (rc = MatchFirst("#?.iodescr",&ap); !rc; rc = MatchNext(&ap)) {
 			if ((file = Open(ap.ap_Info.fib_FileName, MODE_OLDFILE)) != 0) {
@@ -3319,10 +3353,11 @@ initIO(void)
 #ifdef __amigaos4__
 		MatchEnd(ap);
 		FreeDosObject(DOS_ANCHORPATH,ap);
+		SetCurrentDir(olddir);
 #else
 		MatchEnd(&ap);
-#endif
 		CurrentDir(olddir);
+#endif
 		UnLock(dir);
 	}
 }

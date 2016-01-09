@@ -757,8 +757,9 @@ NameValue(struct Result *r, STRPTR t)
         rc = CalcTree(r, &term);
     }
     else                                            /* Standardberechnung */
+    {
         rc = CalcTree(r, db->db_Root);
-
+	}
     calcpage = oldpage;                             /* globale Var. auf alte Werte */
     if (db->db_Node.ln_Type != NMT_SEARCH)
         tf_col = col,  tf_row = row;
@@ -2909,8 +2910,7 @@ CalcTerm(REG(a0, struct Page *page), REG(a1, STRPTR text), REG(a2, struct Term *
             term = CreateTree(page, text + 1);
             treeowner = TRUE;
         }
-        rc = CalcTree(&r, term);
-
+        rc =CalcTree(&r, term);
         if (treeowner)
             DeleteTree(term);
 
@@ -2938,14 +2938,26 @@ CalcTerm(REG(a0, struct Page *page), REG(a1, STRPTR text), REG(a2, struct Term *
 bool
 openBracket(struct Term *k, struct Term *s, uint32 *pos)
 {
+#ifdef __amigaos4__
+    if (!k || !s)
+    {
+        D(bug("openBracket() - fehler!\n"));
+    }
+	else
+	    if (k->t_Pri > s->t_Pri && s->t_Pri != 0 || k->t_Pri == s->t_Pri && k->t_Pri == PRI_POT)
+    	{
+        	strcpy(gTextBuffer + (*pos)++, "(");
+        	return true;
+    	}
+#else
     if (!k || !s)
         D(bug("openBracket() - fehler!\n"));
-
     if (k->t_Pri > s->t_Pri && s->t_Pri != 0 || k->t_Pri == s->t_Pri && k->t_Pri == PRI_POT)
     {
         strcpy(gTextBuffer + (*pos)++, "(");
         return true;
     }
+#endif
     return false;
 }
 
@@ -3054,7 +3066,6 @@ TermToText(struct Term *term, uint32 *_pos)
             break;
         default:
             // left part of the term
-
             klammer = openBracket(term, term->t_Left, &length);
             if (!klammer && term->t_Op == OP_POT && term->t_Left->t_Op == OP_POT)
             {
@@ -3065,7 +3076,14 @@ TermToText(struct Term *term, uint32 *_pos)
 
             closeBracket(klammer, &length);
 
+#ifdef __amigaos4__
+			//Die if-Abfrage verhindert zwei = in Objekten wie zB das Text-Objekt.
+			//ist erstmal eine Notlösung!
+			if(!(gTextBuffer[0] == '=' && term->t_Op == OP_EQUAL && length == 1))
+            	strcpy(gTextBuffer + length, Ops(term->t_Op));
+#else
             strcpy(gTextBuffer + length, Ops(term->t_Op));
+#endif
             length += strlen(gTextBuffer + length);
 
             // right part of the term
@@ -3197,11 +3215,13 @@ CreateTreeFrom(struct Page *page, long col, long row, STRPTR t)
 struct Term * PUBLIC
 CreateTree(REG(a0, struct Page *page),REG(a1, STRPTR t))
 {
+    struct Term *te;
+    
     calcpage = page;
     tf_col = 0;
     tf_row = 0;
-
-    return createTree(t, &tree_stack, &tree_size);
+    te =  createTree(t, &tree_stack, &tree_size);
+	return te;
 }
 
 
@@ -3272,7 +3292,6 @@ createTree(STRPTR t, void **stack, uint32 *_size)
                         specialCharacter = true;      /* Punkt oder Unterstrich? */
                 }
                 buff[i] = '\0';
-
                 if (*t != '(')
                 {
                     if (!specialCharacter && isdigit(*(t - 1)))        /* Dann kann es schon kein Bezug mehr sein */

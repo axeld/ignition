@@ -539,7 +539,7 @@ void ASM closePrefMenuWin(REG(a0, struct Window *win), REG(d0, BOOL clean))
 }
 
 
-void updatePrefMenuGads(struct AppMenue *am,struct AppMenueEntry *ame,struct AppMenueEntry *same)
+void updatePrefMenuGads(struct IgnAppMenu *am,struct IgnAppMenuEntry *ame,struct IgnAppMenuEntry *same)
 {
     UBYTE dame,dsame;
 
@@ -586,8 +586,8 @@ void updatePrefMenuGads(struct AppMenue *am,struct AppMenueEntry *ame,struct App
 
 void ASM handlePrefMenuIDCMP(REG(a0, struct TagItem *tag))
 {
-    struct AppMenue *am;
-    struct AppMenueEntry *ame,*same;
+    struct IgnAppMenu *am;
+    struct IgnAppMenuEntry *ame,*same;
     STRPTR t;
     long   i;
 
@@ -678,7 +678,7 @@ void ASM handlePrefMenuIDCMP(REG(a0, struct TagItem *tag))
                         GT_SetGadgetAttrs(wd->wd_ExtData[0],win,NULL,GTLV_Labels,~0L,GTLV_Selected,~0L,TAG_END);
                         MyRemove(am);
                         FreeString(am->am_Node.ln_Name);
-                        FreePooled(pool,am,sizeof(struct AppMenue));
+                        FreePooled(pool,am,sizeof(struct IgnAppMenu));
                         updatePrefMenuGads(NULL,NULL,NULL);
                     }
                     break;
@@ -690,13 +690,13 @@ void ASM handlePrefMenuIDCMP(REG(a0, struct TagItem *tag))
                         FreeString(ame->am_Node.ln_Name);
                         FreeString(ame->am_ShortCut);
                         FreeString(ame->am_AppCmd);
-                        while((same = (struct AppMenueEntry *)MyRemHead(&ame->am_Subs)) != NULL)
+                        while((same = (struct IgnAppMenuEntry *)MyRemHead(&ame->am_Subs)) != NULL)
                         {
                             FreeString(same->am_Node.ln_Name);
                             FreeString(same->am_ShortCut);
                             FreeString(same->am_AppCmd);
                         }
-                        FreePooled(pool,ame,sizeof(struct AppMenueEntry));
+                        FreePooled(pool,ame,sizeof(struct IgnAppMenuEntry));
                         updatePrefMenuGads(am,NULL,NULL);
                     }
                     break;
@@ -708,7 +708,7 @@ void ASM handlePrefMenuIDCMP(REG(a0, struct TagItem *tag))
                         FreeString(same->am_Node.ln_Name);
                         FreeString(same->am_ShortCut);
                         FreeString(same->am_AppCmd);
-                        FreePooled(pool,same,sizeof(struct AppMenueEntry));
+                        FreePooled(pool,same,sizeof(struct IgnAppMenuEntry));
                         updatePrefMenuGads(am,ame,NULL);
                     }
                     break;
@@ -738,7 +738,7 @@ void ASM handlePrefMenuIDCMP(REG(a0, struct TagItem *tag))
                     break;
                 case 11:
                 {
-                    struct AppMenueEntry *iam;
+                    struct IgnAppMenuEntry *iam;
                     UBYTE  separator;
 
                     iam = ame;
@@ -756,7 +756,7 @@ void ASM handlePrefMenuIDCMP(REG(a0, struct TagItem *tag))
                             iam->am_Node.ln_Name = AllocString(t);
                             updatePrefMenuGads(am,ame,same);
                         }
-                        else if ((iam = AllocPooled(pool, sizeof(struct AppMenueEntry))) != 0)
+                        else if ((iam = AllocPooled(pool, sizeof(struct IgnAppMenuEntry))) != 0)
                         {
                             GT_SetGadgetAttrs(wd->wd_ExtData[i-10],win,NULL,GTLV_Labels,~0L,GA_Disabled,FALSE,GTLV_Selected,~0L,TAG_END);
                             iam->am_Node.ln_Name = AllocString(t);
@@ -856,9 +856,9 @@ void ASM handlePrefMenuIDCMP(REG(a0, struct TagItem *tag))
                 }
                 else if (dm->dm_Object.od_InternalType == DRAGT_SUBMENU)
                 {
-                    struct AppMenueEntry *iam,*dam = dm->dm_Object.od_Object;
+                    struct IgnAppMenuEntry *iam,*dam = dm->dm_Object.od_Object;
 
-                    if ((iam = AllocPooled(pool, sizeof(struct AppMenueEntry))) != 0)
+                    if ((iam = AllocPooled(pool, sizeof(struct IgnAppMenuEntry))) != 0)
                     {
                         GT_SetGadgetAttrs(dm->dm_Target,win,NULL,GTLV_Labels,~0L,GA_Disabled,FALSE,GTLV_Selected,~0L,TAG_END);
                         iam->am_Node.ln_Name = AllocString(dam->am_Node.ln_Name);
@@ -3013,7 +3013,7 @@ handlePrefContextIDCMP(REG(a0, struct TagItem *tag))
                 }
                 else if (dm->dm_Object.od_Object && dm->dm_Object.od_InternalType == DRAGT_SUBMENU)
                 {
-                    struct AppMenueEntry *am = (struct AppMenueEntry *)dm->dm_Object.od_Object;
+                    struct IgnAppMenuEntry *am = (struct IgnAppMenuEntry *)dm->dm_Object.od_Object;
 
                     GT_SetGadgetAttrs(wd->wd_ExtData[6],win,NULL,GTLV_Labels,~0L,TAG_END);
 

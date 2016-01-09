@@ -68,7 +68,7 @@ void _Gtdrag_GTD_RemoveApp(struct GtdragIFace *Self)
       		{
         		s = n->mln_Pred;
         		IExec->Remove((struct Node *)n);
-        		IExec->FreeMem(n,sizeof(struct DragWindow));
+        		IExec->FreeVec(n);
         		n = s;
       		}
     	}
@@ -78,12 +78,12 @@ void _Gtdrag_GTD_RemoveApp(struct GtdragIFace *Self)
       		{
         		s = n->mln_Pred;
         		IExec->Remove((struct Node *)n);
-        		IExec->FreeMem(n,sizeof(struct DragGadget));
+        		IExec->FreeVec(n);
         		n = s;
       		}
     	}
     	IExec->Remove((struct Node *)da);
-    	IExec->FreeMem(da, sizeof(struct DragApp));
+    	IExec->FreeVec(da);
   	}
   	IExec->ReleaseSemaphore(&ListSemaphore);
 }

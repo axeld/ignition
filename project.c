@@ -92,7 +92,6 @@ GetPageTitle(struct Page *page)
 {
 	if (!page)
 		return(NULL);
-
 	return(page->pg_Mappe->mp_Title+(page == rxpage ? 0 : 3));
 }
 
@@ -165,7 +164,6 @@ void
 UpdateProjPage(struct Window *win,struct Page *page)
 {
 	struct winData *wd;
-
 	if (win && page && (wd = (struct winData *)win->UserData) && wd->wd_Data != page) {
 		((struct Page *)wd->wd_Data)->pg_Window = NULL;
 		wd->wd_Data = page;
@@ -1388,7 +1386,7 @@ EditFunc(struct Page *page, UBYTE func, struct tablePos *tp)
 	}
 
 	if (func != PTEF_COPY)
-		printf("EditFunc \n"), CreateTabGadget(page, tp->tp_Col, tp->tp_Row, FALSE);
+		CreateTabGadget(page, tp->tp_Col, tp->tp_Row, FALSE);
 
 	RecalcTableFields(page);
 }

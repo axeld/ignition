@@ -920,11 +920,21 @@ OpenPrintScreen(struct PrintScreenContext *context, struct Mappe *map, struct Ra
 needScreen = true;
 
 	if (needScreen) {
+#ifdef __amigaos4__
+		ULONG dispid;
+
+		dispid = GetVPModeID(&scr->ViewPort);
+#endif
 		context->ps_Screen = OpenScreenTags(NULL,
 					SA_Title,			"ignition.print",
 					SA_LikeWorkbench,	TRUE,
+#ifdef __amigaos4__
+                    SA_DisplayID,     dispid,
+#endif
+#ifndef __amigaos4__
 					SA_Interleaved,		TRUE,
 					SA_Colors32,		standardPalette,
+#endif
 					SA_Depth,			trueColor ? 24 : 8,
 					SA_Draggable,		FALSE,
 					SA_Parent,			scr,
@@ -983,8 +993,11 @@ needScreen = true;
 void
 ClosePrintScreen(struct PrintScreenContext *context)
 {
+    
 	if (context->ps_Screen) {
 		// we had a screen
+//printf("Warte auf RETURN!\n");
+//getchar();
 		CloseScreen(context->ps_Screen);
 	} else {
 		// we didn't have a screen
@@ -1075,7 +1088,7 @@ Print(struct List *list, struct wdtPrinter *wp, WORD unit, struct wdtPrintStatus
 				pio->iodrp.io_SrcWidth = width;  pio->iodrp.io_SrcHeight = stripe - 2;
 				pio->iodrp.io_DestCols = width;/*stripe;*/
 				pio->iodrp.io_DestRows = pio->iodrp.io_SrcHeight; /*stripe;*/
-				pio->iodrp.io_Special = SPECIAL_NOFORMFEED;
+				pio->iodrp.io_Special = SPECIAL_NOFORMFEED|SPECIAL_ASPECT;
 			/*}
 			else
 				D(bug("printer error: %ld\n",pio->iodrp.io_Error));*/

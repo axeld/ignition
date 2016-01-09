@@ -6,6 +6,18 @@
 #ifndef TURBOCALC_H
 #define TURBOCALC_H
 
+//Turbocalc starts with 1.1.1900 the utility-date-functions with 1.1.1978 this is the correction in day
+#define DATECORR       28489
+
+#define FA_PointHeight  TAG_USER+100  /* Tags for SetFontInfo() */
+#define FA_Space        TAG_USER+101
+#define FA_Style        TAG_USER+102
+#define FA_Rotate       TAG_USER+103
+#define FA_Kerning      TAG_USER+104
+#define FA_Family       TAG_USER+105
+#define FA_Shear        TAG_USER+106
+#define FA_Embolden     TAG_USER+107  /* not yet implemented */
+#define FA_Width        TAG_USER+108  /* not yet implemented */
 
 struct THeader {
 	UBYTE th_Type;
@@ -147,6 +159,7 @@ enum {
 						 * title_txt
 						 * subject_txt */
 } TCTypes;
+
 
 /*
 ** ..._txt: num.w txt.num

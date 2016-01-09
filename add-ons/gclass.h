@@ -459,7 +459,6 @@ struct gClass
 	extern struct DOSIFace *IDOS; 
 	extern struct UtilityIFace *IUtility;
 	extern struct LocaleIFace *ILocale;
-	//extern struct GraphicIFace * IGraphics;
 #endif
 #endif  /* GCLASS_H */
 

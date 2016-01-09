@@ -228,12 +228,11 @@ struct PrefsModule {
 
 #define LNT_PREFSMODULE 242
 
+
 /*************************** Prototypes ***************************/
 
 // I/O
 extern void PropPrefsChunks(struct IFFHandle *iff,LONG context,LONG flags);
-//extern long spFormat(struct IFFHandle *iff,struct Prefs *pr,struct MinList *list);
-//extern long spNames(struct IFFHandle *iff,struct Prefs *pr,struct MinList *list);
 extern long SaveProjectPrefs(struct IFFHandle *iff,struct Prefs *pr);
 extern void SavePrefs(struct Prefs *prefs,STRPTR name,long flags);
 extern void lpCmds(struct IFFHandle *iff,LONG context,struct Prefs *pr,BYTE add,BYTE keep);

@@ -50,7 +50,6 @@
 #include <proto/gtdrag.h>
 #include <proto/console.h>
 #include <proto/bullet.h>
-//#include <clib/amigaguide_protos.h>
 #include <proto/colorwheel.h>
 #include <proto/cybergraphics.h>
 #include <proto/dos.h>
@@ -69,7 +68,6 @@
 #include <proto/amigaguide.h>
 #include <proto/wb.h>
 #include <clib/alib_protos.h>
-/*#include <clib/alib_stdio_protos.h>*/
 
 #if defined(__AROS__)
 #	include <cybergraphx/cybergraphics.h>
@@ -82,18 +80,11 @@
 #	include <proto/cybergraphics.h>
 #	include <proto/console.h>
 #	include <proto/bullet.h>
-	//#include <pragmas/amigaguide_pragmas.h>
-	//#include "libs/textedit/include/pragmas/TextEdit_pragmas.h"
-	//#include "libs/gtdrag/include/pragmas/gtdrag_pragmas.h"
-	//#include "libs/textedit/include/clib/TextEdit_protos.h"
-	//#include <proto/mathieeedoubbas.h>
-	//#include <proto/mathieeedoubtrans.h>
 #else
 #	include <cybergraphics/cybergraphics.h>
 #	include <pragmas/cybergraphics_pragmas.h>
 #	include <pragmas/console_pragmas.h>
 #	include <pragmas/bullet_pragmas.h>
-	//#include <pragmas/amigaguide_pragmas.h>
 #	include <pragmas/TextEdit_pragmas.h>
 #	include <pragmas/gtdrag_pragmas.h>
 #	include <clib/TextEdit_protos.h>
@@ -628,12 +619,12 @@ struct RexxScript {
 */
 
 /*************************** Menü ***************************/
-struct AppMenue {
+struct IgnAppMenu {
     struct Node am_Node;
    	struct MinList am_Items;
 };
 
-struct AppMenueEntry {
+struct IgnAppMenuEntry {
    	struct Node am_Node;
    	STRPTR am_AppCmd;
     STRPTR am_ShortCut;

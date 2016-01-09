@@ -1,6 +1,6 @@
 /* ignition I/O-Module-Linkfile
  *
- * Copyright 1996-2009 pinc Software. All Rights Reserved.
+ * Copyright 1996-2015 pinc Software. All Rights Reserved.
  * Licensed under the terms of the MIT License.
  */
 
@@ -84,6 +84,8 @@ struct IOType {
 	struct DOSIFace *IDOS; 
 	struct UtilityIFace *IUtility;
 	struct LocaleIFace *ILocale;
+	struct IntuitionIFace *IIntuition;
+	struct GadToolsIFace *IGadTools;
 #else
 	struct ExecBase *SysBase;
 	#ifndef __SASC
@@ -113,8 +115,10 @@ __attribute__((used)) BOOL
 InitModule(struct IOType *io, APTR *functable, APTR mainpool, 
 		struct ExecIFace *execIF, 
 		struct DOSIFace  *dosIF,
-		struct UtilityIFace *utilif,
-		struct LocaleIFace *localeif, 
+		struct UtilityIFace *utilIF,
+		struct LocaleIFace *localeIF, 
+		struct IntuitionIFace *intuiIF,
+		struct GadToolsIFace *gadtIF,
 		APTR mathBase, 
 		APTR mathtransBase, 
 		long magic)
@@ -123,8 +127,10 @@ InitModule(struct IOType *io, APTR *functable, APTR mainpool,
 	//Library-Pointer
 	IExec = execIF;
 	IDOS = dosIF;
-	IUtility = utilif;
-	ILocale = localeif;
+	IUtility = utilIF;
+	ILocale = localeIF;
+	IIntuition = intuiIF;
+	IGadTools = gadtIF;
 #else
 #define MAKE_ID(a,b,c,d) ((a << 24) | (b << 16) | (c << 8) | d)
 
@@ -174,6 +180,7 @@ InitModule(REG(a0, struct IOType *io), REG(a1, APTR *functable), REG(a2, APTR ma
 	AllocString = functable[12];
 	FreeString = functable[13];
 	ita = functable[14];
+	ChangeFontInfoA = functable[15];
 
 	setPrefs(io->io_Prefs);
 

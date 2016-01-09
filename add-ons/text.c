@@ -14,6 +14,7 @@
 
 #define CATCOMP_NUMBERS
 #ifdef __amigaos4__
+	#include <proto/exec.h>
 	#include <proto/utility.h>
 	#include "../ignition_strings.h"
 #else
@@ -233,7 +234,7 @@ ULONG PUBLIC
 initClass(REG(a0, struct gClass *gc))
 {
 	sCatalog = OpenCatalog(NULL, "ignition.catalog", OC_BuiltInLanguage, "deutsch", TAG_END);
-	interface[0].gi_Label = GetCatalogStr(sCatalog, MSG_TEXT_COLOR_LABEL, "Textfarbe:");
+	interface[0].gi_Label = (STRPTR)GetCatalogStr(sCatalog, MSG_TEXT_COLOR_LABEL, "Textfarbe:");
 
 	return TRUE;
 }

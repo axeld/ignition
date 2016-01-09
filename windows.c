@@ -1788,8 +1788,16 @@ struct Window *OpenAppWindowA(long type, struct TagItem *tags)
 							UpdateObjectGadgets(win);
 							break;
 						case WDT_DIAGRAM:
-							if (wd->u.diagram.wd_CurrentDiagram)
+							if (wd->u.diagram.wd_CurrentDiagram)								//open existing diagram
 								wd->u.diagram.wd_CurrentDiagram->gd_Object.go_Window = win;
+							else																//create new diagram
+								{																//set first diagramtyp as default to avoid grim when use some gadgets (example horiz/vertical
+								struct MinNode *mln;
+
+								mln = gdiagrams.mlh_Head;
+								SetDiagramType(win, wd, (struct gClass *)mln);
+								}
+							
 
 							UpdateObjectGadgets(win);
 							break;

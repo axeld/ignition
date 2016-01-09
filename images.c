@@ -176,11 +176,19 @@ LoadImage(STRPTR t)
 		BPTR olddir,dir;
 
 		if ((dir = Lock(iconpath, SHARED_LOCK)) != 0) {
+#ifdef __amigaos4__
+			olddir = SetCurrentDir(dir);
+
+			im = InternalLoadImage(t);
+
+			SetCurrentDir(olddir);
+#else
 			olddir = CurrentDir(dir);
 
 			im = InternalLoadImage(t);
 
 			CurrentDir(olddir);
+#endif
 			UnLock(dir);
 		}
 	}

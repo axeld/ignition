@@ -1,0 +1,70 @@
+<?xml version="1.0" ?>
+<CodeBench_Project name="gtdrag-OS4" path="Daten:Develop/ignition/libs/gtdrag-OS4/gtdrag-OS4.cbp" created="1142793057" lastmodified="1143056439">
+	<plugin name="PROGDIR:Plugins/AmigaOS4SDK.CCPlugin" flags="0"/>
+	<label identifier="////"/>
+	<target name="gtdrag.library"/>
+	<homedir name="Daten:Develop/ignition/libs/gtdrag-OS4"/>
+	<includedir name="Daten:Develop/ignition/libs/gtdrag-OS4/include"/>
+	<compiler name="SDK:gcc/bin/gcc" switches="-D__AMIGAOS41__ -Wall -O3 -I./main -I. -I../include " stack="131072"/>
+	<linker switches="-nostartfiles"/>
+	<debugger name="SDK:c/gdb"/>
+	<header pattern="#?.(h|hpp|hxx)"/>
+	<source pattern="#?.(c|cpp|cc|cxx)"/>
+	<object pattern="#?.(o|lib|a)"/>
+	<other pattern="~(#?.h|#?.c|#?.cpp|#?.cc|#?.cxx|#?.o|#?.lib|#?.a)"/>
+	<builder name="SDK:c/make -f"/>
+	<environment/>
+	<headers>
+		<file name="Daten:Develop/ignition/libs/gtdrag-OS4/gtdrag_files/main/gtdrag_loc.h" open="0"/>
+		<file name="Daten:Develop/ignition/libs/gtdrag-OS4/gtdrag_files/gtdrag.library_rev.h" open="0"/>
+		<file name="Daten:Develop/ignition/libs/gtdrag-OS4/gtdrag_files/gtdrag_private.h" open="0"/>
+	</headers>
+	<sources>
+		<file name="gtdrag_files/main/AddTreeNode.c" open="0"/>
+		<file name="gtdrag_files/main/CloseTreeNode.c" open="0"/>
+		<file name="gtdrag_files/main/FindListSpecial.c" open="0"/>
+		<file name="gtdrag_files/main/FindTreePath.c" open="0"/>
+		<file name="gtdrag_files/main/FindTreeSpecial.c" open="0"/>
+		<file name="gtdrag_files/main/FreeTreeList.c" open="0"/>
+		<file name="gtdrag_files/main/FreeTreeNodes.c" open="0"/>
+		<file name="gtdrag_files/main/GetTreeContainer.c" open="0"/>
+		<file name="gtdrag_files/main/GetTreePath.c" open="0"/>
+		<file name="gtdrag_files/main/GTD_AddAppA.c" open="0"/>
+		<file name="gtdrag_files/main/GTD_AddGadgetA.c" open="0"/>
+		<file name="gtdrag_files/main/GTD_AddWindowA.c" open="0"/>
+		<file name="gtdrag_files/main/GTD_BeginDrag.c" open="0"/>
+		<file name="gtdrag_files/main/GTD_FilterIMsg.c" open="0"/>
+		<file name="gtdrag_files/main/GTD_GetAttr.c" open="0"/>
+		<file name="gtdrag_files/main/GTD_GetHook.c" open="0"/>
+		<file name="gtdrag_files/main/GTD_GetIMsg.c" open="0"/>
+		<file name="gtdrag_files/main/GTD_GetString.c" open="0"/>
+		<file name="gtdrag_files/main/GTD_HandleInput.c" open="0"/>
+		<file name="gtdrag_files/main/GTD_IFFHook.c" open="0"/>
+		<file name="gtdrag_files/main/GTD_ImageHook.c" open="0"/>
+		<file name="gtdrag_files/main/GTD_PostFilterIMsg.c" open="0"/>
+		<file name="gtdrag_files/main/GTD_PrepareDrag.c" open="0"/>
+		<file name="gtdrag_files/main/GTD_RemoveApp.c" open="0"/>
+		<file name="gtdrag_files/main/GTD_RemoveGadget.c" open="1"/>
+		<file name="gtdrag_files/main/GTD_RemoveGadgets.c" open="1"/>
+		<file name="gtdrag_files/main/GTD_RemoveWindow.c" open="1"/>
+		<file name="gtdrag_files/main/GTD_ReplyIMsg.c" open="1"/>
+		<file name="gtdrag_files/main/GTD_SetAttrsA.c" open="1"/>
+		<file name="gtdrag_files/main/GTD_StopDrag.c" open="1" current="1"/>
+		<file name="gtdrag_files/main/GTD_TreeHook.c" open="0"/>
+		<file name="gtdrag_files/main/InitTreeList.c" open="0"/>
+		<file name="gtdrag_files/main/Obtain.c" open="0"/>
+		<file name="gtdrag_files/main/OpenTreeNode.c" open="0"/>
+		<file name="gtdrag_files/main/Release.c" open="0"/>
+		<file name="gtdrag_files/main/ToggleTree.c" open="0"/>
+		<file name="gtdrag_files/main/ToggleTreeNode.c" open="0"/>
+		<file name="gtdrag_files/gtdrag.c" open="0"/>
+		<file name="gtdrag_files/gtdrag_private.c" open="0"/>
+		<file name="gtdrag_files/gtdrag_vectors.c" open="0"/>
+		<file name="gtdrag_files/init.c" open="0"/>
+	</sources>
+	<flags value="0x0000000000078001"/>
+	<buildscript name="Makefile.CB" depth="3" open="0"/>
+	<projectnotes open="0"/>
+	<buildwindow open="1"/>
+	<logfile name="RAM Disk:Build.log"/>
+</CodeBench_Project>

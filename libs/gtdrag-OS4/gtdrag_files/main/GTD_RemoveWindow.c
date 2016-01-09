@@ -65,7 +65,7 @@ void _Gtdrag_GTD_RemoveWindow(struct GtdragIFace *Self, struct Window * win)
     	if (dw->dw_Window == win)
     	{
       		IExec->Remove((struct Node *)dw);
-      		IExec->FreeMem(dw, sizeof(struct DragWindow));
+      		IExec->FreeVec(dw);
       		break;
     	}
   	}

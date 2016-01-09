@@ -125,7 +125,7 @@ cmdlen(STRPTR t)
 	if (!t)
 		return 0;
 
-	while (*(t+i) && (*(t+i) == '_' || IsAlNum(loc,*(t+i))))
+	while (*(t+i) && i < 30 && (*(t+i) == '_' || IsAlNum(loc,*(t+i))))
 		i++;
 	return i;
 }
@@ -841,10 +841,9 @@ FindLinkCommand(struct MinList *list, STRPTR name)
 		return NULL;
 
 	i = cmdlen(name);
-	for(l = (struct Link *)list->mlh_Head;l->l_Node.mln_Succ && (strnicmp(t = ((struct Node *)l->l_Link)->ln_Name,name,i) || IsAlNum(loc,*(t+i)) || *(t+i) == '_');l = (APTR)l->l_Node.mln_Succ);
+	for(l = (struct Link *)list->mlh_Head; l->l_Node.mln_Succ && (strnicmp(t = ((struct Node *)l->l_Link)->ln_Name,name,i) || IsAlNum(loc,*(t+i)) || *(t+i) == '_');l = (APTR)l->l_Node.mln_Succ);
 	if (l->l_Node.mln_Succ)
 		return l->l_Link;
-
 	return NULL;
 }
 
